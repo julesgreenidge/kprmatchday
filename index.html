@@ -1321,16 +1321,12 @@ function selectTeam(team) {
 
   document.getElementById('scoreBar').style.background = TEAM_COLOURS[team];
   document.getElementById('scoreLeftLabel').textContent = 'KPR ' + team;
-  document.getElementById('setupSquadTitle').textContent = team + ' · Select today\'s players';
+  const badge = document.getElementById('setupTeamBadge');
+  if (badge) { badge.textContent = team; badge.style.background = TEAM_COLOURS[team]; }
 
   const today = new Date().toISOString().split('T')[0];
   document.getElementById('matchDate').value = today;
 
-  // Update team badge on setup screen
-  const badge = document.getElementById('setupTeamBadge');
-  if (badge) { badge.textContent = team; badge.style.background = TEAM_COLOURS[team]; }
-
-  renderSetupPlayers();
   showScreen('screen-setup');
   document.getElementById('headerTitle').textContent = 'Match Day';
   setHeaderBack(false);
@@ -1350,23 +1346,6 @@ function setVenue(v) {
   document.getElementById('venueAway').classList.toggle('active', v === 'Away');
 }
 
-function renderSetupPlayers() {
-  const squad = getSquad(state.team);
-  const grid = document.getElementById('setupPlayerGrid');
-  grid.innerHTML = squad.map(p => `
-    <div class="player-chip ${state.selectedPlayers.includes(p) ? 'selected' : ''}"
-         onclick="toggleSetupPlayer('${p}')">${p}</div>
-  `).join('');
-}
-
-function toggleSetupPlayer(name) {
-  if (state.selectedPlayers.includes(name)) {
-    state.selectedPlayers = state.selectedPlayers.filter(p => p !== name);
-  } else {
-    state.selectedPlayers.push(name);
-  }
-  renderSetupPlayers();
-}
 
 function startMatch() {
   const opponent = document.getElementById('matchOpponent').value.trim();
@@ -1627,17 +1606,12 @@ function addPlayer() {
   saveSquad(managingTeam, squad);
   input.value = '';
   renderSquadList();
-  if (state.team === managingTeam) renderSetupPlayers();
 }
 
 function removePlayer(name) {
   const squad = getSquad(managingTeam).filter(p => p !== name);
   saveSquad(managingTeam, squad);
   renderSquadList();
-  if (state.team === managingTeam) {
-    state.selectedPlayers = state.selectedPlayers.filter(p => p !== name);
-    renderSetupPlayers();
-  }
 }
 
 // ── END MATCH ──
