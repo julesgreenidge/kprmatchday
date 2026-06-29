@@ -341,8 +341,8 @@
     max-width: 448px;
     z-index: 90;
   }
-  /* Spacer to push quarter blocks below the fixed score bar */
-  .score-bar-spacer { height: 86px; }
+  /* Spacer: header (~54px) + score bar (~76px) + gap (12px) */
+  .score-bar-spacer { height: 142px; }
   .score-bar .team-label { font-size: 13px; font-weight: 700; opacity: 0.8; }
   .score-bar .score { font-size: 28px; font-weight: 800; letter-spacing: -0.02em; }
   .score-bar .vs { font-size: 13px; opacity: 0.5; font-weight: 600; text-align: center; padding: 0 12px; }
@@ -2223,23 +2223,21 @@ function renderClubTab(data) {
     const max = Math.max(parseFloat(hVal), parseFloat(aVal), 0.01);
     const hPct = Math.round(parseFloat(hVal)/max*100);
     const aPct = Math.round(parseFloat(aVal)/max*100);
-    const hTxtStyle = hPct > 30 ? 'color:white;right:6px;' : 'color:var(--navy);left:calc(' + hPct + '% + 6px);';
-    const aTxtStyle = aPct > 30 ? 'color:white;right:6px;' : 'color:var(--dark-grey);left:calc(' + aPct + '% + 6px);';
     return `<div class="card" style="margin-bottom:10px;">
       <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:10px;">${label}</div>
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
         <span style="font-size:12px;font-weight:600;color:var(--mid-grey);width:36px;">Home</span>
-        <div style="flex:1;background:var(--light-grey);border-radius:4px;height:22px;position:relative;overflow:visible;">
+        <div style="flex:1;background:var(--light-grey);border-radius:4px;height:22px;">
           <div style="width:${hPct}%;background:var(--navy);height:100%;border-radius:4px;"></div>
-          <span style="position:absolute;top:3px;font-size:12px;font-weight:800;${hTxtStyle}">${hVal}</span>
         </div>
+        <span style="font-size:12px;font-weight:800;color:var(--navy);min-width:28px;text-align:right;">${hVal}</span>
       </div>
       <div style="display:flex;align-items:center;gap:8px;">
         <span style="font-size:12px;font-weight:600;color:var(--mid-grey);width:36px;">Away</span>
-        <div style="flex:1;background:var(--light-grey);border-radius:4px;height:22px;position:relative;overflow:visible;">
-          <div style="width:${aPct}%;background:var(--mid-grey);height:100%;border-radius:4px;"></div>
-          <span style="position:absolute;top:3px;font-size:12px;font-weight:800;${aTxtStyle}">${aVal}</span>
+        <div style="flex:1;background:var(--light-grey);border-radius:4px;height:22px;">
+          <div style="width:${aPct}%;background:#888;height:100%;border-radius:4px;"></div>
         </div>
+        <span style="font-size:12px;font-weight:800;color:var(--dark-grey);min-width:28px;text-align:right;">${aVal}</span>
       </div>
     </div>`;
   };
@@ -2371,13 +2369,12 @@ function renderTeamsTab(data) {
           ? `background:repeating-linear-gradient(90deg,#cc1818 0px,#cc1818 6px,#1a3a8f 6px,#1a3a8f 12px);opacity:0.9;`
           : `background:${colours[t]||'var(--navy)'};opacity:0.85;`;
         const valDisplay = fmt==='pct'?v+'%':fmt==='dec'?v.toFixed(1):v;
-        const txtStyle = pct > 30 ? 'color:white;right:6px;' : `color:var(--dark-grey);left:calc(${pct}% + 6px);`;
         return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
           <span style="font-size:12px;font-weight:700;color:var(--dark-grey);width:52px;">${t}</span>
-          <div style="flex:1;background:var(--light-grey);border-radius:4px;height:20px;position:relative;overflow:visible;">
+          <div style="flex:1;background:var(--light-grey);border-radius:4px;height:20px;">
             <div style="width:${pct}%;height:100%;border-radius:4px;${barStyle}"></div>
-            <span style="position:absolute;top:2px;font-size:11px;font-weight:800;${txtStyle}">${valDisplay}</span>
           </div>
+          <span style="font-size:11px;font-weight:800;color:var(--dark-grey);min-width:28px;text-align:right;">${valDisplay}</span>
         </div>`;
       }).join('')}
     </div>`;
