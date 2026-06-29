@@ -2318,20 +2318,38 @@ function renderPlayersTab(data) {
 
 function renderResultsTab(data) {
   if (!data.length) return '<div style="color:var(--mid-grey);text-align:center;padding:40px 0;">No results match your filters.</div>';
-  const chip = r => r==='W'?'<span class="result-chip chip-w">W</span>':r==='D'?'<span class="result-chip chip-d">D</span>':'<span class="result-chip chip-l">L</span>';
-  return '<div class="card">' + data.map(m => {
-    const scoreStr = m.venue === 'Home' ? `${m.goalsFor}–${m.goalsAgainst}` : `${m.goalsAgainst}–${m.goalsFor}`;
-    const vsLabel = m.venue === 'Home' ? `Home vs ${m.opponent}` : `Away vs ${m.opponent}`;
-    return `<div class="stat-row" style="flex-wrap:wrap;gap:4px;padding:10px 0;">
-      <div style="width:100%;display:flex;align-items:center;gap:8px;">
-        <span style="font-size:11px;font-weight:700;padding:2px 7px;border-radius:4px;color:white;flex-shrink:0;background:${TEAM_TAG_COLOURS[m.team]||'#888'}">${m.team}</span>
-        <span style="flex:1;font-size:13px;font-weight:600;">${vsLabel}</span>
+
+  // Group by date (data already sorted newest first)
+  const byDate = {};
+  data.forEach(m => {
+    const d = m.date || 'Unknown';
+    if (!byDate[d]) byDate[d] = [];
+    byDate[d].push(m);
+  });
+
+  const chip = r => r==='W'
+    ? '<span class="result-chip chip-w">W</span>'
+    : r==='D'
+    ? '<span class="result-chip chip-d">D</span>'
+    : '<span class="result-chip chip-l">L</span>';
+
+  return Object.entries(byDate).map(([date, ms]) => {
+    const rows = ms.map(m => {
+      const scoreStr = m.venue === 'Home' ? `${m.goalsFor}–${m.goalsAgainst}` : `${m.goalsAgainst}–${m.goalsFor}`;
+      const vsLabel = m.venue === 'Home' ? `Home vs ${m.opponent}` : `Away vs ${m.opponent}`;
+      return `<div style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-top:1px solid var(--light-grey);">
+        <span style="font-size:11px;font-weight:700;padding:2px 6px;border-radius:4px;color:white;background:${TEAM_TAG_COLOURS[m.team]||'#888'};flex-shrink:0;width:46px;text-align:center;">${m.team}</span>
+        <span style="flex:1;font-size:13px;font-weight:600;min-width:0;">${vsLabel}</span>
         ${chip(m.result)}
-        <span style="font-size:13px;font-weight:800;">${scoreStr}</span>
-      </div>
-      <div style="font-size:11px;color:var(--mid-grey);padding-left:2px;">${m.date}</div>
+        <span style="font-size:13px;font-weight:800;flex-shrink:0;">${scoreStr}</span>
+      </div>`;
+    }).join('');
+
+    return `<div style="margin-bottom:14px;">
+      <div style="font-size:12px;font-weight:700;color:var(--mid-grey);margin-bottom:6px;letter-spacing:0.04em;">${date}</div>
+      <div style="background:white;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.07);">${rows}</div>
     </div>`;
-  }).join('') + '</div>';
+  }).join('');
 }
 
 function renderTeamsTab(data) {
@@ -2473,20 +2491,40 @@ function renderHistoryList() {
     el.innerHTML = '<div style="text-align:center;color:var(--mid-grey);padding:60px 0;font-size:14px;">No matches recorded yet.<br>Matches submitted to Google Sheets will appear here.</div>';
     return;
   }
-  const chip = r => r==='W'?'<span class="result-chip chip-w">W</span>':r==='D'?'<span class="result-chip chip-d">D</span>':'<span class="result-chip chip-l">L</span>';
-  el.innerHTML = '<div class="card">' + matches.map(m => {
-    const scoreStr = m.venue === 'Home' ? `${m.goalsFor}–${m.goalsAgainst}` : `${m.goalsAgainst}–${m.goalsFor}`;
-    const vsLabel = m.venue === 'Home' ? `KPR ${m.team} vs ${m.opponent}` : `${m.opponent} vs KPR ${m.team}`;
-    return `<div class="stat-row" style="flex-wrap:wrap;gap:4px;cursor:pointer;" onclick="openHistoryDetail('${m.id}')">
-      <div style="width:100%;display:flex;align-items:center;gap:8px;">
-        <span style="font-size:11px;font-weight:700;padding:2px 7px;border-radius:4px;color:white;background:${TEAM_COLOURS[m.team]||'var(--navy)'}">${m.team}</span>
-        <span style="flex:1;font-size:13px;font-weight:600;">${vsLabel}</span>
+
+  // Group by date
+  const byDate = {};
+  matches.forEach(m => {
+    const d = m.date || 'Unknown';
+    if (!byDate[d]) byDate[d] = [];
+    byDate[d].push(m);
+  });
+
+  const chip = r => r==='W'
+    ? '<span class="result-chip chip-w">W</span>'
+    : r==='D'
+    ? '<span class="result-chip chip-d">D</span>'
+    : '<span class="result-chip chip-l">L</span>';
+
+  el.innerHTML = Object.entries(byDate).map(([date, ms]) => {
+    const rows = ms.map(m => {
+      const scoreStr = m.venue === 'Home' ? `${m.goalsFor}–${m.goalsAgainst}` : `${m.goalsAgainst}–${m.goalsFor}`;
+      const vsLabel = m.venue === 'Home' ? `Home vs ${m.opponent}` : `Away vs ${m.opponent}`;
+      return `<div onclick="openHistoryDetail('${m.id}')" style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-top:1px solid var(--light-grey);cursor:pointer;">
+        <span style="font-size:11px;font-weight:700;padding:2px 6px;border-radius:4px;color:white;background:${TEAM_COLOURS[m.team]||'var(--navy)'};flex-shrink:0;width:46px;text-align:center;">${m.team}</span>
+        <span style="flex:1;font-size:13px;font-weight:600;min-width:0;">${vsLabel}</span>
         ${chip(m.result)}
-        <span style="font-size:13px;font-weight:800;">${scoreStr}</span>
+        <span style="font-size:13px;font-weight:800;flex-shrink:0;">${scoreStr}</span>
+      </div>`;
+    }).join('');
+
+    return `<div style="margin-bottom:14px;">
+      <div style="font-size:12px;font-weight:700;color:var(--mid-grey);margin-bottom:6px;letter-spacing:0.04em;">${date}</div>
+      <div style="background:white;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.07);">
+        ${rows}
       </div>
-      <div style="font-size:11px;color:var(--mid-grey);padding-left:2px;">${m.date} · ${m.venue}</div>
     </div>`;
-  }).join('') + '</div>';
+  }).join('');
 }
 
 let historyDetailId = null;
