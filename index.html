@@ -2435,25 +2435,52 @@ function renderOpponentsTab(data) {
   });
 
   const rows = Object.entries(oppMap)
-    .map(([name, o]) => ({name, ...o, wr: o.played?Math.round(o.w/o.played*100):0, gd: o.gf-o.ga}))
-    .sort((a,b) => b.played - a.played);
+    .map(([name, o]) => ({
+      name,
+      played: o.played,
+      teams: o.teams.size,
+      w: o.w, d: o.d, l: o.l,
+      wr: o.played ? Math.round(o.w/o.played*100) : 0,
+      ppg: o.played ? ((o.w*3+o.d)/o.played).toFixed(2) : '0.00',
+      gf: o.gf, ga: o.ga, gd: o.gf - o.ga
+    }))
+    .sort((a,b) => b.played - a.played || b.gf - a.gf);
 
-  return `<div class="card" style="margin-bottom:10px;">
-    <div style="font-size:11px;font-weight:700;color:var(--mid-grey);margin-bottom:8px;">Sorted by games played</div>
-    ${rows.map(o => `
-      <div style="padding:10px 0;border-bottom:1px solid var(--light-grey);">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
-          <span style="font-size:13px;font-weight:700;">${o.name}</span>
-          <span style="font-size:12px;font-weight:700;color:var(--navy);">${o.gf}–${o.ga} <span style="color:${o.gd>0?'var(--green)':o.gd<0?'var(--red)':'var(--mid-grey)'};">(${o.gd>0?'+':''}${o.gd})</span></span>
-        </div>
-        <div style="display:flex;gap:12px;font-size:11px;color:var(--mid-grey);">
-          <span>Played: <strong style="color:var(--text);">${o.played}</strong></span>
-          <span style="color:var(--green);">W: <strong>${o.w}</strong></span>
-          <span style="color:var(--gold);">D: <strong>${o.d}</strong></span>
-          <span style="color:var(--red);">L: <strong>${o.l}</strong></span>
-          <span>WR: <strong style="color:var(--text);">${o.wr}%</strong></span>
-        </div>
-      </div>`).join('')}
+  const th = (label, right) => `<th style="padding:8px 6px;font-size:11px;font-weight:700;color:rgba(255,255,255,0.85);text-align:${right?'right':'left'};white-space:nowrap;background:var(--navy);">${label}</th>`;
+  const td = (val, right, colour) => `<td style="padding:8px 6px;font-size:12px;text-align:${right?'right':'left'};${colour?'color:'+colour+';font-weight:700;':''}white-space:nowrap;">${val}</td>`;
+  const gdColour = gd => gd > 0 ? 'var(--green)' : gd < 0 ? 'var(--red)' : 'var(--mid-grey)';
+
+  return `<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;margin-bottom:10px;">
+    <table style="width:100%;border-collapse:collapse;min-width:600px;background:white;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.07);">
+      <thead><tr>
+        ${th('Opponent')}
+        ${th('Played',true)}
+        ${th('Teams',true)}
+        ${th('W',true)}
+        ${th('D',true)}
+        ${th('L',true)}
+        ${th('WR%',true)}
+        ${th('PPG',true)}
+        ${th('GF',true)}
+        ${th('GA',true)}
+        ${th('GD',true)}
+      </tr></thead>
+      <tbody>
+        ${rows.map((o,i) => `<tr style="background:${i%2===0?'white':'#f8f9fa'};border-top:1px solid var(--light-grey);">
+          ${td(o.name)}
+          ${td(o.played,true)}
+          ${td(o.teams,true)}
+          ${td(o.w,true,'var(--green)')}
+          ${td(o.d,true,'var(--mid-grey)')}
+          ${td(o.l,true,'var(--red)')}
+          ${td(o.wr+'%',true)}
+          ${td(o.ppg,true)}
+          ${td(o.gf,true,'var(--navy)')}
+          ${td(o.ga,true,'var(--red)')}
+          ${td((o.gd>0?'+':'')+o.gd,true,gdColour(o.gd))}
+        </tr>`).join('')}
+      </tbody>
+    </table>
   </div>`;
 }
 
