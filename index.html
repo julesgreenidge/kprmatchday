@@ -1448,10 +1448,8 @@ function renderEventListForQ(q) {
   const list = document.getElementById('eventList-' + q);
   if (!list) return;
   const qEvents = state.events.filter(e => e.quarter === q);
-  const hasOppo = qEvents.some(e => e.type === 'oppo');
-  const hasCS = qEvents.some(e => e.type === 'cs');
-
-  let html = qEvents.map(e => {
+  if (qEvents.length === 0) { list.innerHTML = ''; return; }
+  list.innerHTML = qEvents.map(e => {
     let labelColour, label, detail;
     if (e.type === 'goal') {
       labelColour = 'var(--green)'; label = 'Goal';
@@ -1473,16 +1471,6 @@ function renderEventListForQ(q) {
       </div>
     </div>`;
   }).join('');
-
-  // Reminder: no oppo goal and no clean sheet recorded yet
-  if (!hasOppo && !hasCS) {
-    html += `<div onclick="addCS(${q})" style="background:#fef9ec;border:1.5px dashed var(--gold);border-radius:8px;padding:9px 12px;cursor:pointer;margin-top:${qEvents.length?'6px':'0'};">
-      <div style="font-size:13px;font-weight:700;color:var(--gold);">Clean sheet this quarter?</div>
-      <div style="font-size:12px;color:var(--mid-grey);margin-top:2px;">Tap to add GK &amp; defenders</div>
-    </div>`;
-  }
-
-  list.innerHTML = html;
 }
 function updateScoreBarLayout() {
   // Home: KPR left, opp right. Away: opp left, KPR right.
@@ -1711,6 +1699,20 @@ function goToSetup() {
 }
 
 function endMatch() {
+  // Check for quarters with no oppo goal and no clean sheet
+  const missingCS = [1,2,3,4].filter(q => {
+    const hasOppo = state.events.some(e => e.quarter === q && e.type === 'oppo');
+    const hasCS = state.events.some(e => e.quarter === q && e.type === 'cs');
+    const hasAnyEvent = state.events.some(e => e.quarter === q);
+    return hasAnyEvent && !hasOppo && !hasCS;
+  });
+
+  if (missingCS.length > 0) {
+    const qList = missingCS.map(q => 'Q' + q).join(', ');
+    if (!confirm(`No opposition goal or clean sheet recorded in ${qList}. If it was a clean sheet quarter, go back and add it.\n\nContinue to end match anyway?`)) {
+      return;
+    }
+  }
 
   const goalsFor = state.events.filter(e => e.type === 'goal').length;
   const goalsAgainst = state.events.filter(e => e.type === 'oppo').length;
