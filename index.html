@@ -716,6 +716,24 @@
     gap: 5px;
   }
 
+  /* ── TEAM PILLS ── */
+  .team-pill {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 0;
+    border-radius: 4px;
+    color: white;
+    flex-shrink: 0;
+    width: 46px;
+    text-align: center;
+    letter-spacing: 0.02em;
+  }
+  .team-pill.Blues   { background: #2196F3; }
+  .team-pill.Reds    { background: #cc1818; }
+  .team-pill.Royals  { background: #1a3a8f; }
+  .team-pill.Stripes { background: linear-gradient(90deg, #cc1818 50%, #1a3a8f 50%); }
+
   /* ── MANAGE SQUAD INLINE BTN ── */
   .squad-mgr-btn {
     display: flex;
@@ -1036,7 +1054,7 @@
           <option value="U10" selected>U10</option>
           <option value="U11">U11</option>
         </select>
-        <button onclick="sheetDataLoaded=false;loadSheetData();" title="Refresh" style="background:none;border:1.5px solid var(--light-grey);border-radius:8px;padding:7px 10px;cursor:pointer;color:var(--mid-grey);display:flex;align-items:center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button>
+        <button onclick="sheetDataLoaded=false;sheetDataLoading=false;localStorage.removeItem('kprSheetData');loadSheetData(true);" title="Refresh" style="background:none;border:1.5px solid var(--light-grey);border-radius:8px;padding:7px 10px;cursor:pointer;color:var(--mid-grey);display:flex;align-items:center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button>
       </div>
     </div>
 
@@ -2073,8 +2091,28 @@ let SHEET_DATA = []; // populated by loadSheetData()
 let sheetDataLoaded = false;
 let sheetDataLoading = false;
 
-async function loadSheetData() {
-  if (sheetDataLoaded || sheetDataLoading) return;
+const CACHE_KEY = 'kprSheetData';
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+async function loadSheetData(force = false) {
+  if (sheetDataLoading) return;
+
+  // Check cache first
+  if (!force) {
+    try {
+      const cached = localStorage.getItem(CACHE_KEY);
+      if (cached) {
+        const { ts, data } = JSON.parse(cached);
+        if (Date.now() - ts < CACHE_TTL) {
+          SHEET_DATA = data;
+          sheetDataLoaded = true;
+          renderStats();
+          return;
+        }
+      }
+    } catch(e) {}
+  }
+
   sheetDataLoading = true;
   document.getElementById('statsContent').innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--mid-grey);">Loading data...</div>';
   try {
@@ -2083,6 +2121,8 @@ async function loadSheetData() {
     if (!json.success) throw new Error(json.error);
     SHEET_DATA = parseSheetRows(json.rows);
     sheetDataLoaded = true;
+    // Save to cache
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data: SHEET_DATA }));
     renderStats();
   } catch(err) {
     document.getElementById('statsContent').innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--red);">Could not load data: ' + err.message + '</div>';
@@ -2148,6 +2188,10 @@ function parseDateStr(s) {
 
 
 const TEAM_TAG_COLOURS = { Blues:'#2196F3', Reds:'#cc1818', Royals:'#1a3a8f', Stripes:'#1565C0' };
+
+function teamPill(team) {
+  return `<span class="team-pill ${team}">${team}</span>`;
+}
 
 let currentStatTab = 'club';
 
@@ -2296,7 +2340,7 @@ function renderPlayersTab(data) {
   });
 
   const tagColour = p => TEAM_TAG_COLOURS[teamMap[p]]||'#888';
-  const teamTag = p => `<span class="team-tag" style="background:${tagColour(p)}">${teamMap[p]||''}</span>`;
+  const teamTag = p => `<span class="team-pill ${teamMap[p]||''}" style="margin-right:6px;">${teamMap[p]||''}</span>`;
   const lb = (map,colour) => {
     const sorted = Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,20);
     if(!sorted.length) return '<div style="color:var(--mid-grey);font-size:13px;">No data</div>';
@@ -2338,7 +2382,7 @@ function renderResultsTab(data) {
       const scoreStr = m.venue === 'Home' ? `${m.goalsFor}–${m.goalsAgainst}` : `${m.goalsAgainst}–${m.goalsFor}`;
       const vsLabel = m.venue === 'Home' ? `Home vs ${m.opponent}` : `Away vs ${m.opponent}`;
       return `<div style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-top:1px solid var(--light-grey);">
-        <span style="font-size:11px;font-weight:700;padding:2px 6px;border-radius:4px;color:white;background:${TEAM_TAG_COLOURS[m.team]||'#888'};flex-shrink:0;width:46px;text-align:center;">${m.team}</span>
+        ${teamPill(m.team)}
         <span style="flex:1;font-size:13px;font-weight:600;min-width:0;">${vsLabel}</span>
         ${chip(m.result)}
         <span style="font-size:13px;font-weight:800;flex-shrink:0;">${scoreStr}</span>
@@ -2511,7 +2555,7 @@ function renderHistoryList() {
       const scoreStr = m.venue === 'Home' ? `${m.goalsFor}–${m.goalsAgainst}` : `${m.goalsAgainst}–${m.goalsFor}`;
       const vsLabel = m.venue === 'Home' ? `Home vs ${m.opponent}` : `Away vs ${m.opponent}`;
       return `<div onclick="openHistoryDetail('${m.id}')" style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-top:1px solid var(--light-grey);cursor:pointer;">
-        <span style="font-size:11px;font-weight:700;padding:2px 6px;border-radius:4px;color:white;background:${TEAM_COLOURS[m.team]||'var(--navy)'};flex-shrink:0;width:46px;text-align:center;">${m.team}</span>
+        ${teamPill(m.team)}
         <span style="flex:1;font-size:13px;font-weight:600;min-width:0;">${vsLabel}</span>
         ${chip(m.result)}
         <span style="font-size:13px;font-weight:800;flex-shrink:0;">${scoreStr}</span>
