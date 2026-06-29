@@ -344,7 +344,7 @@
     grid-template-columns: 1fr auto 1fr;
     align-items: center;
   }
-  .score-bar .team-label { font-size: 13px; font-weight: 700; opacity: 0.8; }
+  .score-bar .team-label { font-size: 13px; font-weight: 700; opacity: 0.8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 130px; }
   .score-bar .score { font-size: 28px; font-weight: 800; letter-spacing: -0.02em; }
   .score-bar .vs { font-size: 13px; opacity: 0.5; font-weight: 600; text-align: center; padding: 0 12px; }
   .score-bar .q-scores { font-size: 11px; opacity: 0.6; margin-top: 2px; }
@@ -803,7 +803,7 @@
   <!-- Team indicator -->
   <div style="display:flex;align-items:center;gap:10px;padding:4px 0 14px;">
     <div id="setupTeamBadge" style="padding:6px 14px;border-radius:20px;font-size:14px;font-weight:700;color:white;background:var(--navy);">Blues</div>
-    <button onclick="goToTeamSelect()" style="background:none;border:none;font-size:13px;color:var(--mid-grey);cursor:pointer;text-decoration:underline;padding:0;">Change team</button>
+    <button onclick="openTeamChangeModal()" style="background:none;border:none;font-size:13px;color:var(--mid-grey);cursor:pointer;text-decoration:underline;padding:0;">Change team</button>
   </div>
 
   <div class="card">
@@ -1009,7 +1009,7 @@
   </button>
   <button class="nav-btn" id="nav-history" onclick="switchTab('history')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-    History
+    Results
   </button>
   <button class="nav-btn" id="nav-stats" onclick="switchTab('stats')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
@@ -1020,7 +1020,7 @@
 <!-- HISTORY TAB -->
 <div class="screen" id="screen-history">
   <div style="padding-bottom:4px;">
-    <div style="font-size:18px;font-weight:800;color:var(--navy);margin-bottom:4px;padding-top:4px;">Match History</div>
+    <div style="font-size:18px;font-weight:800;color:var(--navy);margin-bottom:4px;padding-top:4px;">Results</div>
     <div style="font-size:13px;color:var(--mid-grey);margin-bottom:12px;">Tap a match to review or correct stats</div>
     <div id="historyList"></div>
   </div>
@@ -1035,27 +1035,30 @@
   <div style="padding-bottom:4px;">
     <!-- Filter bar -->
     <div class="card" style="margin-bottom:10px;padding:10px 12px;">
-      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-        <select id="statsFilterTeam" onchange="renderStats()" style="flex:1;min-width:80px;padding:7px 8px;border:1.5px solid var(--light-grey);border-radius:8px;font-size:13px;background:white;">
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;">
+        <select id="statsFilterTeam" onchange="renderStats()" style="flex:1;padding:7px 8px;border:1.5px solid var(--light-grey);border-radius:8px;font-size:13px;background:white;">
           <option value="">All teams</option>
           <option value="Blues">Blues</option>
           <option value="Reds">Reds</option>
           <option value="Royals">Royals</option>
           <option value="Stripes">Stripes</option>
         </select>
-        <select id="statsFilterVenue" onchange="renderStats()" style="flex:1;min-width:80px;padding:7px 8px;border:1.5px solid var(--light-grey);border-radius:8px;font-size:13px;background:white;">
+        <select id="statsFilterVenue" onchange="renderStats()" style="flex:1;padding:7px 8px;border:1.5px solid var(--light-grey);border-radius:8px;font-size:13px;background:white;">
           <option value="">Venue</option>
           <option value="Home">Home</option>
           <option value="Away">Away</option>
         </select>
-        <select id="statsFilterAge" onchange="renderStats()" style="flex:1;min-width:80px;padding:7px 8px;border:1.5px solid var(--light-grey);border-radius:8px;font-size:13px;background:white;">
+        <select id="statsFilterAge" onchange="renderStats()" style="flex:1;padding:7px 8px;border:1.5px solid var(--light-grey);border-radius:8px;font-size:13px;background:white;">
           <option value="">All seasons</option>
           <option value="U9">U9</option>
           <option value="U10" selected>U10</option>
           <option value="U11">U11</option>
         </select>
-        <button onclick="sheetDataLoaded=false;sheetDataLoading=false;localStorage.removeItem('kprSheetData');loadSheetData(true);" title="Refresh" style="background:none;border:1.5px solid var(--light-grey);border-radius:8px;padding:7px 10px;cursor:pointer;color:var(--mid-grey);display:flex;align-items:center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button>
+        <button onclick="sheetDataLoaded=false;sheetDataLoading=false;localStorage.removeItem('kprSheetData');loadSheetData(true);" title="Refresh" style="background:none;border:1.5px solid var(--light-grey);border-radius:8px;padding:7px 10px;cursor:pointer;color:var(--mid-grey);display:flex;align-items:center;flex-shrink:0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button>
       </div>
+      <select id="statsFilterOpponent" onchange="renderStats()" style="width:100%;padding:7px 8px;border:1.5px solid var(--light-grey);border-radius:8px;font-size:13px;background:white;" id="statsFilterOpponent">
+        <option value="">All opponents</option>
+      </select>
     </div>
 
     <!-- Stat tabs -->
@@ -1064,7 +1067,6 @@
       <button class="stat-tab" onclick="switchStatTab('players')">Players</button>
       <button class="stat-tab" onclick="switchStatTab('teams')">Teams</button>
       <button class="stat-tab" onclick="switchStatTab('opponents')">Opponents</button>
-      <button class="stat-tab" onclick="switchStatTab('results')">Results</button>
     </div>
 
     <div id="statsContent"></div>
@@ -1145,6 +1147,21 @@
     <div style="margin-top:16px;font-size:12px;color:var(--mid-grey);">To correct a stat, delete this match and re-enter it. Full in-app editing coming soon.</div>
     <button class="btn-danger" style="margin-top:12px;" onclick="deleteHistoryMatch()">Delete match</button>
     <button class="btn-secondary" style="margin-top:8px;" onclick="closeHistoryDetail()">Close</button>
+  </div>
+</div>
+
+<!-- Team change modal -->
+<div class="modal-overlay hidden" id="teamChangeModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Change team</div>
+    <div class="team-grid" style="margin-top:12px;">
+      <button class="team-tile blues" onclick="selectTeam('Blues');closeModal('teamChangeModal')"><div class="team-name">Blues</div></button>
+      <button class="team-tile reds" onclick="selectTeam('Reds');closeModal('teamChangeModal')"><div class="team-name">Reds</div></button>
+      <button class="team-tile royals" onclick="selectTeam('Royals');closeModal('teamChangeModal')"><div class="team-name">Royals</div></button>
+      <button class="team-tile stripes" onclick="selectTeam('Stripes');closeModal('teamChangeModal')"><div class="team-name">Stripes</div></button>
+    </div>
+    <button class="btn-secondary" style="margin-top:12px;" onclick="closeModal('teamChangeModal')">Cancel</button>
   </div>
 </div>
 
@@ -1264,6 +1281,8 @@ function confirmCustomOpponent() {
   input.value = '';
 }
 
+function openTeamChangeModal() { openModal('teamChangeModal'); }
+
 // ── NAVIGATION ──
 function switchTab(tab) {
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
@@ -1274,7 +1293,7 @@ function switchTab(tab) {
   } else if (tab === 'history') {
     hideAllScreens();
     document.getElementById('screen-history').classList.add('active');
-    document.getElementById('headerTitle').textContent = 'Match History';
+    document.getElementById('headerTitle').textContent = 'Results';
     setHeaderBack(false);
     renderHistoryList();
   } else if (tab === 'stats') {
@@ -1335,7 +1354,12 @@ function selectTeam(team) {
   state.league = TEAM_LEAGUES[team];
   state._matchEnded = false;
   state._matchStarted = false;
-  state.selectedPlayers = []; // will be set to full squad on startMatch
+  state.selectedPlayers = [];
+  state._matchStarted = false;
+  state._matchEnded = false;
+  state.events = [];
+  state.starPlayer = null;
+  state.bestPasser = null;
 
   document.getElementById('scoreBar').style.background = TEAM_COLOURS[team];
   document.getElementById('scoreLeftLabel').textContent = 'KPR ' + team;
@@ -2106,6 +2130,7 @@ async function loadSheetData(force = false) {
         if (Date.now() - ts < CACHE_TTL) {
           SHEET_DATA = data;
           sheetDataLoaded = true;
+          populateOpponentFilter();
           renderStats();
           return;
         }
@@ -2121,8 +2146,8 @@ async function loadSheetData(force = false) {
     if (!json.success) throw new Error(json.error);
     SHEET_DATA = parseSheetRows(json.rows);
     sheetDataLoaded = true;
-    // Save to cache
     localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data: SHEET_DATA }));
+    populateOpponentFilter();
     renderStats();
   } catch(err) {
     document.getElementById('statsContent').innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--red);">Could not load data: ' + err.message + '</div>';
@@ -2204,14 +2229,25 @@ function switchStatTab(tab) {
   renderStats();
 }
 
+function populateOpponentFilter() {
+  const sel = document.getElementById('statsFilterOpponent');
+  if (!sel) return;
+  const current = sel.value;
+  const opponents = [...new Set(SHEET_DATA.map(m => m.opponent))].sort();
+  sel.innerHTML = '<option value="">All opponents</option>' +
+    opponents.map(o => `<option value="${o}"${o===current?' selected':''}>${o}</option>`).join('');
+}
+
 function getFilteredData() {
   const team = document.getElementById('statsFilterTeam')?.value || '';
   const venue = document.getElementById('statsFilterVenue')?.value || '';
   const age = document.getElementById('statsFilterAge')?.value || '';
+  const opponent = document.getElementById('statsFilterOpponent')?.value || '';
   return SHEET_DATA.filter(m =>
     (!team || m.team === team) &&
     (!venue || m.venue === venue) &&
-    (!age || m.age === age)
+    (!age || m.age === age) &&
+    (!opponent || m.opponent === opponent)
   );
 }
 
@@ -2408,11 +2444,25 @@ function renderTeamsTab(data) {
     const w = td.filter(m=>m.result==='W').length;
     const d = td.filter(m=>m.result==='D').length;
     const l = td.filter(m=>m.result==='L').length;
+    const played = td.length;
     const gf = td.reduce((s,m)=>s+m.goalsFor,0);
     const ga = td.reduce((s,m)=>s+m.goalsAgainst,0);
     const ast = td.reduce((s,m)=>s+Object.values(m.assists).reduce((a,b)=>a+b,0),0);
-    const played = td.length;
-    teamStats[t] = { played, w, d, l, gf, ga, ast, winRate: played?Math.round(w/played*100):0, ppg: played?(w*3+d)/played:0, gfpg: played?gf/played:0, gapg: played?ga/played:0 };
+    const csQ = td.reduce((s,m)=>s+Object.values(m.csGK).reduce((a,b)=>a+b,0),0);
+    const csGames = td.filter(m=>m.goalsAgainst===0).length;
+    const scored = td.filter(m=>m.goalsFor>0).length;
+    teamStats[t] = {
+      played, w, d, l, gf, ga, ast, csQ, csGames,
+      winRate: played?Math.round(w/played*100):0,
+      ppg: played?(w*3+d)/played:0,
+      gfpg: played?gf/played:0,
+      gapg: played?ga/played:0,
+      apg: played?ast/played:0,
+      cspg: played?csQ/played:0,
+      pctScored: played?Math.round(scored/played*100):0,
+      pctAssist: gf?Math.round(ast/gf*100):0,
+      pctCS: played?Math.round(csGames/played*100):0,
+    };
   });
 
   const bar = (val, max, colour) => {
@@ -2452,10 +2502,16 @@ function renderTeamsTab(data) {
     metric('Win Rate %', 'winRate', 'pct'),
     metric('Points Per Game', 'ppg', 'dec'),
     metric('Goals For', 'gf', 'int'),
-    metric('Goals Against', 'ga', 'int'),
     metric('Goals For Per Game', 'gfpg', 'dec'),
+    metric('% Games Scored', 'pctScored', 'pct'),
+    metric('Goals Against', 'ga', 'int'),
     metric('Goals Against Per Game', 'gapg', 'dec'),
     metric('Assists', 'ast', 'int'),
+    metric('Assists Per Game', 'apg', 'dec'),
+    metric('% Goals from Assist', 'pctAssist', 'pct'),
+    metric('Clean Sheet Quarters', 'csQ', 'int'),
+    metric('Clean Sheet Quarters Per Game', 'cspg', 'dec'),
+    metric('% Clean Sheet Games', 'pctCS', 'pct'),
   ].join('');
 }
 
