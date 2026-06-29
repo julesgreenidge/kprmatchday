@@ -1448,8 +1448,10 @@ function renderEventListForQ(q) {
   const list = document.getElementById('eventList-' + q);
   if (!list) return;
   const qEvents = state.events.filter(e => e.quarter === q);
-  if (qEvents.length === 0) { list.innerHTML = ''; return; }
-  list.innerHTML = qEvents.map(e => {
+  const hasOppo = qEvents.some(e => e.type === 'oppo');
+  const hasCS = qEvents.some(e => e.type === 'cs');
+
+  let html = qEvents.map(e => {
     let labelColour, label, detail;
     if (e.type === 'goal') {
       labelColour = 'var(--green)'; label = 'Goal';
@@ -1471,6 +1473,16 @@ function renderEventListForQ(q) {
       </div>
     </div>`;
   }).join('');
+
+  // Reminder: no oppo goal and no clean sheet recorded yet
+  if (!hasOppo && !hasCS) {
+    html += `<div onclick="addCS(${q})" style="background:#fef9ec;border:1.5px dashed var(--gold);border-radius:8px;padding:9px 12px;cursor:pointer;margin-top:${qEvents.length?'6px':'0'};">
+      <div style="font-size:13px;font-weight:700;color:var(--gold);">Clean sheet this quarter?</div>
+      <div style="font-size:12px;color:var(--mid-grey);margin-top:2px;">Tap to add GK &amp; defenders</div>
+    </div>`;
+  }
+
+  list.innerHTML = html;
 }
 function updateScoreBarLayout() {
   // Home: KPR left, opp right. Away: opp left, KPR right.
