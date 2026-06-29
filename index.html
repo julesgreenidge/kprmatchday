@@ -625,6 +625,10 @@
     border-radius: 4px;
     color: white;
     margin-right: 6px;
+    display: inline-block;
+    width: 46px;
+    text-align: center;
+    flex-shrink: 0;
   }
   .stat-row .val { font-weight: 800; color: var(--navy); min-width: 24px; text-align: right; }
   .result-chip {
@@ -1315,7 +1319,7 @@ function selectTeam(team) {
   state.league = TEAM_LEAGUES[team];
   state._matchEnded = false;
   state._matchStarted = false;
-  state.selectedPlayers = []; // reset when team changes
+  state.selectedPlayers = [...getSquad(team)]; // pre-select full squad
 
   document.getElementById('scoreBar').style.background = TEAM_COLOURS[team];
   document.getElementById('scoreLeftLabel').textContent = 'KPR ' + team;
@@ -1374,11 +1378,15 @@ function startMatch() {
 
   state.matchDate = date;
   state.opponent = opponent;
-  state.events = [];
-  state.currentQ = 1;
-  state.starPlayer = null;
-  state.bestPasser = null;
   state._matchEnded = false;
+
+  // Only reset events if this is a brand new match (not returning from setup)
+  if (!state._matchStarted) {
+    state.events = [];
+    state.currentQ = 1;
+    state.starPlayer = null;
+    state.bestPasser = null;
+  }
   state._matchStarted = true;
 
   // Score bar: home = KPR left, away = KPR right
@@ -1634,10 +1642,24 @@ function removePlayer(name) {
 
 // ── END MATCH ──
 function goToSetup() {
-  state._matchStarted = false;
+  // Do NOT reset _matchStarted — events must be preserved
   showScreen('screen-setup');
   document.getElementById('headerTitle').textContent = 'Match Day';
   setHeaderBack(false);
+  // Restore current match details in the form
+  if (state.matchDate) document.getElementById('matchDate').value = state.matchDate;
+  if (state.opponent) {
+    const sel = document.getElementById('matchOpponent');
+    // Try to select existing option, otherwise show as custom
+    let found = false;
+    for (let o of sel.options) { if (o.value === state.opponent) { sel.value = state.opponent; found = true; break; } }
+    if (!found && state.opponent) {
+      const opt = document.createElement('option');
+      opt.value = state.opponent; opt.textContent = state.opponent;
+      sel.appendChild(opt); sel.value = state.opponent;
+    }
+  }
+  setVenue(state.venue || 'Home');
 }
 
 function endMatch() {
@@ -2080,7 +2102,7 @@ let sheetDataLoading = false;
 async function loadSheetData() {
   if (sheetDataLoaded || sheetDataLoading) return;
   sheetDataLoading = true;
-  document.getElementById('statsContent').innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--mid-grey);">Loading data from Google Sheets...</div>';
+  document.getElementById('statsContent').innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--mid-grey);">Loading data...</div>';
   try {
     const resp = await fetch(SCRIPT_URL);
     const json = await resp.json();
@@ -2126,7 +2148,7 @@ function parseSheetRows(rows) {
     const player = (r['Player']||'').replace(r['Team'] + ' - ', '');
     const stat = r['Stat']||'';
     const count = parseInt(r['Count'])||0;
-    if (stat==='1. Goal' && !player.includes('Oppo')) m.goals[player]=(m.goals[player]||0)+count;
+    if (stat==='1. Goal') m.goals[player]=(m.goals[player]||0)+count;
     else if (stat==='2. Assist') m.assists[player]=(m.assists[player]||0)+count;
     else if (stat==='4. Clean Sheet GK') m.csGK[player]=(m.csGK[player]||0)+count;
     else if (stat==='3. Clean Sheet DEF') m.csDef[player]=(m.csDef[player]||0)+count;
@@ -2300,7 +2322,7 @@ function renderPlayersTab(data) {
   });
 
   const tagColour = p => TEAM_TAG_COLOURS[teamMap[p]]||'#888';
-  const teamTag = p => `<span class="team-tag" style="background:${tagColour(p)}">${(teamMap[p]||'').slice(0,1)}</span>`;
+  const teamTag = p => `<span class="team-tag" style="background:${tagColour(p)}">${teamMap[p]||''}</span>`;
   const lb = (map,colour) => {
     const sorted = Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,20);
     if(!sorted.length) return '<div style="color:var(--mid-grey);font-size:13px;">No data</div>';
@@ -2375,7 +2397,7 @@ function renderTeamsTab(data) {
       ${vals.sort((a,b)=>b.v-a.v).map(({t,v}) => {
         const pct = max ? Math.round(v/max*100) : 0;
         const barStyle = t === 'Stripes'
-          ? `background:repeating-linear-gradient(90deg,#cc1818 0px,#cc1818 6px,#1a3a8f 6px,#1a3a8f 12px);opacity:0.9;`
+          ? `background:repeating-linear-gradient(90deg,#cc1818 0px,#cc1818 12px,#1a3a8f 12px,#1a3a8f 24px);opacity:0.9;`
           : `background:${colours[t]||'var(--navy)'};opacity:0.85;`;
         const valDisplay = fmt==='pct'?v+'%':fmt==='dec'?v.toFixed(1):v;
         return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
