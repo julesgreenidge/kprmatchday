@@ -1699,12 +1699,11 @@ function goToSetup() {
 }
 
 function endMatch() {
-  // Check for quarters with no oppo goal and no clean sheet
+  // Check for quarters with no oppo goal and no clean sheet recorded
   const missingCS = [1,2,3,4].filter(q => {
     const hasOppo = state.events.some(e => e.quarter === q && e.type === 'oppo');
     const hasCS = state.events.some(e => e.quarter === q && e.type === 'cs');
-    const hasAnyEvent = state.events.some(e => e.quarter === q);
-    return hasAnyEvent && !hasOppo && !hasCS;
+    return !hasOppo && !hasCS;
   });
 
   if (missingCS.length > 0) {
