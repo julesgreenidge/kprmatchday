@@ -845,9 +845,7 @@
   </div>
 
   <div class="card">
-    <div class="card-title" id="setupSquadTitle">Select today's players</div>
-    <div class="player-grid" id="setupPlayerGrid"></div>
-    <button class="squad-mgr-btn" onclick="openSquadManager(state.team)">Manage squad</button>
+    <button class="squad-mgr-btn" onclick="openSquadManager(state.team)" style="margin-top:0;">Manage squad</button>
   </div>
 
   <button class="btn-primary" onclick="startMatch()" id="startMatchBtn">Start match</button>
@@ -1319,7 +1317,7 @@ function selectTeam(team) {
   state.league = TEAM_LEAGUES[team];
   state._matchEnded = false;
   state._matchStarted = false;
-  state.selectedPlayers = [...getSquad(team)]; // pre-select full squad
+  state.selectedPlayers = []; // will be set to full squad on startMatch
 
   document.getElementById('scoreBar').style.background = TEAM_COLOURS[team];
   document.getElementById('scoreLeftLabel').textContent = 'KPR ' + team;
@@ -1374,7 +1372,9 @@ function startMatch() {
   const opponent = document.getElementById('matchOpponent').value.trim();
   const date = document.getElementById('matchDate').value;
   if (!date) { showToast('Select a date'); return; }
-  if (state.selectedPlayers.length < 2) { showToast('Select at least 2 players'); return; }
+
+  // Always use full squad
+  state.selectedPlayers = [...getSquad(state.team)];
 
   state.matchDate = date;
   state.opponent = opponent;
