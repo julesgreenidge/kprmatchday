@@ -133,7 +133,7 @@
   .team-tile {
     border: none;
     border-radius: 12px;
-    padding: 20px 12px;
+    padding: 60px 12px;
     font-size: 15px;
     font-weight: 700;
     color: white;
@@ -330,14 +330,17 @@
     color: white;
     border-radius: 12px;
     padding: 14px 16px;
-    display: flex;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
     align-items: center;
-    justify-content: space-between;
     margin-bottom: 12px;
+    position: sticky;
+    top: 56px;
+    z-index: 90;
   }
   .score-bar .team-label { font-size: 13px; font-weight: 700; opacity: 0.8; }
   .score-bar .score { font-size: 28px; font-weight: 800; letter-spacing: -0.02em; }
-  .score-bar .vs { font-size: 13px; opacity: 0.5; font-weight: 600; }
+  .score-bar .vs { font-size: 13px; opacity: 0.5; font-weight: 600; text-align: center; padding: 0 12px; }
   .score-bar .q-scores { font-size: 11px; opacity: 0.6; margin-top: 2px; }
 
   /* ── MODAL ── */
@@ -847,9 +850,7 @@
       <div class="team-label" id="scoreLeftLabel">KPR Blues</div>
       <div class="score" id="scoreLeftVal">0</div>
     </div>
-    <div style="text-align:center;">
-      <div class="vs">vs</div>
-    </div>
+    <div class="vs">vs</div>
     <div style="text-align:right;" id="scoreRight">
       <div class="team-label" id="scoreRightLabel">Opponent</div>
       <div class="score" id="scoreRightVal">0</div>
@@ -963,12 +964,12 @@
     <div style="font-size:15px;font-weight:700;color:#92400e;margin-bottom:10px;">Match Awards</div>
     <div class="section-label">Star Player</div>
     <div class="modal-player-grid" id="starPlayerGrid"></div>
-    <div class="section-label" style="margin-top:12px;">Best Passer</div>
+    <div class="section-label" style="margin-top:12px;">Over-achiever</div>
     <div class="modal-player-grid" id="bestPasserGrid"></div>
   </div>
 
-  <button class="btn-primary" id="submitBtn" onclick="submitMatch()">Submit to Google Sheets ↗</button>
-  <button class="btn-secondary" id="whatsappBtn" onclick="shareWhatsApp()" style="background:#25D366;color:white;border-color:#25D366;margin-top:8px;">Share Summary</button>
+  <button class="btn-primary" id="submitBtn" onclick="confirmSubmit()">Submit results</button>
+  <button class="btn-secondary" id="whatsappBtn" onclick="shareWhatsApp()" style="background:#25D366;color:white;border-color:#25D366;margin-top:8px;">WhatsApp Summary <svg width="16" height="16" viewBox="0 0 24 24" fill="white" style="vertical-align:middle;margin-left:4px;"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.123.555 4.116 1.523 5.845L.057 23.428a.75.75 0 0 0 .915.915l5.638-1.481A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.75a9.703 9.703 0 0 1-4.953-1.355l-.355-.211-3.683.967.983-3.595-.231-.369A9.712 9.712 0 0 1 2.25 12C2.25 6.615 6.615 2.25 12 2.25S21.75 6.615 21.75 12 17.385 21.75 12 21.75z"/></svg></button>
   <button class="btn-danger" onclick="newMatch()" style="margin-top:8px;">New match</button>
 </div>
 
@@ -1112,10 +1113,21 @@
     <div id="hdQuarters"></div>
     <div style="border-top:1px solid var(--light-grey);margin:12px 0;"></div>
     <div style="font-size:13px;"><strong>Star Player:</strong> <span id="hdStar"></span></div>
-    <div style="font-size:13px;margin-top:4px;"><strong>Best Passer:</strong> <span id="hdPasser"></span></div>
+    <div style="font-size:13px;margin-top:4px;"><strong>Over-achiever:</strong> <span id="hdPasser"></span></div>
     <div style="margin-top:16px;font-size:12px;color:var(--mid-grey);">To correct a stat, delete this match and re-enter it. Full in-app editing coming soon.</div>
     <button class="btn-danger" style="margin-top:12px;" onclick="deleteHistoryMatch()">Delete match</button>
     <button class="btn-secondary" style="margin-top:8px;" onclick="closeHistoryDetail()">Close</button>
+  </div>
+</div>
+
+<!-- Submit confirm modal -->
+<div class="modal-overlay hidden" id="submitConfirmModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Submit results?</div>
+    <div class="modal-sub" id="submitConfirmSub"></div>
+    <button class="btn-primary" onclick="closeModal('submitConfirmModal');submitMatch();">Confirm</button>
+    <button class="btn-secondary" onclick="closeModal('submitConfirmModal')">Cancel</button>
   </div>
 </div>
 
@@ -1294,6 +1306,8 @@ function selectTeam(team) {
   state.team = team;
   state.league = TEAM_LEAGUES[team];
   state._matchEnded = false;
+  state._matchStarted = false;
+  state.selectedPlayers = []; // reset when team changes
 
   document.getElementById('scoreBar').style.background = TEAM_COLOURS[team];
   document.getElementById('scoreLeftLabel').textContent = 'KPR ' + team;
@@ -1781,6 +1795,17 @@ function buildRows() {
   return rows;
 }
 
+// ── SUBMIT ──
+function confirmSubmit() {
+  if (!state.opponent) { showToast('Enter an opponent before submitting'); return; }
+  const gf = state.events.filter(e=>e.type==='goal').length;
+  const ga = state.events.filter(e=>e.type==='oppo').length;
+  const opp = state.opponent || 'Opposition';
+  const scoreStr = state.venue === 'Home' ? `KPR ${state.team} ${gf}–${ga} ${opp}` : `${opp} ${ga}–${gf} KPR ${state.team}`;
+  document.getElementById('submitConfirmSub').textContent = scoreStr + ' · ' + formatDate(state.matchDate);
+  openModal('submitConfirmModal');
+}
+
 async function submitMatch() {
   if (!state.opponent) { showToast('Enter an opponent before submitting'); return; }
   const btn = document.getElementById('submitBtn');
@@ -1878,7 +1903,7 @@ function buildWhatsAppText() {
   msg += '\n';
 
   if (state.starPlayer) msg += `*Star Player:* ${state.starPlayer}\n`;
-  if (state.bestPasser) msg += `*Best Passer:* ${state.bestPasser}\n`;
+  if (state.bestPasser) msg += `*Over-achiever:* ${state.bestPasser}\n`;
 
   return msg;
 }
@@ -2136,6 +2161,7 @@ function renderStats() {
 }
 
 function renderClubTab(data) {
+  if (!data.length) return '<div style="color:var(--mid-grey);text-align:center;padding:40px 0;">No data — check filters</div>';
   const played = data.length;
   const wins = data.filter(m=>m.result==='W').length;
   const draws = data.filter(m=>m.result==='D').length;
@@ -2143,73 +2169,140 @@ function renderClubTab(data) {
   const gf = data.reduce((s,m)=>s+m.goalsFor,0);
   const ga = data.reduce((s,m)=>s+m.goalsAgainst,0);
   const assists = data.reduce((s,m)=>s+Object.values(m.assists).reduce((a,b)=>a+b,0),0);
+  const csQs = data.reduce((s,m)=>s+Object.values(m.csGK).reduce((a,b)=>a+b,0),0);
   const winRate = played ? Math.round(wins/played*100) : 0;
-  const ppg = played ? (wins*3+draws)/played : 0;
+  const ppg = played ? ((wins*3+draws)/played).toFixed(1) : '0.0';
+  const gfpg = played ? (gf/played).toFixed(1) : '0.0';
+  const gapg = played ? (ga/played).toFixed(1) : '0.0';
+  const apg = played ? (assists/played).toFixed(1) : '0.0';
+  const cspg = played ? (csQs/played).toFixed(1) : '0.0';
+  const pctScored = played ? Math.round(data.filter(m=>m.goalsFor>0).length/played*100) : 0;
+  const pctFromAssist = gf ? Math.round(assists/gf*100) : 0;
+  const csGames = data.filter(m=>m.goalsAgainst===0).length;
+  const pctCS = played ? Math.round(csGames/played*100) : 0;
 
-  // Player goal leaderboard
-  const goalMap = {};
-  const assistMap = {};
-  const csGKMap = {};
-  const csDefMap = {};
-  data.forEach(m => {
-    Object.entries(m.goals).forEach(([p,n]) => { goalMap[p] = (goalMap[p]||0)+n; });
-    Object.entries(m.assists).forEach(([p,n]) => { assistMap[p] = (assistMap[p]||0)+n; });
-    Object.entries(m.csGK).forEach(([p,n]) => { csGKMap[p] = (csGKMap[p]||0)+n; });
-    Object.entries(m.csDef).forEach(([p,n]) => { csDefMap[p] = (csDefMap[p]||0)+n; });
-  });
-  const top5 = (map) => Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  // Home/away splits
+  const home = data.filter(m=>m.venue==='Home');
+  const away = data.filter(m=>m.venue==='Away');
+  const hgfpg = home.length ? (home.reduce((s,m)=>s+m.goalsFor,0)/home.length).toFixed(1) : '0.0';
+  const agfpg = away.length ? (away.reduce((s,m)=>s+m.goalsFor,0)/away.length).toFixed(1) : '0.0';
+  const hgapg = home.length ? (home.reduce((s,m)=>s+m.goalsAgainst,0)/home.length).toFixed(1) : '0.0';
+  const agapg = away.length ? (away.reduce((s,m)=>s+m.goalsAgainst,0)/away.length).toFixed(1) : '0.0';
+  const hapg = home.length ? (home.reduce((s,m)=>s+Object.values(m.assists).reduce((a,b)=>a+b,0),0)/home.length).toFixed(1) : '0.0';
+  const aapg = away.length ? (away.reduce((s,m)=>s+Object.values(m.assists).reduce((a,b)=>a+b,0),0)/away.length).toFixed(1) : '0.0';
+  const hcspg = home.length ? (home.reduce((s,m)=>s+Object.values(m.csGK).reduce((a,b)=>a+b,0),0)/home.length).toFixed(1) : '0.0';
+  const acspg = away.length ? (away.reduce((s,m)=>s+Object.values(m.csGK).reduce((a,b)=>a+b,0),0)/away.length).toFixed(1) : '0.0';
 
-  const leaderRow = ([name,val], i) => `<div class="stat-row"><span class="rank">${i+1}</span><span class="name">${name}</span><span class="val">${val}</span></div>`;
+  const kpi = (label, value) => `<div class="stat-kpi"><div class="kpi-val">${value}</div><div class="kpi-label">${label}</div></div>`;
+
+  const hBar = (label, hVal, aVal) => {
+    const max = Math.max(parseFloat(hVal), parseFloat(aVal), 0.01);
+    const hPct = Math.round(parseFloat(hVal)/max*100);
+    const aPct = Math.round(parseFloat(aVal)/max*100);
+    return `<div class="card" style="margin-bottom:10px;">
+      <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:10px;">${label}</div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+        <span style="font-size:12px;font-weight:600;color:var(--mid-grey);width:36px;">Home</span>
+        <div style="flex:1;background:var(--light-grey);border-radius:4px;height:22px;position:relative;overflow:hidden;">
+          <div style="width:${hPct}%;background:var(--navy);height:100%;border-radius:4px;"></div>
+          <span style="position:absolute;right:6px;top:3px;font-size:12px;font-weight:800;color:white;">${hVal}</span>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-size:12px;font-weight:600;color:var(--mid-grey);width:36px;">Away</span>
+        <div style="flex:1;background:var(--light-grey);border-radius:4px;height:22px;position:relative;overflow:hidden;">
+          <div style="width:${aPct}%;background:var(--mid-grey);height:100%;border-radius:4px;"></div>
+          <span style="position:absolute;right:6px;top:3px;font-size:12px;font-weight:800;color:white;">${aVal}</span>
+        </div>
+      </div>
+    </div>`;
+  };
 
   return `
-    <div class="stat-kpi-grid">
-      <div class="stat-kpi"><div class="kpi-val">${played}</div><div class="kpi-label">Played</div></div>
-      <div class="stat-kpi"><div class="kpi-val">${wins}</div><div class="kpi-label">Wins</div></div>
-      <div class="stat-kpi"><div class="kpi-val">${draws}</div><div class="kpi-label">Draws</div></div>
-      <div class="stat-kpi"><div class="kpi-val">${losses}</div><div class="kpi-label">Losses</div></div>
-      <div class="stat-kpi"><div class="kpi-val">${winRate}%</div><div class="kpi-label">Win Rate</div></div>
-      <div class="stat-kpi"><div class="kpi-val">${ppg.toFixed(1)}</div><div class="kpi-label">Pts/Game</div></div>
+    <div class="stat-kpi-grid">${kpi('Games Played',played)}${kpi('Wins',wins)}${kpi('Draws',draws)}${kpi('Losses',losses)}${kpi('Win Rate',winRate+'%')}${kpi('Pts / Game',ppg)}</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+      <div class="card" style="margin-bottom:0;"><div style="font-size:11px;color:var(--mid-grey);font-weight:600;">Goals For</div><div style="font-size:24px;font-weight:900;color:var(--navy);">${gf}</div></div>
+      <div class="card" style="margin-bottom:0;"><div style="font-size:11px;color:var(--mid-grey);font-weight:600;">Goals Against</div><div style="font-size:24px;font-weight:900;color:var(--red);">-${ga}</div></div>
+      <div class="card" style="margin-bottom:0;"><div style="font-size:11px;color:var(--mid-grey);font-weight:600;">Assists</div><div style="font-size:24px;font-weight:900;color:var(--navy);">${assists}</div></div>
+      <div class="card" style="margin-bottom:0;"><div style="font-size:11px;color:var(--mid-grey);font-weight:600;">Clean Sheet Qs</div><div style="font-size:24px;font-weight:900;color:var(--navy);">${csQs}</div></div>
+      <div class="card" style="margin-bottom:0;"><div style="font-size:11px;color:var(--mid-grey);font-weight:600;">Goals For / Game</div><div style="font-size:24px;font-weight:900;color:var(--navy);">${gfpg}</div></div>
+      <div class="card" style="margin-bottom:0;"><div style="font-size:11px;color:var(--mid-grey);font-weight:600;">Goals Against / Game</div><div style="font-size:24px;font-weight:900;color:var(--red);">${gapg}</div></div>
+      <div class="card" style="margin-bottom:0;"><div style="font-size:11px;color:var(--mid-grey);font-weight:600;">Assists / Game</div><div style="font-size:24px;font-weight:900;color:var(--navy);">${apg}</div></div>
+      <div class="card" style="margin-bottom:0;"><div style="font-size:11px;color:var(--mid-grey);font-weight:600;">CS Qs / Game</div><div style="font-size:24px;font-weight:900;color:var(--navy);">${cspg}</div></div>
+      <div class="card" style="margin-bottom:0;"><div style="font-size:11px;color:var(--mid-grey);font-weight:600;">% Games Scored</div><div style="font-size:24px;font-weight:900;color:var(--navy);">${pctScored}%</div></div>
+      <div class="card" style="margin-bottom:0;"><div style="font-size:11px;color:var(--mid-grey);font-weight:600;">% Goals from Assist</div><div style="font-size:24px;font-weight:900;color:var(--navy);">${pctFromAssist}%</div></div>
+      <div class="card" style="margin-bottom:0;"><div style="font-size:11px;color:var(--mid-grey);font-weight:600;">% Clean Sheet Games</div><div style="font-size:24px;font-weight:900;color:var(--navy);">${pctCS}%</div></div>
     </div>
-    <div class="stat-kpi-grid" style="grid-template-columns:1fr 1fr;">
-      <div class="stat-kpi" style="background:var(--green)"><div class="kpi-val">${gf}</div><div class="kpi-label">Goals For</div></div>
-      <div class="stat-kpi" style="background:var(--red)"><div class="kpi-val">${ga}</div><div class="kpi-label">Goals Against</div></div>
-    </div>
-    <div class="card" style="margin-bottom:10px;"><div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:8px;">Top Scorers</div>${top5(goalMap).map(leaderRow).join('')||'<div style="color:var(--mid-grey);font-size:13px;">No data</div>'}</div>
-    <div class="card" style="margin-bottom:10px;"><div style="font-size:13px;font-weight:700;color:var(--red);margin-bottom:8px;">Top Assisters</div>${top5(assistMap).map(leaderRow).join('')||'<div style="color:var(--mid-grey);font-size:13px;">No data</div>'}</div>
-    <div class="card" style="margin-bottom:10px;"><div style="font-size:13px;font-weight:700;color:#92400e;margin-bottom:8px;">Top GK Clean Sheets</div>${top5(csGKMap).map(leaderRow).join('')||'<div style="color:var(--mid-grey);font-size:13px;">No data</div>'}</div>
-    <div class="card" style="margin-bottom:10px;"><div style="font-size:13px;font-weight:700;color:#92400e;margin-bottom:8px;">Top DEF Clean Sheets</div>${top5(csDefMap).map(leaderRow).join('')||'<div style="color:var(--mid-grey);font-size:13px;">No data</div>'}</div>
+    ${hBar('Goals For per Game', hgfpg, agfpg)}
+    ${hBar('Goals Against per Game', hgapg, agapg)}
+    ${hBar('Assists per Game', hapg, aapg)}
+    ${hBar('Clean Sheet Qs per Game', hcspg, acspg)}
   `;
 }
 
 function renderPlayersTab(data) {
-  const goalMap = {}, assistMap = {}, csGKMap = {}, csDefMap = {}, starMap = {}, passerMap = {}, teamMap = {};
+  if (!data.length) return '<div style="color:var(--mid-grey);text-align:center;padding:40px 0;">No data — check filters</div>';
+
+  // Aggregate per player
+  const playerMap = {};
+  const addStat = (team, player, key, val) => {
+    const k = team + '||' + player;
+    if (!playerMap[k]) playerMap[k] = { team, player, goals:0, assists:0, csDef:0, csGK:0, star:0, passer:0 };
+    playerMap[k][key] += val;
+  };
   data.forEach(m => {
-    const addTo = (map, key, val) => { map[key] = (map[key]||0)+val; if (!teamMap[key]) teamMap[key] = m.team; };
-    Object.entries(m.goals).forEach(([p,n]) => addTo(goalMap,p,n));
-    Object.entries(m.assists).forEach(([p,n]) => addTo(assistMap,p,n));
-    Object.entries(m.csGK).forEach(([p,n]) => addTo(csGKMap,p,n));
-    Object.entries(m.csDef).forEach(([p,n]) => addTo(csDefMap,p,n));
-    if (m.starPlayer) addTo(starMap,m.starPlayer,1);
-    if (m.bestPasser) addTo(passerMap,m.bestPasser,1);
+    Object.entries(m.goals).forEach(([p,n]) => addStat(m.team,p,'goals',n));
+    Object.entries(m.assists).forEach(([p,n]) => addStat(m.team,p,'assists',n));
+    Object.entries(m.csDef).forEach(([p,n]) => addStat(m.team,p,'csDef',n));
+    Object.entries(m.csGK).forEach(([p,n]) => addStat(m.team,p,'csGK',n));
+    if (m.starPlayer) addStat(m.team,m.starPlayer,'star',1);
+    if (m.bestPasser) addStat(m.team,m.bestPasser,'passer',1);
   });
 
-  const tagColour = (p) => TEAM_TAG_COLOURS[teamMap[p]] || '#888';
-  const teamTag = (p) => `<span class="team-tag" style="background:${tagColour(p)}">${(teamMap[p]||'').slice(0,1)}</span>`;
-
-  const leaderboard = (map, colour) => {
-    const sorted = Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,15);
-    if (!sorted.length) return '<div style="color:var(--mid-grey);font-size:13px;">No data</div>';
-    return sorted.map(([p,v],i) => `<div class="stat-row"><span class="rank">${i+1}</span>${teamTag(p)}<span class="name">${p}</span><span class="val" style="color:${colour}">${v}</span></div>`).join('');
-  };
-
-  return `
-    <div class="card" style="margin-bottom:10px;"><div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:8px;">Goals</div>${leaderboard(goalMap,'var(--navy)')}</div>
-    <div class="card" style="margin-bottom:10px;"><div style="font-size:13px;font-weight:700;color:var(--red);margin-bottom:8px;">Assists</div>${leaderboard(assistMap,'var(--red)')}</div>
-    <div class="card" style="margin-bottom:10px;"><div style="font-size:13px;font-weight:700;color:#92400e;margin-bottom:8px;">Clean Sheets — GK</div>${leaderboard(csGKMap,'#92400e')}</div>
-    <div class="card" style="margin-bottom:10px;"><div style="font-size:13px;font-weight:700;color:#92400e;margin-bottom:8px;">Clean Sheets — DEF</div>${leaderboard(csDefMap,'#92400e')}</div>
-    <div class="card" style="margin-bottom:10px;"><div style="font-size:13px;font-weight:700;color:var(--gold);margin-bottom:8px;">Star Player</div>${leaderboard(starMap,'var(--gold)')}</div>
-    <div class="card" style="margin-bottom:10px;"><div style="font-size:13px;font-weight:700;color:var(--gold);margin-bottom:8px;">Best Passer</div>${leaderboard(passerMap,'var(--gold)')}</div>
-  `;
+  // Group by team, sort players by goal contribution
+  const teams = ['Blues','Reds','Royals','Stripes'];
+  let html = '';
+  teams.forEach(team => {
+    const players = Object.values(playerMap).filter(p=>p.team===team)
+      .sort((a,b)=>(b.goals+b.assists)-(a.goals+a.assists));
+    if (!players.length) return;
+    const totals = players.reduce((t,p)=>({goals:t.goals+p.goals,assists:t.assists+p.assists,csDef:t.csDef+p.csDef,csGK:t.csGK+p.csGK,star:t.star+p.star,passer:t.passer+p.passer}),{goals:0,assists:0,csDef:0,csGK:0,star:0,passer:0});
+    html += `<div class="card" style="margin-bottom:10px;padding:0;overflow:hidden;">
+      <div style="background:${TEAM_TAG_COLOURS[team]};color:white;padding:10px 12px;font-size:13px;font-weight:800;">${team}</div>
+      <table style="width:100%;border-collapse:collapse;font-size:12px;">
+        <thead><tr style="background:var(--off-white);">
+          <th style="text-align:left;padding:7px 10px;font-size:11px;color:var(--mid-grey);font-weight:700;">Player</th>
+          <th style="text-align:center;padding:7px 4px;font-size:11px;color:var(--mid-grey);font-weight:700;">G</th>
+          <th style="text-align:center;padding:7px 4px;font-size:11px;color:var(--mid-grey);font-weight:700;">A</th>
+          <th style="text-align:center;padding:7px 4px;font-size:11px;color:var(--mid-grey);font-weight:700;">CS DEF</th>
+          <th style="text-align:center;padding:7px 4px;font-size:11px;color:var(--mid-grey);font-weight:700;">CS GK</th>
+          <th style="text-align:center;padding:7px 4px;font-size:11px;color:var(--mid-grey);font-weight:700;">SP</th>
+          <th style="text-align:center;padding:7px 4px;font-size:11px;color:var(--mid-grey);font-weight:700;">OA</th>
+        </tr></thead>
+        <tbody>
+          ${players.map(p=>`<tr style="border-top:1px solid var(--light-grey);">
+            <td style="padding:7px 10px;font-weight:600;">${p.player}</td>
+            <td style="text-align:center;padding:7px 4px;">${p.goals||''}</td>
+            <td style="text-align:center;padding:7px 4px;">${p.assists||''}</td>
+            <td style="text-align:center;padding:7px 4px;">${p.csDef||''}</td>
+            <td style="text-align:center;padding:7px 4px;">${p.csGK||''}</td>
+            <td style="text-align:center;padding:7px 4px;">${p.star||''}</td>
+            <td style="text-align:center;padding:7px 4px;">${p.passer||''}</td>
+          </tr>`).join('')}
+          <tr style="border-top:2px solid var(--navy);background:var(--off-white);font-weight:800;">
+            <td style="padding:7px 10px;">Total</td>
+            <td style="text-align:center;padding:7px 4px;">${totals.goals}</td>
+            <td style="text-align:center;padding:7px 4px;">${totals.assists}</td>
+            <td style="text-align:center;padding:7px 4px;">${totals.csDef}</td>
+            <td style="text-align:center;padding:7px 4px;">${totals.csGK}</td>
+            <td style="text-align:center;padding:7px 4px;">${totals.star}</td>
+            <td style="text-align:center;padding:7px 4px;">${totals.passer}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>`;
+  });
+  return html || '<div style="color:var(--mid-grey);text-align:center;padding:40px 0;">No data</div>';
 }
 
 function renderResultsTab(data) {
