@@ -1207,6 +1207,16 @@
   </div>
 </div>
 
+<!-- History edit: add event sub-modal -->
+<div class="modal-overlay hidden" id="hdAddEventModal">
+  <div class="modal" style="max-height:88vh;overflow-y:auto;">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="hdAddEventTitle">Add event</div>
+    <div id="hdAddEventContent"></div>
+    <button class="btn-secondary" style="margin-top:12px;width:100%;" onclick="closeModal('hdAddEventModal')">Cancel</button>
+  </div>
+</div>
+
 <!-- Team change modal -->
 <div class="modal-overlay hidden" id="teamChangeModal">
   <div class="modal">
@@ -1272,7 +1282,7 @@
 
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyRiGa5jg1roJh3drjIvHv96axQiX_bTDnGiGAeeGFsxb94_G1xA1z6GFkk5n0eZ97B5g/exec";
-const APP_VERSION = "2026-06-30-25"; // bumped automatically on every update
+const APP_VERSION = "2026-06-30-26"; // bumped automatically on every update
 const AGE = "U11";
 
 const DEFAULT_SQUADS = {
@@ -2289,6 +2299,7 @@ function newMatch() {
   if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Submit results'; }
 
   showScreen('screen-team');
+  window.scrollTo(0, 0);
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('nav-matchday').classList.add('active');
   document.getElementById('headerTitle').textContent = 'Match Day';
@@ -2913,34 +2924,103 @@ function refreshHdEditView() {
   document.getElementById('hdQuarters').innerHTML = renderHdQuartersFromSheet(hdMatchRef, true);
 }
 
-function hdAddEvent(type) {
-  // Simple prompt-based add since draft rows are flat stat rows, not rich events
-  const players = getSquad(hdMatchRef.team);
-  const playerList = players.join(', ');
-  const q = prompt('Which quarter? (1-4)', '1');
-  if (!q || !['1','2','3','4'].includes(q.trim())) { if (q!==null) showToast('Enter 1, 2, 3 or 4'); return; }
+let hdAddEventType = null;
+let hdAddEventQ = null;
+let hdAddEventScorer = null;
+let hdAddEventGK = null;
+let hdAddEventDefs = [];
 
-  if (type === 'oppo') {
-    hdDraftRows.push({ player: hdMatchRef.team + ' - Oppo', stat: '7. Concede', count: -1, quarter: 'Q'+q.trim() });
-  } else if (type === 'goal') {
-    const scorer = prompt('Scorer name (or "OG" for own goal):\n' + playerList);
-    if (!scorer) return;
-    hdDraftRows.push({ player: scorer.trim()==='OG' ? hdMatchRef.team+' - Oppo' : scorer.trim(), stat: '1. Goal', count: 1, quarter: 'Q'+q.trim() });
-    const assister = prompt('Assister name (leave blank for none):\n' + playerList);
-    if (assister && assister.trim()) {
-      hdDraftRows.push({ player: assister.trim(), stat: '2. Assist', count: 1, quarter: 'Q'+q.trim() });
-    }
-  } else if (type === 'cs') {
-    const gk = prompt('Goalkeeper:\n' + playerList);
-    if (!gk) return;
-    hdDraftRows.push({ player: gk.trim(), stat: '4. Clean Sheet GK', count: 1, quarter: 'Q'+q.trim() });
-    const defs = prompt('Defenders (comma-separated, leave blank for none):\n' + playerList);
-    if (defs && defs.trim()) {
-      defs.split(',').map(s=>s.trim()).filter(Boolean).forEach(d => {
-        hdDraftRows.push({ player: d, stat: '3. Clean Sheet DEF', count: 1, quarter: 'Q'+q.trim() });
-      });
-    }
+function hdAddEvent(type) {
+  hdAddEventType = type;
+  hdAddEventQ = null;
+  hdAddEventScorer = null;
+  hdAddEventGK = null;
+  hdAddEventDefs = [];
+
+  const titles = { goal: 'Add Goal', oppo: 'Add Opposition Goal', cs: 'Add Clean Sheet' };
+  document.getElementById('hdAddEventTitle').textContent = titles[type];
+  document.getElementById('hdAddEventContent').innerHTML = hdAddEventStep1HTML();
+  openModal('hdAddEventModal');
+}
+
+function hdAddEventStep1HTML() {
+  return `<div style="font-size:13px;font-weight:700;color:var(--mid-grey);margin-bottom:8px;">Which quarter?</div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
+      ${[1,2,3,4].map(q => `<button class="btn-secondary" style="font-size:16px;font-weight:800;padding:14px;" onclick="hdSelectQ(${q})">${q}</button>`).join('')}
+    </div>`;
+}
+
+function hdSelectQ(q) {
+  hdAddEventQ = q;
+  if (hdAddEventType === 'oppo') {
+    // No player needed — just add immediately
+    hdDraftRows.push({ player: hdMatchRef.team + ' - Oppo', stat: '7. Concede', count: -1, quarter: 'Q' + q });
+    closeModal('hdAddEventModal');
+    refreshHdEditView();
+    return;
   }
+  // Next: player selection
+  const players = getSquad(hdMatchRef.team);
+  if (hdAddEventType === 'goal') {
+    document.getElementById('hdAddEventContent').innerHTML = `
+      <div style="font-size:13px;font-weight:700;color:var(--mid-grey);margin-bottom:8px;">Q${q} · Who scored?</div>
+      <div class="modal-player-grid">
+        ${[...players, 'OG'].map(p => `<button class="modal-player-btn" onclick="hdSelectScorer('${p}')">${p}</button>`).join('')}
+      </div>`;
+  } else if (hdAddEventType === 'cs') {
+    document.getElementById('hdAddEventContent').innerHTML = `
+      <div style="font-size:13px;font-weight:700;color:var(--mid-grey);margin-bottom:8px;">Q${q} · Goalkeeper?</div>
+      <div class="modal-player-grid">
+        ${players.map(p => `<button class="modal-player-btn" onclick="hdSelectGK('${p}')">${p}</button>`).join('')}
+      </div>`;
+  }
+}
+
+function hdSelectScorer(name) {
+  hdAddEventScorer = name;
+  const players = getSquad(hdMatchRef.team).filter(p => p !== name);
+  document.getElementById('hdAddEventContent').innerHTML = `
+    <div style="font-size:13px;font-weight:700;color:var(--mid-grey);margin-bottom:8px;">Q${hdAddEventQ} · Scorer: ${name} · Who assisted?</div>
+    <div class="modal-player-grid">
+      <button class="modal-player-btn no-assist" onclick="hdFinishGoal(null)">No assist</button>
+      ${players.map(p => `<button class="modal-player-btn" onclick="hdFinishGoal('${p}')">${p}</button>`).join('')}
+    </div>`;
+}
+
+function hdFinishGoal(assister) {
+  const team = hdMatchRef.team;
+  const q = 'Q' + hdAddEventQ;
+  const playerName = hdAddEventScorer === 'OG' ? team + ' - Oppo' : team + ' - ' + hdAddEventScorer;
+  hdDraftRows.push({ player: playerName, stat: '1. Goal', count: 1, quarter: q });
+  if (assister) hdDraftRows.push({ player: team + ' - ' + assister, stat: '2. Assist', count: 1, quarter: q });
+  closeModal('hdAddEventModal');
+  refreshHdEditView();
+}
+
+function hdSelectGK(name) {
+  hdAddEventGK = name;
+  hdAddEventDefs = [];
+  const others = getSquad(hdMatchRef.team).filter(p => p !== name);
+  document.getElementById('hdAddEventContent').innerHTML = `
+    <div style="font-size:13px;font-weight:700;color:var(--mid-grey);margin-bottom:8px;">Q${hdAddEventQ} · GK: ${name} · Select defenders</div>
+    <div class="modal-player-grid" id="hdDefGrid">
+      ${others.map(p => `<button class="modal-player-btn" onclick="hdToggleDef(this,'${p}')">${p}</button>`).join('')}
+    </div>
+    <button class="btn-primary" style="margin-top:12px;width:100%;" onclick="hdFinishCS()">Confirm clean sheet</button>`;
+}
+
+function hdToggleDef(btn, name) {
+  btn.classList.toggle('cs-def-selected');
+  if (btn.classList.contains('cs-def-selected')) hdAddEventDefs.push(name);
+  else hdAddEventDefs = hdAddEventDefs.filter(d => d !== name);
+}
+
+function hdFinishCS() {
+  const team = hdMatchRef.team;
+  const q = 'Q' + hdAddEventQ;
+  hdDraftRows.push({ player: team + ' - ' + hdAddEventGK, stat: '4. Clean Sheet GK', count: 1, quarter: q });
+  hdAddEventDefs.forEach(d => hdDraftRows.push({ player: team + ' - ' + d, stat: '3. Clean Sheet DEF', count: 1, quarter: q }));
+  closeModal('hdAddEventModal');
   refreshHdEditView();
 }
 
