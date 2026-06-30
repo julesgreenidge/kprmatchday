@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>KPR Match Day</title>
 <style>
   :root {
@@ -35,6 +38,26 @@
     margin: 0 auto;
     position: relative;
   }
+
+  /* ── UPDATE BANNER ── */
+  .update-banner {
+    position: fixed;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 480px;
+    background: var(--gold);
+    color: white;
+    padding: 10px 16px;
+    font-size: 13px;
+    font-weight: 700;
+    text-align: center;
+    z-index: 999;
+    cursor: pointer;
+    display: none;
+  }
+  .update-banner.show { display: block; }
 
   /* ── HEADER ── */
   .app-header {
@@ -769,6 +792,8 @@
 </head>
 <body>
 
+<div class="update-banner" id="updateBanner" onclick="forceReload()">Update available — tap to refresh</div>
+
 <!-- HEADER -->
 <div class="app-header">
   <button id="headerBack" onclick="headerBackBtn()" style="display:none;background:none;border:none;color:white;font-size:20px;cursor:pointer;padding:0 8px 0 0;line-height:1;">‹</button>
@@ -1188,6 +1213,7 @@
 
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyRiGa5jg1roJh3drjIvHv96axQiX_bTDnGiGAeeGFsxb94_G1xA1z6GFkk5n0eZ97B5g/exec";
+const APP_VERSION = "2026-06-30-01"; // bumped automatically on every update
 const AGE = "U11";
 
 const DEFAULT_SQUADS = {
@@ -2755,6 +2781,28 @@ function deleteHistoryMatch() {
 }
 
 // ── Init ──
+// ── VERSION CHECK ──
+function forceReload() {
+  // Bypass cache entirely
+  window.location.href = window.location.pathname + '?v=' + Date.now();
+}
+
+async function checkForUpdate() {
+  try {
+    // Fetch the live deployed page, bypassing the browser cache for this check
+    const resp = await fetch(window.location.pathname + '?check=' + Date.now(), { cache: 'no-store' });
+    const html = await resp.text();
+    const match = html.match(/const APP_VERSION = "([^"]+)"/);
+    if (match && match[1] && match[1] !== APP_VERSION) {
+      document.getElementById('updateBanner').classList.add('show');
+    }
+  } catch (e) {
+    // Silently ignore — not critical if this check fails (e.g. offline)
+  }
+}
+
+// ── Init ──
+checkForUpdate();
 seedHistory();
 populateOpponentDatalist();
 updateScoreBar();
