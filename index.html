@@ -59,6 +59,38 @@
   }
   .update-banner.show { display: block; }
 
+  /* ── OPPONENT AUTOCOMPLETE ── */
+  #opponentDropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1.5px solid var(--light-grey);
+    border-top: none;
+    border-radius: 0 0 9px 9px;
+    max-height: 220px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    z-index: 50;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+  }
+  .opp-option {
+    padding: 10px 12px;
+    font-size: 14px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--light-grey);
+  }
+  .opp-option:last-child { border-bottom: none; }
+  .opp-option:active, .opp-option.highlighted { background: var(--off-white); }
+  .opp-option-add {
+    padding: 10px 12px;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--navy);
+    cursor: pointer;
+  }
+
   /* ── HEADER ── */
   .app-header {
     background: var(--navy);
@@ -840,10 +872,11 @@
       <label>Date</label>
       <input type="date" id="matchDate">
     </div>
-    <div class="field">
+    <div class="field" style="position:relative;">
       <label>Opponent</label>
-      <input type="text" id="matchOpponent" list="opponentDatalist" placeholder="Start typing opponent name…" autocomplete="off" oninput="handleOpponentInput()">
-      <datalist id="opponentDatalist"></datalist>
+      <input type="text" id="matchOpponent" placeholder="Start typing opponent name…" autocomplete="off" autocapitalize="words"
+        oninput="handleOpponentInput()" onfocus="handleOpponentInput()" onblur="setTimeout(hideOpponentDropdown, 150)">
+      <div id="opponentDropdown" style="display:none;"></div>
     </div>
     <div class="field">
       <label>Venue</label>
@@ -1213,7 +1246,7 @@
 
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyRiGa5jg1roJh3drjIvHv96axQiX_bTDnGiGAeeGFsxb94_G1xA1z6GFkk5n0eZ97B5g/exec";
-const APP_VERSION = "2026-06-30-01"; // bumped automatically on every update
+const APP_VERSION = "2026-06-30-02"; // bumped automatically on every update
 const AGE = "U11";
 
 const DEFAULT_SQUADS = {
@@ -1293,14 +1326,45 @@ function saveCustomOpponent(name) {
 }
 
 function populateOpponentDatalist() {
-  const dl = document.getElementById('opponentDatalist');
-  if (!dl) return;
-  dl.innerHTML = getOpponentList().map(o => `<option value="${o.replace(/"/g,'&quot;')}"></option>`).join('');
+  // Kept as a no-op alias for backward compatibility with existing calls
 }
 
 function handleOpponentInput() {
-  // No-op for now; saving happens on startMatch / submitMatch so any typed
-  // name (new or existing) persists once actually used in a match.
+  const input = document.getElementById('matchOpponent');
+  const dropdown = document.getElementById('opponentDropdown');
+  const query = input.value.trim().toLowerCase();
+  const all = getOpponentList();
+
+  const matches = query
+    ? all.filter(o => o.toLowerCase().includes(query))
+    : all;
+
+  let html = matches.map(o =>
+    `<div class="opp-option" onmousedown="selectOpponent('${o.replace(/'/g,"\\'")}')">${o}</div>`
+  ).join('');
+
+  // Offer to add as a new team if no exact match exists
+  const exact = all.some(o => o.toLowerCase() === query);
+  if (query && !exact) {
+    html += `<div class="opp-option-add" onmousedown="selectOpponent('${input.value.trim().replace(/'/g,"\\'")}')">+ Add "${input.value.trim()}" as new team</div>`;
+  }
+
+  if (matches.length === 0 && !query) {
+    dropdown.style.display = 'none';
+    return;
+  }
+
+  dropdown.innerHTML = html;
+  dropdown.style.display = html ? 'block' : 'none';
+}
+
+function selectOpponent(name) {
+  document.getElementById('matchOpponent').value = name;
+  hideOpponentDropdown();
+}
+
+function hideOpponentDropdown() {
+  document.getElementById('opponentDropdown').style.display = 'none';
 }
 
 function openTeamChangeModal() { openModal('teamChangeModal'); }
