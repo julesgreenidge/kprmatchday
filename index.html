@@ -1282,7 +1282,7 @@
 
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyRiGa5jg1roJh3drjIvHv96axQiX_bTDnGiGAeeGFsxb94_G1xA1z6GFkk5n0eZ97B5g/exec";
-const APP_VERSION = "2026-06-30-26"; // bumped automatically on every update
+const APP_VERSION = "2026-06-30-27"; // bumped automatically on every update
 const AGE = "U11";
 
 const DEFAULT_SQUADS = {
@@ -3117,7 +3117,7 @@ async function saveHistoryEdit() {
   const result = goalsFor > goalsAgainst ? 'W' : goalsFor === goalsAgainst ? 'D' : 'L';
 
   const rows = hdDraftRows.map(r => ({
-    Date: m.rawDate, Age: m.age, Team: m.team, League: m.league,
+    Date: m.date, Age: m.age, Team: m.team, League: m.league,
     Opponent: m.opponent, Result: result, Venue: m.venue,
     Player: r.player, Stat: r.stat, Quarter: r.quarter, Count: r.count
   }));
