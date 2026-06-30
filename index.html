@@ -1182,7 +1182,6 @@
     <div style="border-top:1px solid var(--light-grey);margin:12px 0;"></div>
     <div id="hdQuarters"></div>
     <div style="border-top:1px solid var(--light-grey);margin:12px 0;"></div>
-    <!-- Awards -->
     <div id="hdAwardsView">
       <div style="font-size:13px;"><strong>Star Player:</strong> <span id="hdStar"></span></div>
       <div style="font-size:13px;margin-top:4px;"><strong>Over-achiever:</strong> <span id="hdPasser"></span></div>
@@ -1193,10 +1192,17 @@
       <div style="font-size:12px;font-weight:700;color:var(--mid-grey);margin:10px 0 6px;">Over-achiever</div>
       <div class="modal-player-grid" id="hdPasserGrid"></div>
     </div>
+    <div id="hdEditNote" style="font-size:11px;color:var(--mid-grey);margin-top:14px;display:none;">Add or remove events below, then save. Saving replaces all stats for this match in Google Sheets.</div>
+    <div id="hdEditAddBtns" style="display:none;gap:8px;margin-top:10px;">
+      <button class="qevent-btn goal" style="flex:1;" onclick="hdAddEvent('goal')">Add Goal</button>
+      <button class="qevent-btn oppo" style="flex:1;" onclick="hdAddEvent('oppo')">Add Opp Goal</button>
+      <button class="qevent-btn cs" style="flex:1;" onclick="hdAddEvent('cs')">Add Clean Sheet</button>
+    </div>
     <div style="display:flex;gap:8px;margin-top:16px;">
       <button id="hdEditBtn" class="btn-secondary" style="flex:1;" onclick="toggleHistoryEdit()">Edit</button>
       <button class="btn-danger" style="flex:1;" onclick="deleteHistoryMatch()">Delete</button>
     </div>
+    <button id="hdSaveBtn" class="btn-primary" style="width:100%;margin-top:8px;display:none;" onclick="saveHistoryEdit()">Save changes</button>
     <button class="btn-secondary" style="margin-top:8px;width:100%;" onclick="closeHistoryDetail()">Close</button>
   </div>
 </div>
@@ -1255,7 +1261,7 @@
 
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyRiGa5jg1roJh3drjIvHv96axQiX_bTDnGiGAeeGFsxb94_G1xA1z6GFkk5n0eZ97B5g/exec";
-const APP_VERSION = "2026-06-30-15"; // bumped automatically on every update
+const APP_VERSION = "2026-06-30-19"; // bumped automatically on every update
 const AGE = "U11";
 
 const DEFAULT_SQUADS = {
@@ -1979,7 +1985,7 @@ async function submitMatch() {
     });
     const data = await resp.json();
     if (data.success) {
-      showToast(data.rowsAdded + ' rows added to sheet');
+      showToast(data.added + ' rows added to sheet');
       btn.textContent = 'Submitted';
       // Save to match history
       const goalsFor = state.events.filter(e => e.type === 'goal').length;
@@ -2131,16 +2137,37 @@ function openEditModal(id) {
     content.innerHTML = `<p style="font-size:14px;color:var(--mid-grey);padding:8px 0;">No editable fields for opposition goals. Delete and re-add if needed.</p>`;
   } else if (e.type === 'cs') {
     title.textContent = '✏️ Edit Clean Sheet';
-    sub.textContent = 'Q' + e.quarter + ' · GK: ' + e.gk;
-    const others = state.selectedPlayers.filter(p => p !== e.gk);
+    sub.textContent = 'Q' + e.quarter + ' · Select goalkeeper';
     content.innerHTML = `
-      <div class="modal-step">GK: <span style="color:var(--gold);font-weight:700;">${e.gk}</span> · Toggle defenders</div>
-      <div class="modal-player-grid">${others.map(p =>
-        `<button class="modal-player-btn ${e.defenders.includes(p) ? 'cs-def-selected' : ''}" onclick="editToggleDef(this,'${p}')">${p}</button>`
-      ).join('')}</div>
-      <button class="btn-primary" style="margin-top:12px;" onclick="editSaveCS()">Save</button>`;
+      <div class="modal-step">Goalkeeper</div>
+      <div class="modal-player-grid" id="editCSGKGrid"></div>
+      <div id="editCSStep2" style="display:none;">
+        <div class="modal-step">GK: <span id="editCSGKLabel" style="color:var(--gold);font-weight:700;"></span> · Toggle defenders</div>
+        <div class="modal-player-grid" id="editCSDefGrid"></div>
+        <button class="btn-primary" style="margin-top:12px;" onclick="editSaveCS()">Save</button>
+      </div>`;
+    document.getElementById('editCSGKGrid').innerHTML = state.selectedPlayers.map(p =>
+      `<button class="modal-player-btn ${p === e.gk ? 'selected-scorer' : ''}" onclick="editSelectCSGK('${p}')">${p}</button>`
+    ).join('');
+    // Pre-select the existing GK so editing defenders doesn't require re-picking GK
+    editSelectCSGK(e.gk);
   }
   openModal('editModal');
+}
+
+let editTempCSGK = null;
+function editSelectCSGK(name) {
+  editTempCSGK = name;
+  const e = state.events.find(ev => ev.id == editingId);
+  document.getElementById('editCSGKLabel').textContent = name;
+  document.getElementById('editCSStep2').style.display = '';
+  document.getElementById('editCSGKGrid').querySelectorAll('button').forEach(b => {
+    b.classList.toggle('selected-scorer', b.textContent === name);
+  });
+  const others = state.selectedPlayers.filter(p => p !== name);
+  document.getElementById('editCSDefGrid').innerHTML = others.map(p =>
+    `<button class="modal-player-btn ${e && e.defenders.includes(p) ? 'cs-def-selected' : ''}" onclick="editToggleDef(this,'${p}')">${p}</button>`
+  ).join('');
 }
 
 let editTempScorer = null;
@@ -2173,7 +2200,8 @@ function editToggleDef(btn, name) {
 function editSaveCS() {
   const idx = state.events.findIndex(ev => ev.id == editingId);
   if (idx === -1) return;
-  const selected = [...document.querySelectorAll('#editModalContent .cs-def-selected')].map(b => b.textContent);
+  const selected = [...document.querySelectorAll('#editCSDefGrid .cs-def-selected')].map(b => b.textContent);
+  state.events[idx].gk = editTempCSGK;
   state.events[idx].defenders = selected;
   closeModal('editModal');
   renderAllQuarters();
@@ -2300,13 +2328,16 @@ function parseSheetRows(rows) {
         date: cleanDate(r['Date']), team: r['Team'], league: r['League'],
         opponent: r['Opponent'], result: r['Result'], venue: r['Venue'],
         age: r['Age'], goals:{}, assists:{}, csGK:{}, csDef:{},
-        concede:0, starPlayer:null, bestPasser:null
+        concede:0, starPlayer:null, bestPasser:null,
+        sheetRows: [] // raw rows kept for quarter-level reconstruction
       };
     }
     const m = matchMap[key];
     const player = (r['Player']||'').replace(r['Team'] + ' - ', '');
     const stat = r['Stat']||'';
     const count = parseInt(r['Count'])||0;
+    const quarter = r['Quarter'] || '';
+    m.sheetRows.push({ player, stat, count, quarter });
     if (stat==='1. Goal') m.goals[player]=(m.goals[player]||0)+count;
     else if (stat==='2. Assist') m.assists[player]=(m.assists[player]||0)+count;
     else if (stat==='4. Clean Sheet GK') m.csGK[player]=(m.csGK[player]||0)+count;
@@ -2317,6 +2348,7 @@ function parseSheetRows(rows) {
   });
   return Object.values(matchMap).map(m => ({
     ...m,
+    id: btoa(unescape(encodeURIComponent(m.date + '||' + m.team + '||' + m.opponent))).replace(/[^a-zA-Z0-9]/g,''),
     goalsFor: Object.values(m.goals).reduce((a,b)=>a+b,0),
     goalsAgainst: m.concede,
   })).sort((a,b) => parseDateStr(b.date) - parseDateStr(a.date));
@@ -2689,18 +2721,6 @@ function renderOpponentsTab(data) {
 // ── MATCH HISTORY ──
 // In-session recorded matches (persisted in localStorage)
 
-const HISTORY_SEED = [{"id":"26_Apr_2026_Royals_Hampton_and_Richmond","date":"26 Apr 2026","team":"Royals","league":"Lime","opponent":"Hampton and Richmond","result":"L","venue":"Away","age":"U10","goalsFor":2,"goalsAgainst":3,"events":[],"starPlayer":"Harry","bestPasser":"Olly H"},{"id":"26_Apr_2026_Reds_Raynes_Park_Vale_Youth","date":"26 Apr 2026","team":"Reds","league":"White","opponent":"Raynes Park Vale Youth","result":"D","venue":"Away","age":"U10","goalsFor":4,"goalsAgainst":4,"events":[],"starPlayer":null,"bestPasser":null},{"id":"19_Apr_2026_Royals_Whitton_Wanderers_Youth","date":"19 Apr 2026","team":"Royals","league":"Lime","opponent":"Whitton Wanderers Youth","result":"W","venue":"Home","age":"U10","goalsFor":5,"goalsAgainst":4,"events":[],"starPlayer":null,"bestPasser":"Olly H"},{"id":"19_Apr_2026_Stripes_Corinthian_Casuals","date":"19 Apr 2026","team":"Stripes","league":"Emerald","opponent":"Corinthian Casuals","result":"W","venue":"Home","age":"U10","goalsFor":3,"goalsAgainst":2,"events":[],"starPlayer":"Jacob","bestPasser":"Max"},{"id":"19_Apr_2026_Blues_AFC_Walcountians","date":"19 Apr 2026","team":"Blues","league":"Azure","opponent":"AFC Walcountians","result":"L","venue":"Home","age":"U10","goalsFor":2,"goalsAgainst":3,"events":[],"starPlayer":"Oli M","bestPasser":"James"},{"id":"12_Apr_2026_Blues_Corinthian_Casuals","date":"12 Apr 2026","team":"Blues","league":"Azure","opponent":"Corinthian Casuals","result":"W","venue":"Home","age":"U10","goalsFor":2,"goalsAgainst":1,"events":[],"starPlayer":"Alex","bestPasser":"Huxley M"},{"id":"22_Mar_2026_Blues_Isleworthians_Youth","date":"22 Mar 2026","team":"Blues","league":"Azure","opponent":"Isleworthians Youth","result":"W","venue":"Away","age":"U10","goalsFor":6,"goalsAgainst":4,"events":[],"starPlayer":"Theo","bestPasser":"Seb"},{"id":"22_Mar_2026_Royals_Corinthian_Casuals","date":"22 Mar 2026","team":"Royals","league":"Lime","opponent":"Corinthian Casuals","result":"W","venue":"Home","age":"U10","goalsFor":3,"goalsAgainst":2,"events":[],"starPlayer":"Aaban","bestPasser":"Evan"},{"id":"22_Mar_2026_Reds_Doverhouse_Lions","date":"22 Mar 2026","team":"Reds","league":"White","opponent":"Doverhouse Lions","result":"L","venue":"Away","age":"U10","goalsFor":0,"goalsAgainst":3,"events":[],"starPlayer":"Reuben","bestPasser":"Feliks"},{"id":"22_Mar_2026_Stripes_Croygas_Falcons","date":"22 Mar 2026","team":"Stripes","league":"Emerald","opponent":"Croygas Falcons","result":"L","venue":"Home","age":"U10","goalsFor":1,"goalsAgainst":2,"events":[],"starPlayer":"Hugo","bestPasser":"Aurelian"},{"id":"15_Mar_2026_Royals_Westside_Youth","date":"15 Mar 2026","team":"Royals","league":"Lime","opponent":"Westside Youth","result":"L","venue":"Away","age":"U10","goalsFor":1,"goalsAgainst":8,"events":[],"starPlayer":null,"bestPasser":null},{"id":"15_Mar_2026_Blues_NPL_Youth","date":"15 Mar 2026","team":"Blues","league":"Azure","opponent":"NPL Youth","result":"W","venue":"Home","age":"U10","goalsFor":3,"goalsAgainst":2,"events":[],"starPlayer":"Theo","bestPasser":"Jesse"},{"id":"15_Mar_2026_Reds_Sutton_Common_Rovers","date":"15 Mar 2026","team":"Reds","league":"White","opponent":"Sutton Common Rovers","result":"W","venue":"Away","age":"U10","goalsFor":3,"goalsAgainst":0,"events":[],"starPlayer":"Myles","bestPasser":"Salim"},{"id":"15_Mar_2026_Stripes_Metropolitan_Police_Youth","date":"15 Mar 2026","team":"Stripes","league":"Emerald","opponent":"Metropolitan Police Youth","result":"L","venue":"Away","age":"U10","goalsFor":1,"goalsAgainst":3,"events":[],"starPlayer":"Magnus","bestPasser":"Max"},{"id":"8_Mar_2026_Reds_Raynes_Park_Vale_Youth","date":"8 Mar 2026","team":"Reds","league":"White","opponent":"Raynes Park Vale Youth","result":"D","venue":"Home","age":"U10","goalsFor":2,"goalsAgainst":2,"events":[],"starPlayer":"Felix","bestPasser":"William"},{"id":"8_Mar_2026_Blues_Motspur_Park","date":"8 Mar 2026","team":"Blues","league":"Azure","opponent":"Motspur Park","result":"W","venue":"Away","age":"U10","goalsFor":6,"goalsAgainst":2,"events":[],"starPlayer":"Seb","bestPasser":"Huxley M"},{"id":"8_Mar_2026_Royals_Hampton_and_Richmond","date":"8 Mar 2026","team":"Royals","league":"Lime","opponent":"Hampton and Richmond","result":"D","venue":"Home","age":"U10","goalsFor":4,"goalsAgainst":4,"events":[],"starPlayer":"Arthur","bestPasser":"Olly H"},{"id":"8_Mar_2026_Stripes_Mitcham_Park","date":"8 Mar 2026","team":"Stripes","league":"Emerald","opponent":"Mitcham Park","result":"W","venue":"Home","age":"U10","goalsFor":8,"goalsAgainst":3,"events":[],"starPlayer":"Elliott","bestPasser":"Max"},{"id":"1_Mar_2026_Royals_Whitton_Wanderers_Youth","date":"1 Mar 2026","team":"Royals","league":"Lime","opponent":"Whitton Wanderers Youth","result":"L","venue":"Away","age":"U10","goalsFor":2,"goalsAgainst":4,"events":[],"starPlayer":"Royal - Aaban","bestPasser":"Evan"},{"id":"1_Mar_2026_Blues_AFC_Walcountians","date":"1 Mar 2026","team":"Blues","league":"Azure","opponent":"AFC Walcountians","result":"L","venue":"Home","age":"U10","goalsFor":1,"goalsAgainst":2,"events":[],"starPlayer":"Oli M","bestPasser":"Seb"},{"id":"1_Mar_2026_Stripes_Mitcham_Park","date":"1 Mar 2026","team":"Stripes","league":"Emerald","opponent":"Mitcham Park","result":"L","venue":"Away","age":"U10","goalsFor":1,"goalsAgainst":13,"events":[],"starPlayer":"Arlo","bestPasser":"Ferdinand"},{"id":"1_Mar_2026_Reds_Richmond_and_Kew_FC","date":"1 Mar 2026","team":"Reds","league":"White","opponent":"Richmond & Kew FC","result":"W","venue":"Away","age":"U10","goalsFor":6,"goalsAgainst":3,"events":[],"starPlayer":"Ethan","bestPasser":"Felix"},{"id":"8_Feb_2026_Royals_Westside_Youth","date":"8 Feb 2026","team":"Royals","league":"Crimson","opponent":"Westside Youth","result":"L","venue":"Home","age":"U10","goalsFor":3,"goalsAgainst":5,"events":[],"starPlayer":"Arthur","bestPasser":"Olly H"},{"id":"8_Feb_2026_Reds_Corinthian_Casuals","date":"8 Feb 2026","team":"Reds","league":"White","opponent":"Corinthian Casuals","result":"L","venue":"Away","age":"U10","goalsFor":1,"goalsAgainst":3,"events":[],"starPlayer":"Jack","bestPasser":"Laurence"},{"id":"1_Feb_2026_Royals_Mitcham_Park","date":"1 Feb 2026","team":"Royals","league":"Crimson","opponent":"Mitcham Park","result":"D","venue":"Away","age":"U10","goalsFor":2,"goalsAgainst":2,"events":[],"starPlayer":"Albie","bestPasser":null},{"id":"1_Feb_2026_Blues_Richmond_and_Kew_FC","date":"1 Feb 2026","team":"Blues","league":"Indigo","opponent":"Richmond & Kew FC","result":"L","venue":"Away","age":"U10","goalsFor":4,"goalsAgainst":9,"events":[],"starPlayer":null,"bestPasser":null},{"id":"1_Feb_2026_Stripes_Hampton_and_Richmond","date":"1 Feb 2026","team":"Stripes","league":"Sage","opponent":"Hampton and Richmond","result":"W","venue":"Home","age":"U10","goalsFor":5,"goalsAgainst":2,"events":[],"starPlayer":"Aurelian","bestPasser":"Aurelian"},{"id":"1_Feb_2026_Reds_Doverhouse_Lions","date":"1 Feb 2026","team":"Reds","league":"White","opponent":"Doverhouse Lions","result":"L","venue":"Home","age":"U10","goalsFor":1,"goalsAgainst":3,"events":[],"starPlayer":"Myles","bestPasser":"Salim"},{"id":"25_Jan_2026_Blues_Esher_Youth","date":"25 Jan 2026","team":"Blues","league":"Indigo","opponent":"Esher Youth","result":"D","venue":"Away","age":"U10","goalsFor":2,"goalsAgainst":2,"events":[],"starPlayer":"Jesse","bestPasser":"Oli M"},{"id":"25_Jan_2026_Royals_Esher_Youth","date":"25 Jan 2026","team":"Royals","league":"Crimson","opponent":"Esher Youth","result":"W","venue":"Away","age":"U10","goalsFor":6,"goalsAgainst":3,"events":[],"starPlayer":"Harry","bestPasser":"Albie"},{"id":"25_Jan_2026_Reds_Woking_Cougars","date":"25 Jan 2026","team":"Reds","league":"White","opponent":"Woking Cougars","result":"L","venue":"Home","age":"U10","goalsFor":3,"goalsAgainst":6,"events":[],"starPlayer":"Felix","bestPasser":"Ethan"},{"id":"25_Jan_2026_Stripes_Metropolitan_Police_Youth","date":"25 Jan 2026","team":"Stripes","league":"Sage","opponent":"Metropolitan Police Youth","result":"L","venue":"Home","age":"U10","goalsFor":1,"goalsAgainst":3,"events":[],"starPlayer":"Ferdinand","bestPasser":null},{"id":"18_Jan_2026_Blues_Claygate_Royals","date":"18 Jan 2026","team":"Blues","league":"Indigo","opponent":"Claygate Royals","result":"D","venue":"Home","age":"U10","goalsFor":2,"goalsAgainst":5,"events":[],"starPlayer":"Levi","bestPasser":"Alex"},{"id":"18_Jan_2026_Royals_Corinthian_Casuals","date":"18 Jan 2026","team":"Royals","league":"Crimson","opponent":"Corinthian Casuals","result":"L","venue":"Home","age":"U10","goalsFor":1,"goalsAgainst":2,"events":[],"starPlayer":"Liam","bestPasser":"Gio"},{"id":"18_Jan_2026_Reds_Raynes_Park_Vale_Youth","date":"18 Jan 2026","team":"Reds","league":"White","opponent":"Raynes Park Vale Youth","result":"D","venue":"Home","age":"U10","goalsFor":2,"goalsAgainst":2,"events":[],"starPlayer":"Laurence","bestPasser":"Ethan"},{"id":"18_Jan_2026_Stripes_Walton_and_Hersham_United","date":"18 Jan 2026","team":"Stripes","league":"Sage","opponent":"Walton & Hersham United","result":"L","venue":"Away","age":"U10","goalsFor":0,"goalsAgainst":4,"events":[],"starPlayer":"Archie","bestPasser":null},{"id":"11_Jan_2026_Blues_Sutton_Common_Rovers","date":"11 Jan 2026","team":"Blues","league":"Indigo","opponent":"Sutton Common Rovers","result":"L","venue":"Home","age":"U10","goalsFor":0,"goalsAgainst":3,"events":[],"starPlayer":"Jesse","bestPasser":"James"},{"id":"11_Jan_2026_Stripes_Mitcham_Park","date":"11 Jan 2026","team":"Stripes","league":"Sage","opponent":"Mitcham Park","result":"W","venue":"Away","age":"U10","goalsFor":6,"goalsAgainst":2,"events":[],"starPlayer":"Otto","bestPasser":"Aurelian"},{"id":"11_Jan_2026_Royals_Sutton_Common_Rovers","date":"11 Jan 2026","team":"Royals","league":"Crimson","opponent":"Sutton Common Rovers","result":"W","venue":"Home","age":"U10","goalsFor":3,"goalsAgainst":1,"events":[],"starPlayer":"Albie","bestPasser":"Royal - Aaban"},{"id":"11_Jan_2026_Reds_Corinthian_Casuals","date":"11 Jan 2026","team":"Reds","league":"White","opponent":"Corinthian Casuals","result":"W","venue":"Home","age":"U10","goalsFor":4,"goalsAgainst":1,"events":[],"starPlayer":"Reuben","bestPasser":"Laurence"},{"id":"14_Dec_2025_Stripes_Raynes_Park_Vale_Youth","date":"14 Dec 2025","team":"Stripes","league":"Emerald","opponent":"Raynes Park Vale Youth","result":"D","venue":"Home","age":"U10","goalsFor":1,"goalsAgainst":1,"events":[],"starPlayer":"Elliott","bestPasser":"Max"},{"id":"14_Dec_2025_Royals_Westside_Youth","date":"14 Dec 2025","team":"Royals","league":"Crimson","opponent":"Westside Youth","result":"L","venue":"Away","age":"U10","goalsFor":2,"goalsAgainst":6,"events":[],"starPlayer":"Huxley GC","bestPasser":"Royal - Aaban"},{"id":"14_Dec_2025_Blues_Alexandra_United","date":"14 Dec 2025","team":"Blues","league":"White","opponent":"Alexandra United","result":"L","venue":"Home","age":"U10","goalsFor":4,"goalsAgainst":6,"events":[],"starPlayer":"Theo","bestPasser":"Liam"},{"id":"7_Dec_2025_Royals_Sheen_Lions","date":"7 Dec 2025","team":"Royals","league":"Crimson","opponent":"Sheen Lions","result":"W","venue":"Home","age":"U10","goalsFor":7,"goalsAgainst":2,"events":[],"starPlayer":"Gio","bestPasser":"Olly H"},{"id":"7_Dec_2025_Blues_Guildford_City","date":"7 Dec 2025","team":"Blues","league":"White","opponent":"Guildford City","result":"L","venue":"Away","age":"U10","goalsFor":2,"goalsAgainst":9,"events":[],"starPlayer":"Oli M","bestPasser":"Bailey"},{"id":"7_Dec_2025_Reds_Hampton_Rangers","date":"7 Dec 2025","team":"Reds","league":"Amber","opponent":"Hampton Rangers","result":"L","venue":"Away","age":"U10","goalsFor":2,"goalsAgainst":9,"events":[],"starPlayer":"Felix","bestPasser":"Reuben"},{"id":"7_Dec_2025_Stripes_Corinthian_Casuals","date":"7 Dec 2025","team":"Stripes","league":"Emerald","opponent":"Corinthian Casuals","result":"L","venue":"Away","age":"U10","goalsFor":2,"goalsAgainst":7,"events":[],"starPlayer":"Archie","bestPasser":"Ismayil"},{"id":"30_Nov_2025_Blues_Raynes_Park_Vale_Youth","date":"30 Nov 2025","team":"Blues","league":"White","opponent":"Raynes Park Vale Youth","result":"L","venue":"Away","age":"U10","goalsFor":2,"goalsAgainst":4,"events":[],"starPlayer":"Levi","bestPasser":"James"},{"id":"30_Nov_2025_Stripes_Metropolitan_Police_Youth","date":"30 Nov 2025","team":"Stripes","league":"Emerald","opponent":"Metropolitan Police Youth","result":"L","venue":"Away","age":"U10","goalsFor":2,"goalsAgainst":4,"events":[],"starPlayer":"Aurelian","bestPasser":"Ferdinand"},{"id":"30_Nov_2025_Reds_NPL_Youth","date":"30 Nov 2025","team":"Reds","league":"Amber","opponent":"NPL Youth","result":"W","venue":"Away","age":"U10","goalsFor":2,"goalsAgainst":0,"events":[],"starPlayer":"William","bestPasser":"Felix"},{"id":"30_Nov_2025_Royals_Hampton_and_Richmond","date":"30 Nov 2025","team":"Royals","league":"Crimson","opponent":"Hampton and Richmond","result":"W","venue":"Home","age":"U10","goalsFor":8,"goalsAgainst":0,"events":[],"starPlayer":"Liam","bestPasser":"Harry"},{"id":"23_Nov_2025_Reds_Motspur_Park","date":"23 Nov 2025","team":"Reds","league":"Amber","opponent":"Motspur Park","result":"L","venue":"Home","age":"U10","goalsFor":1,"goalsAgainst":6,"events":[],"starPlayer":"Salim","bestPasser":"William"},{"id":"16_Nov_2025_Blues_Esher_Youth","date":"16 Nov 2025","team":"Blues","league":"White","opponent":"Esher Youth","result":"D","venue":"Away","age":"U10","goalsFor":1,"goalsAgainst":1,"events":[],"starPlayer":"Bailey","bestPasser":"James"},{"id":"16_Nov_2025_Royals_South_Park_Juniors","date":"16 Nov 2025","team":"Royals","league":"Crimson","opponent":"South Park Juniors","result":"L","venue":"Away","age":"U10","goalsFor":3,"goalsAgainst":9,"events":[],"starPlayer":"Albie","bestPasser":"Royal - Aaban"},{"id":"16_Nov_2025_Stripes_Mitcham_Park","date":"16 Nov 2025","team":"Stripes","league":"Emerald","opponent":"Mitcham Park","result":"L","venue":"Home","age":"U10","goalsFor":1,"goalsAgainst":8,"events":[],"starPlayer":"Jacob","bestPasser":"Max"},{"id":"16_Nov_2025_Reds_CB_Hounslow_and_Abbots","date":"16 Nov 2025","team":"Reds","league":"Amber","opponent":"CB Hounslow & Abbots","result":"L","venue":"Away","age":"U10","goalsFor":1,"goalsAgainst":4,"events":[],"starPlayer":"Reuben","bestPasser":"William"},{"id":"9_Nov_2025_Stripes_Raynes_Park_Vale_Youth","date":"9 Nov 2025","team":"Stripes","league":"Emerald","opponent":"Raynes Park Vale Youth","result":"L","venue":"Away","age":"U10","goalsFor":1,"goalsAgainst":6,"events":[],"starPlayer":"Max","bestPasser":"Max"},{"id":"9_Nov_2025_Reds_Bedfont_Eagles","date":"9 Nov 2025","team":"Reds","league":"Amber","opponent":"Bedfont Eagles","result":"L","venue":"Away","age":"U10","goalsFor":4,"goalsAgainst":6,"events":[],"starPlayer":"Jerry","bestPasser":"Reuben"},{"id":"9_Nov_2025_Blues_Alexandra_United","date":"9 Nov 2025","team":"Blues","league":"White","opponent":"Alexandra United","result":"L","venue":"Away","age":"U10","goalsFor":1,"goalsAgainst":4,"events":[],"starPlayer":"Liam","bestPasser":"Alex"},{"id":"9_Nov_2025_Royals_Westside_Youth","date":"9 Nov 2025","team":"Royals","league":"Crimson","opponent":"Westside Youth","result":"D","venue":"Home","age":"U10","goalsFor":4,"goalsAgainst":4,"events":[],"starPlayer":"Olly H","bestPasser":"Gio"},{"id":"19_Oct_2025_Royals_Burpham_Juniors","date":"19 Oct 2025","team":"Royals","league":"White","opponent":"Burpham Juniors","result":"D","venue":"Home","age":"U10","goalsFor":2,"goalsAgainst":2,"events":[],"starPlayer":"Harry","bestPasser":"Olly H"},{"id":"19_Oct_2025_Blues_Isleworthians_Youth","date":"19 Oct 2025","team":"Blues","league":"Amber","opponent":"Isleworthians Youth","result":"L","venue":"Home","age":"U10","goalsFor":1,"goalsAgainst":5,"events":[],"starPlayer":"Seb","bestPasser":"Jesse"},{"id":"19_Oct_2025_Reds_Hampton_and_Richmond","date":"19 Oct 2025","team":"Reds","league":"Indigo","opponent":"Hampton and Richmond","result":"W","venue":"Home","age":"U10","goalsFor":7,"goalsAgainst":1,"events":[],"starPlayer":"Salim","bestPasser":"Kinley"},{"id":"19_Oct_2025_Stripes_Metropolitan_Police_Youth","date":"19 Oct 2025","team":"Stripes","league":"Sage","opponent":"Metropolitan Police Youth","result":"L","venue":"Away","age":"U10","goalsFor":2,"goalsAgainst":3,"events":[],"starPlayer":"Hugo","bestPasser":"Ferdinand"},{"id":"12_Oct_2025_Royals_Richmond_and_Kew_FC","date":"12 Oct 2025","team":"Royals","league":"White","opponent":"Richmond & Kew FC","result":"L","venue":"Away","age":"U10","goalsFor":0,"goalsAgainst":12,"events":[],"starPlayer":"Gio","bestPasser":"Albie"},{"id":"12_Oct_2025_Reds_Westside_Youth","date":"12 Oct 2025","team":"Reds","league":"Indigo","opponent":"Westside Youth","result":"L","venue":"Home","age":"U10","goalsFor":1,"goalsAgainst":3,"events":[],"starPlayer":"Ethan","bestPasser":"William"},{"id":"12_Oct_2025_Stripes_Corinthian_Casuals","date":"12 Oct 2025","team":"Stripes","league":"Sage","opponent":"Corinthian Casuals","result":"L","venue":"Away","age":"U10","goalsFor":3,"goalsAgainst":6,"events":[],"starPlayer":"Ferdinand","bestPasser":"Ferdinand"},{"id":"12_Oct_2025_Blues_NPL_Youth","date":"12 Oct 2025","team":"Blues","league":"Amber","opponent":"NPL Youth","result":"L","venue":"Home","age":"U10","goalsFor":3,"goalsAgainst":7,"events":[],"starPlayer":"Theo","bestPasser":"Liam"},{"id":"5_Oct_2025_Stripes_Corinthian_Casuals","date":"5 Oct 2025","team":"Stripes","league":"Sage","opponent":"Corinthian Casuals","result":"D","venue":"Home","age":"U10","goalsFor":2,"goalsAgainst":2,"events":[],"starPlayer":"Arlo","bestPasser":"Marco"},{"id":"5_Oct_2025_Reds_Twickenham_Tigers","date":"5 Oct 2025","team":"Reds","league":"Indigo","opponent":"Twickenham Tigers","result":"L","venue":"Away","age":"U10","goalsFor":2,"goalsAgainst":8,"events":[],"starPlayer":"William","bestPasser":"Jack"},{"id":"5_Oct_2025_Royals_Walton_and_Hersham_United","date":"5 Oct 2025","team":"Royals","league":"White","opponent":"Walton & Hersham United","result":"L","venue":"Away","age":"U10","goalsFor":1,"goalsAgainst":11,"events":[],"starPlayer":"Teo","bestPasser":null},{"id":"28_Sep_2025_Blues_Sandgate_Youth","date":"28 Sep 2025","team":"Blues","league":"Amber","opponent":"Sandgate Youth","result":"L","venue":"Away","age":"U10","goalsFor":1,"goalsAgainst":5,"events":[],"starPlayer":"Oli M","bestPasser":"Theo"},{"id":"28_Sep_2025_Reds_Bedfont_Eagles","date":"28 Sep 2025","team":"Reds","league":"Indigo","opponent":"Bedfont Eagles","result":"W","venue":"Home","age":"U10","goalsFor":2,"goalsAgainst":1,"events":[],"starPlayer":"Feliks","bestPasser":"Laurence"},{"id":"28_Sep_2025_Stripes_Mitcham_Park","date":"28 Sep 2025","team":"Stripes","league":"Sage","opponent":"Mitcham Park","result":"W","venue":"Home","age":"U10","goalsFor":10,"goalsAgainst":3,"events":[],"starPlayer":"Elliott","bestPasser":"Otto"},{"id":"21_Sep_2025_Blues_Sheen_Lions","date":"21 Sep 2025","team":"Blues","league":"Amber","opponent":"Sheen Lions","result":"W","venue":"Home","age":"U10","goalsFor":4,"goalsAgainst":2,"events":[],"starPlayer":"Bailey","bestPasser":"Jack"},{"id":"21_Sep_2025_Royals_Corinthian_Casuals","date":"21 Sep 2025","team":"Royals","league":"White","opponent":"Corinthian Casuals","result":"L","venue":"Away","age":"U10","goalsFor":3,"goalsAgainst":4,"events":[],"starPlayer":"Arthur","bestPasser":"Olly H"},{"id":"21_Sep_2025_Stripes_Corinthian_Casuals","date":"21 Sep 2025","team":"Stripes","league":"Sage","opponent":"Corinthian Casuals","result":"L","venue":"Home","age":"U10","goalsFor":1,"goalsAgainst":4,"events":[],"starPlayer":"Marco","bestPasser":"Ismayil"},{"id":"21_Sep_2025_Reds_Barnes_Eagles","date":"21 Sep 2025","team":"Reds","league":"Indigo","opponent":"Barnes Eagles","result":"L","venue":"Home","age":"U10","goalsFor":2,"goalsAgainst":8,"events":[],"starPlayer":"Ethan","bestPasser":"Feliks"},{"id":"14_Sep_2025_Blues_Isleworthians_Youth","date":"14 Sep 2025","team":"Blues","league":"Amber","opponent":"Isleworthians Youth","result":"L","venue":"Away","age":"U10","goalsFor":1,"goalsAgainst":3,"events":[],"starPlayer":"Alex","bestPasser":"Huxley M"},{"id":"14_Sep_2025_Reds_Hampton_and_Richmond","date":"14 Sep 2025","team":"Reds","league":"Indigo","opponent":"Hampton and Richmond","result":"L","venue":"Away","age":"U10","goalsFor":2,"goalsAgainst":4,"events":[],"starPlayer":"Myles","bestPasser":"Ethan"},{"id":"14_Sep_2025_Royals_Woking_Cougars","date":"14 Sep 2025","team":"Royals","league":"White","opponent":"Woking Cougars","result":"L","venue":"Home","age":"U10","goalsFor":0,"goalsAgainst":5,"events":[],"starPlayer":"Teo","bestPasser":"Harry"},{"id":"27_Apr_2025_Blues_Whitton_Wanderers_Youth","date":"27 Apr 2025","team":"Blues","league":"Azure","opponent":"Whitton Wanderers Youth","result":"W","venue":"Home","age":"U9","goalsFor":4,"goalsAgainst":3,"events":[],"starPlayer":"Liam","bestPasser":"Hector"},{"id":"6_Apr_2025_Blues_Woking_Cougars","date":"6 Apr 2025","team":"Blues","league":"Azure","opponent":"Woking Cougars","result":"L","venue":"Away","age":"U9","goalsFor":1,"goalsAgainst":7,"events":[],"starPlayer":null,"bestPasser":null},{"id":"6_Apr_2025_Stripes_Esher_Youth","date":"6 Apr 2025","team":"Stripes","league":"Sage","opponent":"Esher Youth","result":"W","venue":"Away","age":"U9","goalsFor":2,"goalsAgainst":1,"events":[],"starPlayer":"Max","bestPasser":"Ferdinand"},{"id":"6_Apr_2025_Royals_Bedfont_Eagles","date":"6 Apr 2025","team":"Royals","league":"Lime","opponent":"Bedfont Eagles","result":"L","venue":"Home","age":"U9","goalsFor":0,"goalsAgainst":2,"events":[],"starPlayer":"Royal - Aaban","bestPasser":"Huxley GC"},{"id":"6_Apr_2025_Reds_Sandgate_Youth","date":"6 Apr 2025","team":"Reds","league":"Ruby","opponent":"Sandgate Youth","result":"W","venue":"Away","age":"U9","goalsFor":3,"goalsAgainst":1,"events":[],"starPlayer":"Myles","bestPasser":"Laurence"},{"id":"30_Mar_2025_Blues_Sheen_Lions","date":"30 Mar 2025","team":"Blues","league":"Azure","opponent":"Sheen Lions","result":"D","venue":"Home","age":"U9","goalsFor":7,"goalsAgainst":7,"events":[],"starPlayer":"Seb","bestPasser":"Hector"},{"id":"30_Mar_2025_Royals_Corinthian_Casuals","date":"30 Mar 2025","team":"Royals","league":"Lime","opponent":"Corinthian Casuals","result":"W","venue":"Away","age":"U9","goalsFor":3,"goalsAgainst":1,"events":[],"starPlayer":"Harry","bestPasser":"Albie"},{"id":"30_Mar_2025_Reds_Sutton_Common_Rovers","date":"30 Mar 2025","team":"Reds","league":"Ruby","opponent":"Sutton Common Rovers","result":"W","venue":"Home","age":"U9","goalsFor":3,"goalsAgainst":0,"events":[],"starPlayer":"Ethan","bestPasser":"Feliks"},{"id":"30_Mar_2025_Stripes_Hampton_and_Richmond","date":"30 Mar 2025","team":"Stripes","league":"Sage","opponent":"Hampton and Richmond","result":"W","venue":"Home","age":"U9","goalsFor":7,"goalsAgainst":2,"events":[],"starPlayer":"Ferdinand","bestPasser":"Ferdinand"},{"id":"23_Mar_2025_Royals_Motspur_Park","date":"23 Mar 2025","team":"Royals","league":"Lime","opponent":"Motspur Park","result":"L","venue":"Home","age":"U9","goalsFor":2,"goalsAgainst":4,"events":[],"starPlayer":"Evan","bestPasser":"Gio"},{"id":"23_Mar_2025_Reds_Sheen_Lions","date":"23 Mar 2025","team":"Reds","league":"Ruby","opponent":"Sheen Lions","result":"W","venue":"Away","age":"U9","goalsFor":4,"goalsAgainst":2,"events":[],"starPlayer":"Kinley","bestPasser":"Laurence"},{"id":"23_Mar_2025_Stripes_Sutton_Common_Rovers","date":"23 Mar 2025","team":"Stripes","league":"Sage","opponent":"Sutton Common Rovers","result":"L","venue":"Away","age":"U9","goalsFor":2,"goalsAgainst":12,"events":[],"starPlayer":"Otto","bestPasser":"Ismayil"},{"id":"23_Mar_2025_Blues_Westside_Youth","date":"23 Mar 2025","team":"Blues","league":"Azure","opponent":"Westside Youth","result":"D","venue":"Away","age":"U9","goalsFor":5,"goalsAgainst":5,"events":[],"starPlayer":"Liam","bestPasser":"Alex"},{"id":"16_Mar_2025_Blues_Sandgate_Youth","date":"16 Mar 2025","team":"Blues","league":"Azure","opponent":"Sandgate Youth","result":"L","venue":"Home","age":"U9","goalsFor":1,"goalsAgainst":8,"events":[],"starPlayer":"Hector","bestPasser":"Huxley M"},{"id":"16_Mar_2025_Royals_Raynes_Park_Vale_Youth","date":"16 Mar 2025","team":"Royals","league":"Lime","opponent":"Raynes Park Vale Youth","result":"W","venue":"Away","age":"U9","goalsFor":2,"goalsAgainst":0,"events":[],"starPlayer":"Olly H","bestPasser":"Harry"},{"id":"16_Mar_2025_Reds_Richmond_and_Kew_FC","date":"16 Mar 2025","team":"Reds","league":"Ruby","opponent":"Richmond & Kew FC","result":"D","venue":"Home","age":"U9","goalsFor":4,"goalsAgainst":4,"events":[],"starPlayer":null,"bestPasser":null},{"id":"16_Mar_2025_Stripes_Westside_Youth","date":"16 Mar 2025","team":"Stripes","league":"Sage","opponent":"Westside Youth","result":"W","venue":"Home","age":"U9","goalsFor":5,"goalsAgainst":1,"events":[],"starPlayer":"Elliott","bestPasser":null},{"id":"9_Mar_2025_Blues_Westside_Youth","date":"9 Mar 2025","team":"Blues","league":"Azure","opponent":"Westside Youth","result":"W","venue":"Away","age":"U9","goalsFor":8,"goalsAgainst":8,"events":[],"starPlayer":"Theo","bestPasser":"Oli M"},{"id":"9_Mar_2025_Reds_Claygate_Royals","date":"9 Mar 2025","team":"Reds","league":"Ruby","opponent":"Claygate Royals","result":"L","venue":"Home","age":"U9","goalsFor":1,"goalsAgainst":4,"events":[],"starPlayer":"Myles","bestPasser":"Ethan"},{"id":"9_Mar_2025_Royals_Sandgate_Youth","date":"9 Mar 2025","team":"Royals","league":"Lime","opponent":"Sandgate Youth","result":"W","venue":"Away","age":"U9","goalsFor":3,"goalsAgainst":2,"events":[],"starPlayer":"Ted","bestPasser":"Olly H"},{"id":"9_Mar_2025_Stripes_Barnes_Eagles","date":"9 Mar 2025","team":"Stripes","league":"Sage","opponent":"Barnes Eagles","result":"L","venue":"Away","age":"U9","goalsFor":0,"goalsAgainst":5,"events":[],"starPlayer":"Ismayil","bestPasser":"Ismayil"},{"id":"2_Mar_2025_Blues_Sheen_Lions","date":"2 Mar 2025","team":"Blues","league":"Azure","opponent":"Sheen Lions","result":"W","venue":"Away","age":"U9","goalsFor":9,"goalsAgainst":1,"events":[],"starPlayer":"Levi","bestPasser":"Ben"},{"id":"2_Mar_2025_Royals_Richmond_and_Kew_FC","date":"2 Mar 2025","team":"Royals","league":"Lime","opponent":"Richmond & Kew FC","result":"W","venue":"Away","age":"U9","goalsFor":3,"goalsAgainst":2,"events":[],"starPlayer":"Royal - Aaban","bestPasser":"Teo"},{"id":"2_Mar_2025_Reds_Richmond_and_Kew_FC","date":"2 Mar 2025","team":"Reds","league":"Ruby","opponent":"Richmond & Kew FC","result":"L","venue":"Away","age":"U9","goalsFor":4,"goalsAgainst":6,"events":[],"starPlayer":"William","bestPasser":"Kinley"},{"id":"2_Mar_2025_Stripes_Esher_Youth","date":"2 Mar 2025","team":"Stripes","league":"Sage","opponent":"Esher Youth","result":"W","venue":"Home","age":"U9","goalsFor":2,"goalsAgainst":1,"events":[],"starPlayer":"Marco","bestPasser":"Elliott"},{"id":"9_Feb_2025_Blues_Motspur_Park","date":"9 Feb 2025","team":"Blues","league":"Azure","opponent":"Motspur Park","result":"W","venue":"Away","age":"U9","goalsFor":6,"goalsAgainst":1,"events":[],"starPlayer":"Oli M","bestPasser":"Hector"},{"id":"9_Feb_2025_Stripes_Corinthian_Casuals","date":"9 Feb 2025","team":"Stripes","league":"Sage","opponent":"Corinthian Casuals","result":"L","venue":"Home","age":"U9","goalsFor":2,"goalsAgainst":6,"events":[],"starPlayer":"Ismayil","bestPasser":"Ferdinand"},{"id":"9_Feb_2025_Reds_Esher_Youth","date":"9 Feb 2025","team":"Reds","league":"Ruby","opponent":"Esher Youth","result":"D","venue":"Home","age":"U9","goalsFor":1,"goalsAgainst":1,"events":[],"starPlayer":"Jerry","bestPasser":"Salim"},{"id":"2_Feb_2025_Stripes_Barnes_Eagles","date":"2 Feb 2025","team":"Stripes","league":"Sage","opponent":"Barnes Eagles","result":"L","venue":"Home","age":"U9","goalsFor":1,"goalsAgainst":3,"events":[],"starPlayer":"Arlo","bestPasser":"Elliott"},{"id":"2_Feb_2025_Reds_Claygate_Royals","date":"2 Feb 2025","team":"Reds","league":"Ruby","opponent":"Claygate Royals","result":"W","venue":"Away","age":"U9","goalsFor":5,"goalsAgainst":3,"events":[],"starPlayer":"William","bestPasser":"Salim"},{"id":"26_Jan_2025_Royals_Isleworthians_Youth","date":"26 Jan 2025","team":"Royals","league":"Lime","opponent":"Isleworthians Youth","result":"W","venue":"Home","age":"U9","goalsFor":5,"goalsAgainst":1,"events":[],"starPlayer":"Teo","bestPasser":"Huxley GC"},{"id":"26_Jan_2025_Blues_Hampton_and_Richmond","date":"26 Jan 2025","team":"Blues","league":"Azure","opponent":"Hampton and Richmond","result":"W","venue":"Home","age":"U9","goalsFor":4,"goalsAgainst":2,"events":[],"starPlayer":"Theo","bestPasser":"James"},{"id":"26_Jan_2025_Reds_A.C._Fulham","date":"26 Jan 2025","team":"Reds","league":"Ruby","opponent":"A.C. Fulham","result":"L","venue":"Away","age":"U9","goalsFor":0,"goalsAgainst":6,"events":[],"starPlayer":"Feliks","bestPasser":"Felix"},{"id":"19_Jan_2025_Blues_Corinthian_Casuals","date":"19 Jan 2025","team":"Blues","league":"Azure","opponent":"Corinthian Casuals","result":"W","venue":"Home","age":"U9","goalsFor":10,"goalsAgainst":2,"events":[],"starPlayer":"James","bestPasser":"Theo"},{"id":"19_Jan_2025_Royals_Corinthian_Casuals","date":"19 Jan 2025","team":"Royals","league":"Lime","opponent":"Corinthian Casuals","result":"W","venue":"Home","age":"U9","goalsFor":4,"goalsAgainst":0,"events":[],"starPlayer":"Ted","bestPasser":"Albie"},{"id":"19_Jan_2025_Reds_Motspur_Park","date":"19 Jan 2025","team":"Reds","league":"Ruby","opponent":"Motspur Park","result":"W","venue":"Home","age":"U9","goalsFor":3,"goalsAgainst":1,"events":[],"starPlayer":"Felix","bestPasser":"Ethan"},{"id":"19_Jan_2025_Stripes_Hampton_and_Richmond","date":"19 Jan 2025","team":"Stripes","league":"Sage","opponent":"Hampton and Richmond","result":"L","venue":"Away","age":"U9","goalsFor":1,"goalsAgainst":2,"events":[],"starPlayer":"Jacob","bestPasser":"Ismayil"},{"id":"15_Dec_2024_Blues_Barnes_Eagles","date":"15 Dec 2024","team":"Blues","league":"Maroon","opponent":"Barnes Eagles","result":"L","venue":"Away","age":"U9","goalsFor":3,"goalsAgainst":5,"events":[],"starPlayer":"Seb","bestPasser":"James"},{"id":"15_Dec_2024_Reds_Esher_Youth","date":"15 Dec 2024","team":"Reds","league":"Amber","opponent":"Esher Youth","result":"W","venue":"Home","age":"U9","goalsFor":6,"goalsAgainst":5,"events":[],"starPlayer":"Reuben","bestPasser":"Salim"},{"id":"15_Dec_2024_Royals_Richmond_and_Kew_FC","date":"15 Dec 2024","team":"Royals","league":"Grey","opponent":"Richmond & Kew FC","result":"D","venue":"Home","age":"U9","goalsFor":3,"goalsAgainst":3,"events":[],"starPlayer":"Teo","bestPasser":"Evan"},{"id":"1_Dec_2024_Blues_CB_Hounslow_and_Abbots","date":"1 Dec 2024","team":"Blues","league":"Maroon","opponent":"CB Hounslow & Abbots","result":"W","venue":"Away","age":"U9","goalsFor":6,"goalsAgainst":3,"events":[],"starPlayer":"Ben","bestPasser":"Theo"},{"id":"1_Dec_2024_Royals_Isleworthians_Youth","date":"1 Dec 2024","team":"Royals","league":"Grey","opponent":"Isleworthians Youth","result":"L","venue":"Home","age":"U9","goalsFor":1,"goalsAgainst":5,"events":[],"starPlayer":"Evan","bestPasser":"Ted"},{"id":"1_Dec_2024_Reds_Sandgate_Youth","date":"1 Dec 2024","team":"Reds","league":"Amber","opponent":"Sandgate Youth","result":"L","venue":"Home","age":"U9","goalsFor":2,"goalsAgainst":6,"events":[],"starPlayer":"Laurence","bestPasser":"Reuben"},{"id":"24_Nov_2024_Royals_Claygate_Royals","date":"24 Nov 2024","team":"Royals","league":"Grey","opponent":"Claygate Royals","result":"L","venue":"Away","age":"U9","goalsFor":1,"goalsAgainst":5,"events":[],"starPlayer":"Teo","bestPasser":"Evan"},{"id":"24_Nov_2024_Reds_Corinthian_Casuals","date":"24 Nov 2024","team":"Reds","league":"Amber","opponent":"Corinthian Casuals","result":"L","venue":"Home","age":"U9","goalsFor":2,"goalsAgainst":4,"events":[],"starPlayer":"Myles","bestPasser":"Kinley"},{"id":"17_Nov_2024_Blues_NPL_Youth","date":"17 Nov 2024","team":"Blues","league":"Maroon","opponent":"NPL Youth","result":"L","venue":"Home","age":"U9","goalsFor":2,"goalsAgainst":8,"events":[],"starPlayer":"Seb","bestPasser":"Oli M"},{"id":"17_Nov_2024_Reds_Westside_Youth","date":"17 Nov 2024","team":"Reds","league":"Amber","opponent":"Westside Youth","result":"W","venue":"Away","age":"U9","goalsFor":4,"goalsAgainst":3,"events":[],"starPlayer":"Ethan","bestPasser":"Jack"},{"id":"17_Nov_2024_Royals_Worcester_Park_Colts","date":"17 Nov 2024","team":"Royals","league":"Grey","opponent":"Worcester Park Colts","result":"L","venue":"Home","age":"U9","goalsFor":3,"goalsAgainst":4,"events":[],"starPlayer":"Harry","bestPasser":"Evan"},{"id":"10_Nov_2024_Blues_Hampton_and_Richmond","date":"10 Nov 2024","team":"Blues","league":"Maroon","opponent":"Hampton and Richmond","result":"D","venue":"Home","age":"U9","goalsFor":8,"goalsAgainst":8,"events":[],"starPlayer":"Hector","bestPasser":"Levi"},{"id":"10_Nov_2024_Royals_Motspur_Park","date":"10 Nov 2024","team":"Royals","league":"Grey","opponent":"Motspur Park","result":"L","venue":"Away","age":"U9","goalsFor":1,"goalsAgainst":4,"events":[],"starPlayer":"Huxley GC","bestPasser":"Ted"},{"id":"10_Nov_2024_Reds_Whitton_Wanderers_Youth","date":"10 Nov 2024","team":"Reds","league":"Amber","opponent":"Whitton Wanderers Youth","result":"W","venue":"Home","age":"U9","goalsFor":3,"goalsAgainst":2,"events":[],"starPlayer":"Jack","bestPasser":"Laurence"},{"id":"20_Oct_2024_Blues_Claygate_Royals","date":"20 Oct 2024","team":"Blues","league":"Grey","opponent":"Claygate Royals","result":"L","venue":"Home","age":"U9","goalsFor":2,"goalsAgainst":10,"events":[],"starPlayer":"Theo","bestPasser":"Alex"},{"id":"20_Oct_2024_Royals_Nork_Park_Rangers","date":"20 Oct 2024","team":"Royals","league":"Purple","opponent":"Nork Park Rangers","result":"L","venue":"Home","age":"U9","goalsFor":0,"goalsAgainst":5,"events":[],"starPlayer":"Huxley GC","bestPasser":"Albie"},{"id":"20_Oct_2024_Reds_Corinthian_Casuals","date":"20 Oct 2024","team":"Reds","league":"Maroon","opponent":"Corinthian Casuals","result":"L","venue":"Home","age":"U9","goalsFor":4,"goalsAgainst":5,"events":[],"starPlayer":"Salim","bestPasser":"Reuben"},{"id":"13_Oct_2024_Blues_NPL_Youth","date":"13 Oct 2024","team":"Blues","league":"Grey","opponent":"NPL Youth","result":"L","venue":"Home","age":"U9","goalsFor":2,"goalsAgainst":6,"events":[],"starPlayer":"Huxley M","bestPasser":"Liam"},{"id":"13_Oct_2024_Reds_Barnes_Eagles","date":"13 Oct 2024","team":"Reds","league":"Maroon","opponent":"Barnes Eagles","result":"W","venue":"Home","age":"U9","goalsFor":4,"goalsAgainst":1,"events":[],"starPlayer":"Kinley","bestPasser":"Jack"},{"id":"6_Oct_2024_Blues_Isleworthians_Youth","date":"6 Oct 2024","team":"Blues","league":"Grey","opponent":"Isleworthians Youth","result":"W","venue":"Home","age":"U9","goalsFor":5,"goalsAgainst":3,"events":[],"starPlayer":"Ben","bestPasser":"Theo"},{"id":"6_Oct_2024_Royals_Sheen_Lions","date":"6 Oct 2024","team":"Royals","league":"Purple","opponent":"Sheen Lions","result":"W","venue":"Home","age":"U9","goalsFor":4,"goalsAgainst":3,"events":[],"starPlayer":"Arthur","bestPasser":"Albie"},{"id":"6_Oct_2024_Reds_Sutton_Common_Rovers","date":"6 Oct 2024","team":"Reds","league":"Maroon","opponent":"Sutton Common Rovers","result":"W","venue":"Away","age":"U9","goalsFor":5,"goalsAgainst":1,"events":[],"starPlayer":"Felix","bestPasser":"Salim"},{"id":"29_Sep_2024_Blues_Barnes_Eagles","date":"29 Sep 2024","team":"Blues","league":"Grey","opponent":"Barnes Eagles","result":"L","venue":"Away","age":"U9","goalsFor":4,"goalsAgainst":6,"events":[],"starPlayer":"Hector","bestPasser":"Seb"},{"id":"29_Sep_2024_Royals_Teddington_Eagles","date":"29 Sep 2024","team":"Royals","league":"Purple","opponent":"Teddington Eagles","result":"L","venue":"Away","age":"U9","goalsFor":2,"goalsAgainst":11,"events":[],"starPlayer":"Harry","bestPasser":"Evan"},{"id":"29_Sep_2024_Reds_Westside_Youth","date":"29 Sep 2024","team":"Reds","league":"Maroon","opponent":"Westside Youth","result":"L","venue":"Away","age":"U9","goalsFor":4,"goalsAgainst":5,"events":[],"starPlayer":"Ethan","bestPasser":"Salim"},{"id":"22_Sep_2024_Blues_Carshalton_Athletic","date":"22 Sep 2024","team":"Blues","league":"Grey","opponent":"Carshalton Athletic","result":"L","venue":"Home","age":"U9","goalsFor":3,"goalsAgainst":8,"events":[],"starPlayer":"Oli M","bestPasser":"Theo"},{"id":"22_Sep_2024_Royals_Esher_Youth","date":"22 Sep 2024","team":"Royals","league":"Purple","opponent":"Esher Youth","result":"L","venue":"Away","age":"U9","goalsFor":2,"goalsAgainst":5,"events":[],"starPlayer":"Gio","bestPasser":"Olly H"},{"id":"22_Sep_2024_Reds_Esher_Youth","date":"22 Sep 2024","team":"Reds","league":"Maroon","opponent":"Esher Youth","result":"W","venue":"Away","age":"U9","goalsFor":5,"goalsAgainst":4,"events":[],"starPlayer":"Laurence","bestPasser":"Reuben"},{"id":"15_Sep_2024_Royals_Woking_Cougars","date":"15 Sep 2024","team":"Royals","league":"Purple","opponent":"Woking Cougars","result":"L","venue":"Home","age":"U9","goalsFor":0,"goalsAgainst":2,"events":[],"starPlayer":"Ted","bestPasser":"Huxley GC"},{"id":"15_Sep_2024_Blues_Claygate_Royals","date":"15 Sep 2024","team":"Blues","league":"Grey","opponent":"Claygate Royals","result":"W","venue":"Away","age":"U9","goalsFor":6,"goalsAgainst":3,"events":[],"starPlayer":"Levi","bestPasser":"Ben"},{"id":"15_Sep_2024_Reds_Raynes_Park_Vale_Youth","date":"15 Sep 2024","team":"Reds","league":"Maroon","opponent":"Raynes Park Vale Youth","result":"L","venue":"Home","age":"U9","goalsFor":1,"goalsAgainst":10,"events":[],"starPlayer":"Myles","bestPasser":"William"},{"id":"8_Sep_2024_Reds_Barnes_Eagles","date":"8 Sep 2024","team":"Reds","league":"Maroon","opponent":"Barnes Eagles","result":"L","venue":"Home","age":"U9","goalsFor":2,"goalsAgainst":4,"events":[],"starPlayer":"William","bestPasser":"Jack"},{"id":"8_Sep_2024_Royals_Worcester_Park_Colts","date":"8 Sep 2024","team":"Royals","league":"Purple","opponent":"Worcester Park Colts","result":"W","venue":"Away","age":"U9","goalsFor":4,"goalsAgainst":2,"events":[],"starPlayer":"Olly H","bestPasser":"Evan"},{"id":"8_Sep_2024_Blues_Whitton_Wanderers_Youth","date":"8 Sep 2024","team":"Blues","league":"Grey","opponent":"Whitton Wanderers Youth","result":"L","venue":"Away","age":"U9","goalsFor":4,"goalsAgainst":6,"events":[],"starPlayer":"James","bestPasser":"Huxley M"}];
-
-function seedHistory() {
-  if (!localStorage.getItem('kprHistorySeeded')) {
-    const existing = getSavedMatches();
-    if (!existing.length) {
-      localStorage.setItem('kprMatches', JSON.stringify(HISTORY_SEED));
-    }
-    localStorage.setItem('kprHistorySeeded', '1');
-  }
-}
-
 function getSavedMatches() {
   try { return JSON.parse(localStorage.getItem('kprMatches') || '[]'); } catch(e) { return []; }
 }
@@ -2720,7 +2740,13 @@ function deleteMatchFromHistory(id) {
 }
 
 function renderHistoryList() {
-  let matches = getSavedMatches();
+  if (!sheetDataLoaded) {
+    document.getElementById('historyList').innerHTML = '<div style="text-align:center;color:var(--mid-grey);padding:60px 0;font-size:14px;">Loading data...</div>';
+    loadSheetData().then(renderHistoryList);
+    return;
+  }
+
+  let matches = SHEET_DATA;
   const teamFilter = document.getElementById('historyFilterTeam')?.value || '';
   if (teamFilter) matches = matches.filter(m => m.team === teamFilter);
 
@@ -2766,115 +2792,211 @@ function renderHistoryList() {
 }
 
 let historyDetailId = null;
-let hdEditMode = false;
 
-function renderHdQuarters(m, editMode) {
+let hdEditMode = false;
+let hdDraftRows = []; // working copy of m.sheetRows while editing
+let hdMatchRef = null; // the match object currently open
+
+function renderHdQuartersFromSheet(m, editMode) {
   const isHome = m.venue === 'Home';
+  const sourceRows = editMode ? hdDraftRows : (m.sheetRows||[]);
+  const byQ = {1:[],2:[],3:[],4:[]};
+  sourceRows.forEach((r, idx) => {
+    const qNum = parseInt((r.quarter||'').replace('Q',''));
+    if (!qNum || qNum < 1 || qNum > 4) return;
+    if (r.stat === '1. Goal') for (let i=0;i<r.count;i++) byQ[qNum].push({type:'goal', player:r.player, rowIdx:idx});
+    else if (r.stat === '2. Assist') for (let i=0;i<r.count;i++) byQ[qNum].push({type:'assist', player:r.player, rowIdx:idx});
+    else if (r.stat === '4. Clean Sheet GK') for (let i=0;i<r.count;i++) byQ[qNum].push({type:'csGK', player:r.player, rowIdx:idx});
+    else if (r.stat === '3. Clean Sheet DEF') for (let i=0;i<r.count;i++) byQ[qNum].push({type:'csDef', player:r.player, rowIdx:idx});
+    else if (r.stat === '7. Concede') for (let i=0;i<Math.abs(r.count);i++) byQ[qNum].push({type:'oppo', rowIdx:idx});
+  });
+
   let html = '';
   [1,2,3,4].forEach(q => {
-    const qFor = m.events.filter(e=>e.quarter===q&&e.type==='goal').length;
-    const qAgainst = m.events.filter(e=>e.quarter===q&&e.type==='oppo').length;
-    const events = m.events.filter(e=>e.quarter===q);
+    const events = byQ[q] || [];
+    const qFor = events.filter(e=>e.type==='goal').length;
+    const qAgainst = events.filter(e=>e.type==='oppo').length;
     const qScore = isHome ? `${qFor}-${qAgainst}` : `${qAgainst}-${qFor}`;
     html += `<div style="margin-bottom:14px;">
       <div style="font-size:12px;font-weight:700;color:var(--mid-grey);margin-bottom:6px;">Quarter ${q} · ${qScore}</div>`;
     if (events.length === 0) {
       html += `<div style="font-size:12px;color:var(--mid-grey);">No events</div>`;
     } else {
-      events.forEach(e => {
-        let txt = '';
-        if (e.type==='goal') txt = `<span style="color:var(--green);">Goal</span> — ${e.scorer}${e.assister?' ('+e.assister+')':''}`;
-        if (e.type==='oppo') txt = `<span style="color:var(--red);">Opposition Goal</span>`;
-        if (e.type==='cs') txt = `<span style="color:var(--gold);">Clean Sheet</span> — GK: ${e.gk}${e.defenders.length?' | DEF: '+e.defenders.join(', '):''}`;
-        if (editMode) {
-          html += `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--light-grey);">
-            <span style="flex:1;font-size:13px;">${txt}</span>
-            <button onclick="hdDeleteEvent('${e.id}')" style="background:none;border:none;color:var(--red);font-size:18px;cursor:pointer;padding:0 4px;flex-shrink:0;">×</button>
-          </div>`;
-        } else {
-          html += `<div style="font-size:13px;padding:4px 0;">${txt}</div>`;
-        }
-      });
+      const row = (label, colour, text, rowIdx) => `<div style="display:flex;align-items:center;gap:8px;padding:3px 0;">
+        <span style="flex:1;font-size:13px;"><span style="color:${colour};">${label}</span> — ${text}</span>
+        ${editMode ? `<button onclick="hdRemoveRow(${rowIdx})" style="background:none;border:none;color:var(--red);font-size:17px;cursor:pointer;padding:0 4px;flex-shrink:0;">×</button>` : ''}
+      </div>`;
+      events.filter(e=>e.type==='goal').forEach(g => html += row('Goal', 'var(--green)', g.player, g.rowIdx));
+      const assists = events.filter(e=>e.type==='assist');
+      if (assists.length) {
+        if (editMode) assists.forEach(a => html += row('Assist', 'var(--mid-grey)', a.player, a.rowIdx));
+        else html += `<div style="font-size:12px;color:var(--mid-grey);padding:2px 0;">Assists: ${assists.map(a=>a.player).join(', ')}</div>`;
+      }
+      events.filter(e=>e.type==='oppo').forEach(o => html += row('Opposition Goal', 'var(--red)', '', o.rowIdx).replace(' — ', ''));
+      events.filter(e=>e.type==='csGK').forEach(g => html += row('Clean Sheet GK', 'var(--gold)', g.player, g.rowIdx));
+      events.filter(e=>e.type==='csDef').forEach(d => html += row('Clean Sheet DEF', 'var(--gold)', d.player, d.rowIdx));
     }
     html += '</div>';
   });
   return html;
 }
 
+function hdRemoveRow(idx) {
+  hdDraftRows.splice(idx, 1);
+  refreshHdEditView();
+}
+
+function refreshHdEditView() {
+  document.getElementById('hdQuarters').innerHTML = renderHdQuartersFromSheet(hdMatchRef, true);
+}
+
+function hdAddEvent(type) {
+  // Simple prompt-based add since draft rows are flat stat rows, not rich events
+  const players = getSquad(hdMatchRef.team);
+  const playerList = players.join(', ');
+  const q = prompt('Which quarter? (1-4)', '1');
+  if (!q || !['1','2','3','4'].includes(q.trim())) { if (q!==null) showToast('Enter 1, 2, 3 or 4'); return; }
+
+  if (type === 'oppo') {
+    hdDraftRows.push({ player: hdMatchRef.team + ' - Oppo', stat: '7. Concede', count: -1, quarter: 'Q'+q.trim() });
+  } else if (type === 'goal') {
+    const scorer = prompt('Scorer name (or "OG" for own goal):\n' + playerList);
+    if (!scorer) return;
+    hdDraftRows.push({ player: scorer.trim()==='OG' ? hdMatchRef.team+' - Oppo' : scorer.trim(), stat: '1. Goal', count: 1, quarter: 'Q'+q.trim() });
+    const assister = prompt('Assister name (leave blank for none):\n' + playerList);
+    if (assister && assister.trim()) {
+      hdDraftRows.push({ player: assister.trim(), stat: '2. Assist', count: 1, quarter: 'Q'+q.trim() });
+    }
+  } else if (type === 'cs') {
+    const gk = prompt('Goalkeeper:\n' + playerList);
+    if (!gk) return;
+    hdDraftRows.push({ player: gk.trim(), stat: '4. Clean Sheet GK', count: 1, quarter: 'Q'+q.trim() });
+    const defs = prompt('Defenders (comma-separated, leave blank for none):\n' + playerList);
+    if (defs && defs.trim()) {
+      defs.split(',').map(s=>s.trim()).filter(Boolean).forEach(d => {
+        hdDraftRows.push({ player: d, stat: '3. Clean Sheet DEF', count: 1, quarter: 'Q'+q.trim() });
+      });
+    }
+  }
+  refreshHdEditView();
+}
+
 function openHistoryDetail(id) {
-  const m = getSavedMatches().find(x => x.id === id);
+  const m = SHEET_DATA.find(x => x.id === id);
   if (!m) return;
   historyDetailId = id;
+  hdMatchRef = m;
   hdEditMode = false;
   renderHistoryDetailModal(m);
   document.getElementById('historyDetailModal').classList.remove('hidden');
 }
 
 function renderHistoryDetailModal(m) {
-  const goalsFor = m.events ? m.events.filter(e=>e.type==='goal').length : m.goalsFor;
-  const goalsAgainst = m.events ? m.events.filter(e=>e.type==='oppo').length : m.goalsAgainst;
   const isHome = m.venue === 'Home';
   const opp = m.opponent || 'Opposition';
   const scoreLine = isHome
-    ? `KPR ${m.team} ${goalsFor} – ${goalsAgainst} ${opp}`
-    : `${opp} ${goalsAgainst} – ${goalsFor} KPR ${m.team}`;
-  const result = m.result || (goalsFor > goalsAgainst ? 'W' : goalsFor === goalsAgainst ? 'D' : 'L');
+    ? `KPR ${m.team} ${m.goalsFor} – ${m.goalsAgainst} ${opp}`
+    : `${opp} ${m.goalsAgainst} – ${m.goalsFor} KPR ${m.team}`;
+  const result = m.result || (m.goalsFor > m.goalsAgainst ? 'W' : m.goalsFor === m.goalsAgainst ? 'D' : 'L');
   const chipCls = result==='W'?'chip-w':result==='D'?'chip-d':'chip-l';
 
   document.getElementById('hdScoreLine').textContent = scoreLine;
   document.getElementById('hdDate').textContent = m.date + (m.league ? ' · ' + m.league : '');
   document.getElementById('hdResult').innerHTML = `<span class="result-chip ${chipCls}">${result}</span>`;
+  document.getElementById('hdQuarters').innerHTML = renderHdQuartersFromSheet(m, false);
+  document.getElementById('hdStar').textContent = m.starPlayer || '—';
+  document.getElementById('hdPasser').textContent = m.bestPasser || '—';
 
-  // Quarters
-  const hasEvents = m.events && m.events.length > 0;
-  document.getElementById('hdQuarters').innerHTML = hasEvents
-    ? renderHdQuarters(m, hdEditMode)
-    : '<div style="font-size:12px;color:var(--mid-grey);">No quarter data available for this match.</div>';
-
-  // Awards
-  if (hdEditMode) {
-    document.getElementById('hdAwardsView').style.display = 'none';
-    document.getElementById('hdAwardsEdit').style.display = '';
-    const players = getSquad(m.team);
-    document.getElementById('hdStarGrid').innerHTML = players.map(p =>
-      `<button class="modal-player-btn ${m.starPlayer===p?'selected-scorer':''}" onclick="hdSetAward('star','${p}')">${p}</button>`
-    ).join('');
-    document.getElementById('hdPasserGrid').innerHTML = players.map(p =>
-      `<button class="modal-player-btn ${m.bestPasser===p?'no-assist':''}" onclick="hdSetAward('passer','${p}')">${p}</button>`
-    ).join('');
-  } else {
-    document.getElementById('hdAwardsView').style.display = '';
-    document.getElementById('hdAwardsEdit').style.display = 'none';
-    document.getElementById('hdStar').textContent = m.starPlayer || '—';
-    document.getElementById('hdPasser').textContent = m.bestPasser || '—';
-  }
-  document.getElementById('hdEditBtn').textContent = hdEditMode ? 'Done' : 'Edit';
+  document.getElementById('hdAwardsView').style.display = '';
+  document.getElementById('hdAwardsEdit').style.display = 'none';
+  document.getElementById('hdEditNote').style.display = 'none';
+  document.getElementById('hdEditAddBtns').style.display = 'none';
+  document.getElementById('hdSaveBtn').style.display = 'none';
+  document.getElementById('hdEditBtn').textContent = 'Edit';
 }
 
 function toggleHistoryEdit() {
   hdEditMode = !hdEditMode;
-  const m = getSavedMatches().find(x => x.id === historyDetailId);
-  if (m) renderHistoryDetailModal(m);
-}
+  const m = hdMatchRef;
 
-function hdDeleteEvent(eventId) {
-  const matches = getSavedMatches();
-  const idx = matches.findIndex(x => x.id === historyDetailId);
-  if (idx === -1) return;
-  matches[idx].events = matches[idx].events.filter(e => String(e.id) !== String(eventId));
-  localStorage.setItem('kprMatches', JSON.stringify(matches));
-  renderHistoryDetailModal(matches[idx]);
-  renderHistoryList();
+  if (hdEditMode) {
+    hdDraftRows = JSON.parse(JSON.stringify(m.sheetRows || []));
+    document.getElementById('hdQuarters').innerHTML = renderHdQuartersFromSheet(m, true);
+
+    document.getElementById('hdAwardsView').style.display = 'none';
+    document.getElementById('hdAwardsEdit').style.display = '';
+    const players = getSquad(m.team);
+    const draftStar = (hdDraftRows.find(r=>r.stat==='5. Star Player')||{}).player || null;
+    const draftPasser = (hdDraftRows.find(r=>r.stat==='6. Best Passer')||{}).player || null;
+    document.getElementById('hdStarGrid').innerHTML = players.map(p =>
+      `<button class="modal-player-btn ${draftStar===p?'selected-scorer':''}" onclick="hdSetAward('star','${p}')">${p}</button>`
+    ).join('');
+    document.getElementById('hdPasserGrid').innerHTML = players.map(p =>
+      `<button class="modal-player-btn ${draftPasser===p?'no-assist':''}" onclick="hdSetAward('passer','${p}')">${p}</button>`
+    ).join('');
+
+    document.getElementById('hdEditNote').style.display = '';
+    document.getElementById('hdEditAddBtns').style.display = 'flex';
+    document.getElementById('hdSaveBtn').style.display = 'block';
+    document.getElementById('hdEditBtn').textContent = 'Cancel';
+  } else {
+    renderHistoryDetailModal(m);
+  }
 }
 
 function hdSetAward(type, player) {
-  const matches = getSavedMatches();
-  const idx = matches.findIndex(x => x.id === historyDetailId);
-  if (idx === -1) return;
-  if (type === 'star') matches[idx].starPlayer = matches[idx].starPlayer === player ? null : player;
-  if (type === 'passer') matches[idx].bestPasser = matches[idx].bestPasser === player ? null : player;
-  localStorage.setItem('kprMatches', JSON.stringify(matches));
-  renderHistoryDetailModal(matches[idx]);
+  const stat = type === 'star' ? '5. Star Player' : '6. Best Passer';
+  const currentlySet = hdDraftRows.find(r => r.stat === stat && r.player === player);
+  hdDraftRows = hdDraftRows.filter(r => r.stat !== stat);
+  if (!currentlySet) {
+    hdDraftRows.push({ player, stat, count: 1, quarter: '-' });
+  }
+  // Re-render just the award grids
+  const players = getSquad(hdMatchRef.team);
+  const draftStar = (hdDraftRows.find(r=>r.stat==='5. Star Player')||{}).player || null;
+  const draftPasser = (hdDraftRows.find(r=>r.stat==='6. Best Passer')||{}).player || null;
+  document.getElementById('hdStarGrid').innerHTML = players.map(p =>
+    `<button class="modal-player-btn ${draftStar===p?'selected-scorer':''}" onclick="hdSetAward('star','${p}')">${p}</button>`
+  ).join('');
+  document.getElementById('hdPasserGrid').innerHTML = players.map(p =>
+    `<button class="modal-player-btn ${draftPasser===p?'no-assist':''}" onclick="hdSetAward('passer','${p}')">${p}</button>`
+  ).join('');
+}
+
+async function saveHistoryEdit() {
+  const m = hdMatchRef;
+  const btn = document.getElementById('hdSaveBtn');
+  btn.disabled = true; btn.textContent = 'Saving...';
+
+  // Recompute result/score from draft rows
+  const goalsFor = hdDraftRows.filter(r=>r.stat==='1. Goal').reduce((s,r)=>s+r.count,0);
+  const goalsAgainst = Math.abs(hdDraftRows.filter(r=>r.stat==='7. Concede').reduce((s,r)=>s+r.count,0));
+  const result = goalsFor > goalsAgainst ? 'W' : goalsFor === goalsAgainst ? 'D' : 'L';
+
+  const rows = hdDraftRows.map(r => ({
+    Date: m.date, Age: m.age, Team: m.team, League: m.league,
+    Opponent: m.opponent, Result: result, Venue: m.venue,
+    Player: r.player, Stat: r.stat, Quarter: r.quarter, Count: r.count
+  }));
+
+  try {
+    const resp = await fetch(SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'updateMatch', date: m.date, team: m.team, opponent: m.opponent, rows })
+    });
+    const data = await resp.json();
+    if (!data.success) throw new Error(data.error);
+    showToast('Match updated');
+    localStorage.removeItem(CACHE_KEY);
+    sheetDataLoaded = false;
+    closeHistoryDetail();
+    await loadSheetData(true);
+    renderHistoryList();
+  } catch (err) {
+    showToast('Error: ' + err.message);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Save changes';
+  }
 }
 
 function closeHistoryDetail() {
@@ -2882,11 +3004,27 @@ function closeHistoryDetail() {
   hdEditMode = false;
 }
 
-function deleteHistoryMatch() {
-  if (!confirm('Delete this match? This cannot be undone.')) return;
-  deleteMatchFromHistory(historyDetailId);
-  closeHistoryDetail();
-  renderHistoryList();
+async function deleteHistoryMatch() {
+  const m = hdMatchRef;
+  if (!m) return;
+  if (!confirm(`Delete this match (${m.date} · ${m.team} vs ${m.opponent})? This permanently removes it from Google Sheets and cannot be undone.`)) return;
+
+  try {
+    const resp = await fetch(SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'deleteMatch', date: m.date, team: m.team, opponent: m.opponent })
+    });
+    const data = await resp.json();
+    if (!data.success) throw new Error(data.error);
+    showToast('Match deleted');
+    localStorage.removeItem(CACHE_KEY);
+    sheetDataLoaded = false;
+    closeHistoryDetail();
+    await loadSheetData(true);
+    renderHistoryList();
+  } catch (err) {
+    showToast('Error: ' + err.message);
+  }
 }
 
 // ── Init ──
@@ -2920,7 +3058,6 @@ checkForUpdate();
 setInterval(checkForUpdate, 2 * 60 * 1000);
 // Re-check whenever the app regains focus/visibility (covers home-screen icon reopen)
 document.addEventListener('visibilitychange', () => { if (!document.hidden) checkForUpdate(); });
-seedHistory();
 populateOpponentDatalist();
 updateScoreBar();
 </script>
