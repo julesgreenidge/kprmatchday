@@ -861,9 +861,12 @@
 <div class="screen" id="screen-setup">
 
   <!-- Team indicator -->
-  <div style="display:flex;align-items:center;gap:10px;padding:4px 0 14px;">
-    <div id="setupTeamBadge" style="padding:6px 14px;border-radius:20px;font-size:14px;font-weight:700;color:white;background:var(--navy);">Blues</div>
-    <button onclick="openTeamChangeModal()" style="background:none;border:none;font-size:13px;color:var(--mid-grey);cursor:pointer;text-decoration:underline;padding:0;">Change team</button>
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:4px 0 14px;">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div id="setupTeamBadge" style="padding:6px 14px;border-radius:20px;font-size:14px;font-weight:700;color:white;background:var(--navy);">Blues</div>
+      <button onclick="openTeamChangeModal()" style="background:none;border:none;font-size:13px;color:var(--mid-grey);cursor:pointer;text-decoration:underline;padding:0;">Change team</button>
+    </div>
+    <button onclick="openSquadManager(state.team)" style="background:none;border:none;font-size:13px;color:var(--mid-grey);cursor:pointer;text-decoration:underline;padding:0;white-space:nowrap;">Add or remove players</button>
   </div>
 
   <div class="card">
@@ -885,10 +888,6 @@
         <button class="toggle-btn" id="venueAway" onclick="setVenue('Away')">Away</button>
       </div>
     </div>
-  </div>
-
-  <div class="card">
-    <button class="squad-mgr-btn" onclick="openSquadManager(state.team)" style="margin-top:0;">Manage squad</button>
   </div>
 
   <button class="btn-primary" onclick="startMatch()" id="startMatchBtn">Start match</button>
@@ -1246,7 +1245,7 @@
 
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyRiGa5jg1roJh3drjIvHv96axQiX_bTDnGiGAeeGFsxb94_G1xA1z6GFkk5n0eZ97B5g/exec";
-const APP_VERSION = "2026-06-30-02"; // bumped automatically on every update
+const APP_VERSION = "2026-06-30-03"; // bumped automatically on every update
 const AGE = "U11";
 
 const DEFAULT_SQUADS = {
@@ -1262,6 +1261,10 @@ const TEAM_LEAGUES = {
 const TEAM_COLOURS = {
   Blues: '#2196F3', Reds: '#cc1818', Royals: '#1a3a8f', Stripes: '#1565C0'
 };
+function getTeamBackground(team) {
+  if (team === 'Stripes') return 'linear-gradient(90deg, #cc1818 50%, #1a3a8f 50%)';
+  return TEAM_COLOURS[team] || 'var(--navy)';
+}
 const TEAM_TAG_COLOURS_MAP = {
   Blues: '#2196F3', Reds: '#cc1818', Royals: '#1a3a8f', Stripes: '#1565C0'
 };
@@ -1447,10 +1450,10 @@ function selectTeam(team) {
   state.starPlayer = null;
   state.bestPasser = null;
 
-  document.getElementById('scoreBar').style.background = TEAM_COLOURS[team];
+  document.getElementById('scoreBar').style.background = getTeamBackground(team);
   document.getElementById('scoreLeftLabel').textContent = 'KPR ' + team;
   const badge = document.getElementById('setupTeamBadge');
-  if (badge) { badge.textContent = team; badge.style.background = TEAM_COLOURS[team]; }
+  if (badge) { badge.textContent = team; badge.style.background = getTeamBackground(team); }
 
   const today = new Date().toISOString().split('T')[0];
   document.getElementById('matchDate').value = today;
@@ -1546,7 +1549,7 @@ function updateScoreBarLayout() {
   const oppName = state.opponent || 'Opposition';
   document.getElementById('scoreLeftLabel').textContent = isHome ? kprName : oppName;
   document.getElementById('scoreRightLabel').textContent = isHome ? oppName : kprName;
-  document.getElementById('scoreBar').style.background = TEAM_COLOURS[state.team] || 'var(--navy)';
+  document.getElementById('scoreBar').style.background = getTeamBackground(state.team);
 }
 
 function updateScoreBar() {
@@ -2847,14 +2850,18 @@ function deleteHistoryMatch() {
 // ── Init ──
 // ── VERSION CHECK ──
 function forceReload() {
-  // Bypass cache entirely
-  window.location.href = window.location.pathname + '?v=' + Date.now();
+  // Navigate to a brand-new URL (cache-busted) so even a saved home-screen
+  // icon is forced to fetch fresh content from the network.
+  const url = window.location.origin + window.location.pathname + '?v=' + Date.now();
+  window.location.replace(url);
 }
 
 async function checkForUpdate() {
   try {
-    // Fetch the live deployed page, bypassing the browser cache for this check
-    const resp = await fetch(window.location.pathname + '?check=' + Date.now(), { cache: 'no-store' });
+    const resp = await fetch(window.location.pathname + '?check=' + Date.now(), {
+      cache: 'no-store',
+      headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate', 'Pragma': 'no-cache' }
+    });
     const html = await resp.text();
     const match = html.match(/const APP_VERSION = "([^"]+)"/);
     if (match && match[1] && match[1] !== APP_VERSION) {
@@ -2867,6 +2874,10 @@ async function checkForUpdate() {
 
 // ── Init ──
 checkForUpdate();
+// Re-check periodically in case the app is left open for a while (e.g. during a match)
+setInterval(checkForUpdate, 2 * 60 * 1000);
+// Re-check whenever the app regains focus/visibility (covers home-screen icon reopen)
+document.addEventListener('visibilitychange', () => { if (!document.hidden) checkForUpdate(); });
 seedHistory();
 populateOpponentDatalist();
 updateScoreBar();
