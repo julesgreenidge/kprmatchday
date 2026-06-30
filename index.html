@@ -1282,7 +1282,7 @@
 
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyRiGa5jg1roJh3drjIvHv96axQiX_bTDnGiGAeeGFsxb94_G1xA1z6GFkk5n0eZ97B5g/exec";
-const APP_VERSION = "2026-06-30-27"; // bumped automatically on every update
+const APP_VERSION = "2026-06-30-28"; // bumped automatically on every update
 const AGE = "U11";
 
 const DEFAULT_SQUADS = {
@@ -3058,6 +3058,32 @@ function renderHistoryDetailModal(m) {
   document.getElementById('hdEditBtn').textContent = 'Edit';
 }
 
+function renderHdAwardsEdit() {
+  const players = getSquad(hdMatchRef.team);
+  const draftStar = (hdDraftRows.find(r=>r.stat==='5. Star Player')||{}).player || null;
+  const draftPasser = (hdDraftRows.find(r=>r.stat==='6. Best Passer')||{}).player || null;
+
+  const awardRow = (label, player, type) => player
+    ? `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;">
+        <span style="flex:1;font-size:13px;"><span style="color:var(--gold);">${label}</span> — ${player}</span>
+        <button onclick="hdClearAward('${type}')" style="background:none;border:none;color:var(--red);font-size:18px;cursor:pointer;padding:0 4px;">×</button>
+      </div>`
+    : `<div style="padding:6px 0;">
+        <div class="modal-player-grid">${players.map(p =>
+          `<button class="modal-player-btn" onclick="hdSetAward('${type}','${p}')">${p}</button>`
+        ).join('')}</div>
+      </div>`;
+
+  document.getElementById('hdStarGrid').innerHTML = awardRow('Star Player', draftStar, 'star');
+  document.getElementById('hdPasserGrid').innerHTML = awardRow('Over-achiever', draftPasser, 'passer');
+}
+
+function hdClearAward(type) {
+  const stat = type === 'star' ? '5. Star Player' : '6. Best Passer';
+  hdDraftRows = hdDraftRows.filter(r => r.stat !== stat);
+  renderHdAwardsEdit();
+}
+
 function toggleHistoryEdit() {
   hdEditMode = !hdEditMode;
   const m = hdMatchRef;
@@ -3065,19 +3091,9 @@ function toggleHistoryEdit() {
   if (hdEditMode) {
     hdDraftRows = JSON.parse(JSON.stringify(m.sheetRows || []));
     document.getElementById('hdQuarters').innerHTML = renderHdQuartersFromSheet(m, true);
-
     document.getElementById('hdAwardsView').style.display = 'none';
     document.getElementById('hdAwardsEdit').style.display = '';
-    const players = getSquad(m.team);
-    const draftStar = (hdDraftRows.find(r=>r.stat==='5. Star Player')||{}).player || null;
-    const draftPasser = (hdDraftRows.find(r=>r.stat==='6. Best Passer')||{}).player || null;
-    document.getElementById('hdStarGrid').innerHTML = players.map(p =>
-      `<button class="modal-player-btn ${draftStar===p?'selected-scorer':''}" onclick="hdSetAward('star','${p}')">${p}</button>`
-    ).join('');
-    document.getElementById('hdPasserGrid').innerHTML = players.map(p =>
-      `<button class="modal-player-btn ${draftPasser===p?'no-assist':''}" onclick="hdSetAward('passer','${p}')">${p}</button>`
-    ).join('');
-
+    renderHdAwardsEdit();
     document.getElementById('hdEditNote').style.display = '';
     document.getElementById('hdEditAddBtns').style.display = 'flex';
     document.getElementById('hdSaveBtn').style.display = 'block';
@@ -3089,21 +3105,9 @@ function toggleHistoryEdit() {
 
 function hdSetAward(type, player) {
   const stat = type === 'star' ? '5. Star Player' : '6. Best Passer';
-  const currentlySet = hdDraftRows.find(r => r.stat === stat && r.player === player);
   hdDraftRows = hdDraftRows.filter(r => r.stat !== stat);
-  if (!currentlySet) {
-    hdDraftRows.push({ player, stat, count: 1, quarter: '-' });
-  }
-  // Re-render just the award grids
-  const players = getSquad(hdMatchRef.team);
-  const draftStar = (hdDraftRows.find(r=>r.stat==='5. Star Player')||{}).player || null;
-  const draftPasser = (hdDraftRows.find(r=>r.stat==='6. Best Passer')||{}).player || null;
-  document.getElementById('hdStarGrid').innerHTML = players.map(p =>
-    `<button class="modal-player-btn ${draftStar===p?'selected-scorer':''}" onclick="hdSetAward('star','${p}')">${p}</button>`
-  ).join('');
-  document.getElementById('hdPasserGrid').innerHTML = players.map(p =>
-    `<button class="modal-player-btn ${draftPasser===p?'no-assist':''}" onclick="hdSetAward('passer','${p}')">${p}</button>`
-  ).join('');
+  hdDraftRows.push({ player, stat, count: 1, quarter: '-' });
+  renderHdAwardsEdit();
 }
 
 async function saveHistoryEdit() {
