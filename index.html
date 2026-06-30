@@ -1233,6 +1233,17 @@
   </div>
 </div>
 
+<!-- End match warning modal -->
+<div class="modal-overlay hidden" id="endMatchWarningModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="endMatchWarningTitle">Check quarters</div>
+    <div class="modal-sub" id="endMatchWarningSub"></div>
+    <button class="btn-primary" id="endMatchWarningContinueBtn" onclick="closeModal('endMatchWarningModal');proceedToEndMatch();">Continue anyway</button>
+    <button class="btn-secondary" onclick="closeModal('endMatchWarningModal')">Go back and fix</button>
+  </div>
+</div>
+
 <!-- Reset confirm -->
 <div class="modal-overlay hidden" id="resetModal">
   <div class="modal">
@@ -1261,7 +1272,7 @@
 
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyRiGa5jg1roJh3drjIvHv96axQiX_bTDnGiGAeeGFsxb94_G1xA1z6GFkk5n0eZ97B5g/exec";
-const APP_VERSION = "2026-06-30-19"; // bumped automatically on every update
+const APP_VERSION = "2026-06-30-23"; // bumped automatically on every update
 const AGE = "U11";
 
 const DEFAULT_SQUADS = {
@@ -1785,7 +1796,25 @@ function goToSetup() {
 }
 
 function endMatch() {
-  // Check for quarters with no oppo goal and no clean sheet recorded
+  // Hard block: a quarter cannot have both an opposition goal and a clean sheet —
+  // a clean sheet means zero goals conceded that quarter, so these are contradictory.
+  const conflicting = [1,2,3,4].filter(q => {
+    const hasOppo = state.events.some(e => e.quarter === q && e.type === 'oppo');
+    const hasCS = state.events.some(e => e.quarter === q && e.type === 'cs');
+    return hasOppo && hasCS;
+  });
+
+  if (conflicting.length > 0) {
+    const qList = conflicting.map(q => 'Q' + q).join(', ');
+    document.getElementById('endMatchWarningTitle').textContent = 'Conflicting data';
+    document.getElementById('endMatchWarningSub').textContent =
+      `${qList} has both an opposition goal and a clean sheet recorded. A clean sheet means no goals were conceded, so these can't both be true. Please fix this before ending the match.`;
+    document.getElementById('endMatchWarningContinueBtn').style.display = 'none';
+    openModal('endMatchWarningModal');
+    return;
+  }
+
+  // Soft warning: quarters with neither an opposition goal nor a clean sheet recorded
   const missingCS = [1,2,3,4].filter(q => {
     const hasOppo = state.events.some(e => e.quarter === q && e.type === 'oppo');
     const hasCS = state.events.some(e => e.quarter === q && e.type === 'cs');
@@ -1794,11 +1823,18 @@ function endMatch() {
 
   if (missingCS.length > 0) {
     const qList = missingCS.map(q => 'Q' + q).join(', ');
-    if (!confirm(`No opposition goal or clean sheet recorded in ${qList}. If it was a clean sheet quarter, go back and add it.\n\nContinue to end match anyway?`)) {
-      return;
-    }
+    document.getElementById('endMatchWarningTitle').textContent = 'Check quarters';
+    document.getElementById('endMatchWarningSub').textContent =
+      `No opposition goal or clean sheet recorded in ${qList}. If it was a clean sheet quarter, go back and add it.`;
+    document.getElementById('endMatchWarningContinueBtn').style.display = 'block';
+    openModal('endMatchWarningModal');
+    return;
   }
 
+  proceedToEndMatch();
+}
+
+function proceedToEndMatch() {
   const goalsFor = state.events.filter(e => e.type === 'goal').length;
   const goalsAgainst = state.events.filter(e => e.type === 'oppo').length;
   const opp = state.opponent || 'Opposition';
@@ -1916,45 +1952,44 @@ function buildRows() {
   const goalsAgainst = state.events.filter(e => e.type === 'oppo').length;
   const result = goalsFor > goalsAgainst ? 'W' : goalsFor === goalsAgainst ? 'D' : 'L';
   const date = formatDate(state.matchDate);
-  const base = { date, age: AGE, team: state.team, league: state.league, opponent: state.opponent, result, venue: state.venue };
+  const base = { Date: date, Age: AGE, Team: state.team, League: state.league, Opponent: state.opponent, Result: result, Venue: state.venue };
 
   const rows = [];
 
   // Goals
   state.events.filter(e => e.type === 'goal').forEach(e => {
     const playerName = e.scorer === 'OG' ? state.team + ' - Oppo' : state.team + ' - ' + e.scorer;
-    rows.push({ ...base, player: playerName, stat: '1. Goal', quarter: 'Q' + e.quarter, count: 1 });
+    rows.push({ ...base, Player: playerName, Stat: '1. Goal', Quarter: 'Q' + e.quarter, Count: 1 });
     if (e.assister) {
-      rows.push({ ...base, player: state.team + ' - ' + e.assister, stat: '2. Assist', quarter: 'Q' + e.quarter, count: 1 });
+      rows.push({ ...base, Player: state.team + ' - ' + e.assister, Stat: '2. Assist', Quarter: 'Q' + e.quarter, Count: 1 });
     }
   });
 
   // Clean sheets
   state.events.filter(e => e.type === 'cs').forEach(e => {
-    rows.push({ ...base, player: state.team + ' - ' + e.gk, stat: '4. Clean Sheet GK', quarter: 'Q' + e.quarter, count: 1 });
+    rows.push({ ...base, Player: state.team + ' - ' + e.gk, Stat: '4. Clean Sheet GK', Quarter: 'Q' + e.quarter, Count: 1 });
     e.defenders.forEach(def => {
-      rows.push({ ...base, player: state.team + ' - ' + def, stat: '3. Clean Sheet DEF', quarter: 'Q' + e.quarter, count: 1 });
+      rows.push({ ...base, Player: state.team + ' - ' + def, Stat: '3. Clean Sheet DEF', Quarter: 'Q' + e.quarter, Count: 1 });
     });
   });
 
-  // Concede (total oppo goals as single row)
+  // Concede (total oppo goals as single row per quarter)
   const oppoGoals = state.events.filter(e => e.type === 'oppo').length;
   if (oppoGoals > 0) {
-    // Group by quarter
     [1,2,3,4].forEach(q => {
       const count = state.events.filter(e => e.type === 'oppo' && e.quarter === q).length;
       if (count > 0) {
-        rows.push({ ...base, player: state.team + ' - Oppo', stat: '7. Concede', quarter: 'Q' + q, count: -count });
+        rows.push({ ...base, Player: state.team + ' - Oppo', Stat: '7. Concede', Quarter: 'Q' + q, Count: -count });
       }
     });
   }
 
   // Awards
   if (state.starPlayer) {
-    rows.push({ ...base, player: state.team + ' - ' + state.starPlayer, stat: '5. Star Player', quarter: '-', count: 1 });
+    rows.push({ ...base, Player: state.team + ' - ' + state.starPlayer, Stat: '5. Star Player', Quarter: '-', Count: 1 });
   }
   if (state.bestPasser) {
-    rows.push({ ...base, player: state.team + ' - ' + state.bestPasser, stat: '6. Best Passer', quarter: '-', count: 1 });
+    rows.push({ ...base, Player: state.team + ' - ' + state.bestPasser, Stat: '6. Best Passer', Quarter: '-', Count: 1 });
   }
 
   return rows;
@@ -1985,7 +2020,7 @@ async function submitMatch() {
     });
     const data = await resp.json();
     if (data.success) {
-      showToast(data.added + ' rows added to sheet');
+      showToast('Results submitted successfully');
       btn.textContent = 'Submitted';
       // Save to match history
       const goalsFor = state.events.filter(e => e.type === 'goal').length;
@@ -2000,6 +2035,18 @@ async function submitMatch() {
         events: JSON.parse(JSON.stringify(state.events)),
         starPlayer: state.starPlayer, bestPasser: state.bestPasser,
       });
+
+      // Patch in-memory SHEET_DATA so Results/Stats show this match immediately,
+      // without waiting for the cache to expire or forcing a full re-fetch.
+      if (sheetDataLoaded) {
+        const newMatch = parseSheetRows(rows)[0];
+        if (newMatch) {
+          SHEET_DATA = SHEET_DATA.filter(x => x.id !== newMatch.id); // remove any stale duplicate
+          SHEET_DATA.unshift(newMatch);
+          SHEET_DATA.sort((a,b) => parseDateStr(b.date) - parseDateStr(a.date));
+          localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data: SHEET_DATA }));
+        }
+      }
     } else {
       throw new Error(data.error);
     }
@@ -2226,8 +2273,18 @@ function doReset() {
 }
 
 function newMatch() {
+  // Force-close any modal that might still be open and intercepting clicks
+  document.querySelectorAll('.modal-overlay').forEach(m => m.classList.add('hidden'));
+
   state = { team: null, league: null, matchDate: '', opponent: '', venue: 'Home', selectedPlayers: [], currentQ: 1, events: [], starPlayer: null, bestPasser: null, _matchStarted: false, _matchEnded: false };
+
+  // Reset submit button in case it was left disabled/showing "Submitted"
+  const submitBtn = document.getElementById('submitBtn');
+  if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Submit results'; }
+
   showScreen('screen-team');
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('nav-matchday').classList.add('active');
   document.getElementById('headerTitle').textContent = 'Match Day';
   setHeaderBack(false);
 }
@@ -2325,7 +2382,7 @@ function parseSheetRows(rows) {
     const key = r['Date'] + '||' + r['Team'] + '||' + r['Opponent'];
     if (!matchMap[key]) {
       matchMap[key] = {
-        date: cleanDate(r['Date']), team: r['Team'], league: r['League'],
+        date: cleanDate(r['Date']), rawDate: r['Date'], team: r['Team'], league: r['League'],
         opponent: r['Opponent'], result: r['Result'], venue: r['Venue'],
         age: r['Age'], goals:{}, assists:{}, csGK:{}, csDef:{},
         concede:0, starPlayer:null, bestPasser:null,
@@ -2974,7 +3031,7 @@ async function saveHistoryEdit() {
   const result = goalsFor > goalsAgainst ? 'W' : goalsFor === goalsAgainst ? 'D' : 'L';
 
   const rows = hdDraftRows.map(r => ({
-    Date: m.date, Age: m.age, Team: m.team, League: m.league,
+    Date: m.rawDate, Age: m.age, Team: m.team, League: m.league,
     Opponent: m.opponent, Result: result, Venue: m.venue,
     Player: r.player, Stat: r.stat, Quarter: r.quarter, Count: r.count
   }));
@@ -2982,15 +3039,19 @@ async function saveHistoryEdit() {
   try {
     const resp = await fetch(SCRIPT_URL, {
       method: 'POST',
-      body: JSON.stringify({ action: 'updateMatch', date: m.date, team: m.team, opponent: m.opponent, rows })
+      body: JSON.stringify({ action: 'updateMatch', date: m.rawDate, team: m.team, opponent: m.opponent, rows })
     });
     const data = await resp.json();
     if (!data.success) throw new Error(data.error);
     showToast('Match updated');
-    localStorage.removeItem(CACHE_KEY);
-    sheetDataLoaded = false;
+
+    // Patch the in-memory + cached data directly instead of re-fetching the whole sheet
+    const patched = parseSheetRows(rows)[0]; // rows only contains this one match
+    const idx = SHEET_DATA.findIndex(x => x.id === m.id);
+    if (idx !== -1 && patched) SHEET_DATA[idx] = patched;
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data: SHEET_DATA }));
+
     closeHistoryDetail();
-    await loadSheetData(true);
     renderHistoryList();
   } catch (err) {
     showToast('Error: ' + err.message);
@@ -3012,15 +3073,17 @@ async function deleteHistoryMatch() {
   try {
     const resp = await fetch(SCRIPT_URL, {
       method: 'POST',
-      body: JSON.stringify({ action: 'deleteMatch', date: m.date, team: m.team, opponent: m.opponent })
+      body: JSON.stringify({ action: 'deleteMatch', date: m.rawDate, team: m.team, opponent: m.opponent })
     });
     const data = await resp.json();
     if (!data.success) throw new Error(data.error);
     showToast('Match deleted');
-    localStorage.removeItem(CACHE_KEY);
-    sheetDataLoaded = false;
+
+    // Remove from in-memory + cached data directly instead of re-fetching the whole sheet
+    SHEET_DATA = SHEET_DATA.filter(x => x.id !== m.id);
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data: SHEET_DATA }));
+
     closeHistoryDetail();
-    await loadSheetData(true);
     renderHistoryList();
   } catch (err) {
     showToast('Error: ' + err.message);
