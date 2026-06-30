@@ -1158,6 +1158,17 @@
   </div>
 </div>
 
+<!-- Remove player confirmation modal -->
+<div class="modal-overlay hidden" id="removePlayerModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Remove <span id="removePlayerName"></span>?</div>
+    <div class="modal-sub">They'll no longer appear in the squad for future matches. Their existing match history and stats will not be affected.</div>
+    <button class="btn-danger" onclick="removePlayer(playerPendingRemoval)">Remove player</button>
+    <button class="btn-secondary" onclick="closeModal('removePlayerModal')">Cancel</button>
+  </div>
+</div>
+
 <!-- History detail modal -->
 <div class="modal-overlay hidden" id="historyDetailModal">
   <div class="modal" style="max-height:88vh;overflow-y:auto;">
@@ -1245,7 +1256,7 @@
 
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyRiGa5jg1roJh3drjIvHv96axQiX_bTDnGiGAeeGFsxb94_G1xA1z6GFkk5n0eZ97B5g/exec";
-const APP_VERSION = "2026-06-30-03"; // bumped automatically on every update
+const APP_VERSION = "2026-06-30-04"; // bumped automatically on every update
 const AGE = "U11";
 
 const DEFAULT_SQUADS = {
@@ -1724,7 +1735,7 @@ function openSquadManager(team) {
 function renderSquadList() {
   const squad = getSquad(managingTeam);
   document.getElementById('squadList').innerHTML = squad.map(p =>
-    `<div class="squad-item"><span>${p}</span><button onclick="removePlayer('${p}')">×</button></div>`
+    `<div class="squad-item"><span>${p}</span><button onclick="confirmRemovePlayer('${p}')">×</button></div>`
   ).join('');
 }
 
@@ -1740,10 +1751,20 @@ function addPlayer() {
   renderSquadList();
 }
 
+let playerPendingRemoval = null;
+
+function confirmRemovePlayer(name) {
+  playerPendingRemoval = name;
+  document.getElementById('removePlayerName').textContent = name;
+  openModal('removePlayerModal');
+}
+
 function removePlayer(name) {
   const squad = getSquad(managingTeam).filter(p => p !== name);
   saveSquad(managingTeam, squad);
   renderSquadList();
+  playerPendingRemoval = null;
+  closeModal('removePlayerModal');
 }
 
 // ── END MATCH ──
