@@ -817,44 +817,8 @@
     </div>
     <div class="field">
       <label>Opponent</label>
-      <select id="matchOpponent" onchange="handleOpponentChange(this)">
-        <option value="">Select opponent…</option>
-        <option value="__add__">+ Add new team</option>
-        <option value="AFC Walcountians">AFC Walcountians</option>
-        <option value="Alexandra United">Alexandra United</option>
-        <option value="Barnes Eagles">Barnes Eagles</option>
-        <option value="Bedfont Eagles">Bedfont Eagles</option>
-        <option value="Burpham Juniors">Burpham Juniors</option>
-        <option value="CB Hounslow &amp; Abbots">CB Hounslow &amp; Abbots</option>
-        <option value="Carshalton Athletic">Carshalton Athletic</option>
-        <option value="Claygate Royals">Claygate Royals</option>
-        <option value="Corinthian Casuals">Corinthian Casuals</option>
-        <option value="Croygas Falcons">Croygas Falcons</option>
-        <option value="Doverhouse Lions">Doverhouse Lions</option>
-        <option value="Esher Youth">Esher Youth</option>
-        <option value="Guildford City">Guildford City</option>
-        <option value="Hampton Rangers">Hampton Rangers</option>
-        <option value="Hampton and Richmond">Hampton and Richmond</option>
-        <option value="Isleworthians Youth">Isleworthians Youth</option>
-        <option value="Metropolitan Police Youth">Metropolitan Police Youth</option>
-        <option value="Mitcham Park">Mitcham Park</option>
-        <option value="Motspur Park">Motspur Park</option>
-        <option value="NPL Youth">NPL Youth</option>
-        <option value="Raynes Park Vale Youth">Raynes Park Vale Youth</option>
-        <option value="Richmond &amp; Kew FC">Richmond &amp; Kew FC</option>
-        <option value="Sandgate Youth">Sandgate Youth</option>
-        <option value="Sheen Lions">Sheen Lions</option>
-        <option value="South Park Juniors">South Park Juniors</option>
-        <option value="Sutton Common Rovers">Sutton Common Rovers</option>
-        <option value="Twickenham Tigers">Twickenham Tigers</option>
-        <option value="Walton &amp; Hersham United">Walton &amp; Hersham United</option>
-        <option value="Westside Youth">Westside Youth</option>
-        <option value="Whitton Wanderers Youth">Whitton Wanderers Youth</option>
-        <option value="Woking Cougars">Woking Cougars</option>
-        <option value="Worcester Park Colts">Worcester Park Colts</option>
-      </select>
-      <input type="text" id="matchOpponentCustom" placeholder="Enter team name" style="display:none;margin-top:8px;" onkeydown="if(event.key==='Enter')confirmCustomOpponent()">
-      <button id="confirmCustomBtn" onclick="confirmCustomOpponent()" style="display:none;width:100%;margin-top:6px;padding:10px;background:var(--navy);color:white;border:none;border-radius:9px;font-size:14px;font-weight:700;cursor:pointer;">Add team</button>
+      <input type="text" id="matchOpponent" list="opponentDatalist" placeholder="Start typing opponent name…" autocomplete="off" oninput="handleOpponentInput()">
+      <datalist id="opponentDatalist"></datalist>
     </div>
     <div class="field">
       <label>Venue</label>
@@ -1272,33 +1236,45 @@ function saveSquad(team, squad) {
 }
 
 // ── OPPONENT DROPDOWN ──
-function handleOpponentChange(sel) {
-  const custom = document.getElementById('matchOpponentCustom');
-  const btn = document.getElementById('confirmCustomBtn');
-  if (sel.value === '__add__') {
-    custom.style.display = 'block';
-    btn.style.display = 'block';
-    custom.focus();
-    sel.value = '';
-  } else {
-    custom.style.display = 'none';
-    btn.style.display = 'none';
+const BASE_OPPONENTS = [
+  "Abbey Rangers Youth","Addlestone","AFC Walcountians","Alexandra United","Ascot United",
+  "Ashford Town Juniors","Ashtead Colts","Barnes Eagles","BedHead Youth","Bedfont Eagles",
+  "Bracknell Town FC Youth","Bracknell Town Robins","Burpham Juniors","CB Hounslow & Abbots",
+  "Carshalton Athletic","Chipstead Youth","Claygate Royals","Colliers Wood United Youth",
+  "Corinthian Casuals","Croygas Falcons","Dorking Wanderers Youth","Doverhouse Lions",
+  "Esher Youth","Guildford City","Hampton Rangers","Hampton and Richmond","Isleworthians Youth",
+  "Kew Park Rangers","Leatherhead Youth","Manorcroft United","Meadow Sports",
+  "Metropolitan Police Youth","Mitcham Park","Motspur Park","NPL Youth","Raynes Park Vale Youth",
+  "Richmond & Kew FC","Rocks Lane","Sandgate Youth","Sheen Lions","South Park Juniors",
+  "Spelthorne Sports Youth","St. Helier","Sutton Common Rovers","Sutton United Colts",
+  "Twickenham Tigers","Walton & Hersham United","Wandgas","Westside Youth",
+  "Whitton Wanderers Youth","Woking Cougars","Woking Town","Worcester Park Colts"
+];
+
+function getOpponentList() {
+  const saved = JSON.parse(localStorage.getItem('kprCustomOpponents') || '[]');
+  const all = [...new Set([...BASE_OPPONENTS, ...saved])];
+  return all.sort((a,b) => a.localeCompare(b));
+}
+
+function saveCustomOpponent(name) {
+  if (!name || BASE_OPPONENTS.includes(name)) return;
+  const saved = JSON.parse(localStorage.getItem('kprCustomOpponents') || '[]');
+  if (!saved.includes(name)) {
+    saved.push(name);
+    localStorage.setItem('kprCustomOpponents', JSON.stringify(saved));
   }
 }
 
-function confirmCustomOpponent() {
-  const input = document.getElementById('matchOpponentCustom');
-  const name = input.value.trim();
-  if (!name) return;
-  const sel = document.getElementById('matchOpponent');
-  // Add option and select it
-  const opt = document.createElement('option');
-  opt.value = name; opt.textContent = name;
-  sel.appendChild(opt);
-  sel.value = name;
-  input.style.display = 'none';
-  document.getElementById('confirmCustomBtn').style.display = 'none';
-  input.value = '';
+function populateOpponentDatalist() {
+  const dl = document.getElementById('opponentDatalist');
+  if (!dl) return;
+  dl.innerHTML = getOpponentList().map(o => `<option value="${o.replace(/"/g,'&quot;')}"></option>`).join('');
+}
+
+function handleOpponentInput() {
+  // No-op for now; saving happens on startMatch / submitMatch so any typed
+  // name (new or existing) persists once actually used in a match.
 }
 
 function openTeamChangeModal() { openModal('teamChangeModal'); }
@@ -1420,6 +1396,7 @@ function startMatch() {
   state.matchDate = date;
   state.opponent = opponent;
   state._matchEnded = false;
+  saveCustomOpponent(opponent);
 
   // Only reset events if this is a brand new match (not returning from setup)
   if (!state._matchStarted) {
@@ -1684,17 +1661,7 @@ function goToSetup() {
   setHeaderBack(false);
   // Restore current match details in the form
   if (state.matchDate) document.getElementById('matchDate').value = state.matchDate;
-  if (state.opponent) {
-    const sel = document.getElementById('matchOpponent');
-    // Try to select existing option, otherwise show as custom
-    let found = false;
-    for (let o of sel.options) { if (o.value === state.opponent) { sel.value = state.opponent; found = true; break; } }
-    if (!found && state.opponent) {
-      const opt = document.createElement('option');
-      opt.value = state.opponent; opt.textContent = state.opponent;
-      sel.appendChild(opt); sel.value = state.opponent;
-    }
-  }
+  if (state.opponent) document.getElementById('matchOpponent').value = state.opponent;
   setVenue(state.venue || 'Home');
 }
 
@@ -2789,6 +2756,7 @@ function deleteHistoryMatch() {
 
 // ── Init ──
 seedHistory();
+populateOpponentDatalist();
 updateScoreBar();
 </script>
 </body>
