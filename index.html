@@ -1272,7 +1272,7 @@
 
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyRiGa5jg1roJh3drjIvHv96axQiX_bTDnGiGAeeGFsxb94_G1xA1z6GFkk5n0eZ97B5g/exec";
-const APP_VERSION = "2026-06-30-23"; // bumped automatically on every update
+const APP_VERSION = "2026-06-30-25"; // bumped automatically on every update
 const AGE = "U11";
 
 const DEFAULT_SQUADS = {
@@ -2014,11 +2014,17 @@ async function submitMatch() {
 
   try {
     const rows = buildRows();
+    console.log('DEBUG: rows built:', rows.length, rows);
+    const payload = JSON.stringify({ action: 'appendRows', rows });
+    console.log('DEBUG: payload length (chars):', payload.length);
+    console.log('DEBUG: payload:', payload);
     const resp = await fetch(SCRIPT_URL, {
       method: 'POST',
-      body: JSON.stringify({ action: 'appendRows', rows })
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: payload
     });
     const data = await resp.json();
+    console.log('DEBUG: response from Apps Script:', data);
     if (data.success) {
       showToast('Results submitted successfully');
       btn.textContent = 'Submitted';
@@ -3039,6 +3045,7 @@ async function saveHistoryEdit() {
   try {
     const resp = await fetch(SCRIPT_URL, {
       method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify({ action: 'updateMatch', date: m.rawDate, team: m.team, opponent: m.opponent, rows })
     });
     const data = await resp.json();
@@ -3073,6 +3080,7 @@ async function deleteHistoryMatch() {
   try {
     const resp = await fetch(SCRIPT_URL, {
       method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify({ action: 'deleteMatch', date: m.rawDate, team: m.team, opponent: m.opponent })
     });
     const data = await resp.json();
