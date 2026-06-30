@@ -399,7 +399,8 @@
     grid-template-columns: 1fr auto 1fr;
     align-items: center;
   }
-  .score-bar .team-label { font-size: 13px; font-weight: 700; opacity: 0.8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 130px; }
+  .score-bar .team-label { font-size: 13px; font-weight: 700; opacity: 0.85; line-height: 1.25; word-break: break-word; }
+  #scoreRight .team-label { text-align: right; }
   .score-bar .score { font-size: 28px; font-weight: 800; letter-spacing: -0.02em; }
   .score-bar .vs { font-size: 13px; opacity: 0.5; font-weight: 600; text-align: center; padding: 0 12px; }
   .score-bar .q-scores { font-size: 11px; opacity: 0.6; margin-top: 2px; }
@@ -831,7 +832,6 @@
   <button id="headerBack" onclick="headerBackBtn()" style="display:none;background:none;border:none;color:white;font-size:20px;cursor:pointer;padding:0 8px 0 0;line-height:1;">‹</button>
   <span class="badge">KPR</span>
   <h1 id="headerTitle" style="flex:1;margin-left:8px;">Match Day</h1>
-  <span class="version">v1.0</span>
 </div>
 
 <!-- SCREENS -->
@@ -967,7 +967,6 @@
 
   <div style="margin-top:16px;">
     <button class="btn-primary" onclick="endMatch()">End match →</button>
-    <button class="btn-secondary" onclick="confirmReset()" style="margin-top:6px;">Reset match</button>
   </div>
 </div>
 
@@ -1256,7 +1255,7 @@
 
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyRiGa5jg1roJh3drjIvHv96axQiX_bTDnGiGAeeGFsxb94_G1xA1z6GFkk5n0eZ97B5g/exec";
-const APP_VERSION = "2026-06-30-04"; // bumped automatically on every update
+const APP_VERSION = "2026-06-30-15"; // bumped automatically on every update
 const AGE = "U11";
 
 const DEFAULT_SQUADS = {
@@ -1310,17 +1309,17 @@ function saveSquad(team, squad) {
 
 // ── OPPONENT DROPDOWN ──
 const BASE_OPPONENTS = [
-  "Abbey Rangers Youth","Addlestone","AFC Walcountians","Alexandra United","Ascot United",
+  "A.C. Fulham","Abbey Rangers Youth","Addlestone","AFC Walcountians","Alexandra United","Ascot United",
   "Ashford Town Juniors","Ashtead Colts","Barnes Eagles","BedHead Youth","Bedfont Eagles",
   "Bracknell Town FC Youth","Bracknell Town Robins","Burpham Juniors","CB Hounslow & Abbots",
   "Carshalton Athletic","Chipstead Youth","Claygate Royals","Colliers Wood United Youth",
   "Corinthian Casuals","Croygas Falcons","Dorking Wanderers Youth","Doverhouse Lions",
   "Esher Youth","Guildford City","Hampton Rangers","Hampton and Richmond","Isleworthians Youth",
   "Kew Park Rangers","Leatherhead Youth","Manorcroft United","Meadow Sports",
-  "Metropolitan Police Youth","Mitcham Park","Motspur Park","NPL Youth","Raynes Park Vale Youth",
+  "Metropolitan Police Youth","Mitcham Park","Motspur Park","Nork Park Rangers","NPL Youth","Raynes Park Vale Youth",
   "Richmond & Kew FC","Rocks Lane","Sandgate Youth","Sheen Lions","South Park Juniors",
   "Spelthorne Sports Youth","St. Helier","Sutton Common Rovers","Sutton United Colts",
-  "Twickenham Tigers","Walton & Hersham United","Wandgas","Westside Youth",
+  "Teddington Eagles","Twickenham Tigers","Walton & Hersham United","Wandgas","Westside Youth",
   "Whitton Wanderers Youth","Woking Cougars","Woking Town","Worcester Park Colts"
 ];
 
@@ -1416,16 +1415,16 @@ function showMatchDayScreens() {
     setHeaderBack(false);
   } else if (state._matchEnded) {
     showScreen('screen-end');
-    document.getElementById('headerTitle').textContent = state.team + ' · Summary';
+    document.getElementById('headerTitle').textContent = 'KPR ' + state.team + ' · Summary';
     setHeaderBack(true, () => {
       state._matchEnded = false;
       showScreen('screen-match');
-      document.getElementById('headerTitle').textContent = state.team + ' · Match Day';
+      document.getElementById('headerTitle').textContent = 'KPR ' + state.team + ' · Match Day';
       setHeaderBack(true, goToSetup);
     });
   } else {
     showScreen('screen-match');
-    document.getElementById('headerTitle').textContent = state.team + ' · Match Day';
+    document.getElementById('headerTitle').textContent = 'KPR ' + state.team + ' · Match Day';
     setHeaderBack(true, goToSetup);
   }
 }
@@ -1461,7 +1460,7 @@ function selectTeam(team) {
   state.starPlayer = null;
   state.bestPasser = null;
 
-  document.getElementById('scoreBar').style.background = getTeamBackground(team);
+  document.getElementById('scoreBar').style.background = 'var(--navy)';
   document.getElementById('scoreLeftLabel').textContent = 'KPR ' + team;
   const badge = document.getElementById('setupTeamBadge');
   if (badge) { badge.textContent = team; badge.style.background = getTeamBackground(team); }
@@ -1515,7 +1514,7 @@ function startMatch() {
   updateScoreBarLayout();
   renderAllQuarters();
   showScreen('screen-match');
-  document.getElementById('headerTitle').textContent = state.team + ' · Match Day';
+  document.getElementById('headerTitle').textContent = 'KPR ' + state.team + ' · Match Day';
   setHeaderBack(true, goToSetup);
 }
 
@@ -1560,7 +1559,7 @@ function updateScoreBarLayout() {
   const oppName = state.opponent || 'Opposition';
   document.getElementById('scoreLeftLabel').textContent = isHome ? kprName : oppName;
   document.getElementById('scoreRightLabel').textContent = isHome ? oppName : kprName;
-  document.getElementById('scoreBar').style.background = getTeamBackground(state.team);
+  document.getElementById('scoreBar').style.background = 'var(--navy)';
 }
 
 function updateScoreBar() {
@@ -1876,8 +1875,8 @@ function endMatch() {
   renderAwardGrids();
   state._matchEnded = true;
   showScreen('screen-end');
-  document.getElementById('headerTitle').textContent = state.team + ' · Summary';
-  setHeaderBack(true, () => { state._matchEnded = false; showScreen('screen-match'); document.getElementById('headerTitle').textContent = state.team + ' · Match Day'; setHeaderBack(true, goToSetup); });
+  document.getElementById('headerTitle').textContent = 'KPR ' + state.team + ' · Summary';
+  setHeaderBack(true, () => { state._matchEnded = false; showScreen('screen-match'); document.getElementById('headerTitle').textContent = 'KPR ' + state.team + ' · Match Day'; setHeaderBack(true, goToSetup); });
 }
 
 function renderAwardGrids() {
@@ -2235,7 +2234,14 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 async function loadSheetData(force = false) {
   if (sheetDataLoading) return;
 
-  // Check cache first
+  // If already loaded in memory this session and not forcing, just re-render instantly
+  if (sheetDataLoaded && !force) {
+    populateOpponentFilter();
+    renderStats();
+    return;
+  }
+
+  // Check localStorage cache
   if (!force) {
     try {
       const cached = localStorage.getItem(CACHE_KEY);
@@ -2396,6 +2402,7 @@ function renderClubTab(data) {
   const pctFromAssist = gf ? Math.round(assists/gf*100) : 0;
   const csGames = data.filter(m=>m.goalsAgainst===0).length;
   const pctCS = played ? Math.round(csGames/played*100) : 0;
+  const pctCSQs = played ? Math.round(csQs/(played*4)*100) : 0;
 
   // Home/away splits
   const home = data.filter(m=>m.venue==='Home');
@@ -2443,17 +2450,23 @@ function renderClubTab(data) {
 
   return `
     <div class="stat-kpi-grid">${kpi('Games Played',played)}${kpi('Wins',wins)}${kpi('Draws',draws)}${kpi('Losses',losses)}${kpi('Win Rate',winRate+'%')}${kpi('Pts / Game',ppg)}</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
       <div class="card" style="margin-bottom:0;"><div style="font-size:11px;color:var(--mid-grey);font-weight:600;">Goals For</div><div style="font-size:24px;font-weight:900;color:var(--navy);">${gf}</div></div>
       <div class="card" style="margin-bottom:0;"><div style="font-size:11px;color:var(--mid-grey);font-weight:600;">Goals Against</div><div style="font-size:24px;font-weight:900;color:var(--red);">-${ga}</div></div>
-      <div class="card" style="margin-bottom:0;"><div style="font-size:11px;color:var(--mid-grey);font-weight:600;">Assists</div><div style="font-size:24px;font-weight:900;color:var(--navy);">${assists}</div></div>
-      <div class="card" style="margin-bottom:0;"><div style="font-size:11px;color:var(--mid-grey);font-weight:600;">Clean Sheet Qs</div><div style="font-size:24px;font-weight:900;color:var(--navy);">${csQs}</div></div>
       <div class="card" style="margin-bottom:0;"><div style="font-size:11px;color:var(--mid-grey);font-weight:600;">Goals For / Game</div><div style="font-size:24px;font-weight:900;color:var(--navy);">${gfpg}</div></div>
       <div class="card" style="margin-bottom:0;"><div style="font-size:11px;color:var(--mid-grey);font-weight:600;">Goals Against / Game</div><div style="font-size:24px;font-weight:900;color:var(--red);">${gapg}</div></div>
-      <div class="card" style="margin-bottom:0;"><div style="font-size:11px;color:var(--mid-grey);font-weight:600;">Assists / Game</div><div style="font-size:24px;font-weight:900;color:var(--navy);">${apg}</div></div>
-      <div class="card" style="margin-bottom:0;"><div style="font-size:11px;color:var(--mid-grey);font-weight:600;">CS Qs / Game</div><div style="font-size:24px;font-weight:900;color:var(--navy);">${cspg}</div></div>
       <div class="card" style="margin-bottom:0;"><div style="font-size:11px;color:var(--mid-grey);font-weight:600;">% Games Scored</div><div style="font-size:24px;font-weight:900;color:var(--navy);">${pctScored}%</div></div>
+    </div>
+    <div style="border-top:1px solid var(--light-grey);margin:12px 0;"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+      <div class="card" style="margin-bottom:0;"><div style="font-size:11px;color:var(--mid-grey);font-weight:600;">Assists</div><div style="font-size:24px;font-weight:900;color:var(--navy);">${assists}</div></div>
+      <div class="card" style="margin-bottom:0;"><div style="font-size:11px;color:var(--mid-grey);font-weight:600;">Assists / Game</div><div style="font-size:24px;font-weight:900;color:var(--navy);">${apg}</div></div>
       <div class="card" style="margin-bottom:0;"><div style="font-size:11px;color:var(--mid-grey);font-weight:600;">% Goals from Assist</div><div style="font-size:24px;font-weight:900;color:var(--navy);">${pctFromAssist}%</div></div>
+    </div>
+    <div style="border-top:1px solid var(--light-grey);margin:12px 0;"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+      <div class="card" style="margin-bottom:0;"><div style="font-size:11px;color:var(--mid-grey);font-weight:600;">Clean Sheet Qs</div><div style="font-size:24px;font-weight:900;color:var(--navy);">${csQs}</div></div>
+      <div class="card" style="margin-bottom:0;"><div style="font-size:11px;color:var(--mid-grey);font-weight:600;">CS Qs / Game</div><div style="font-size:24px;font-weight:900;color:var(--navy);">${cspg} <span style="font-size:14px;font-weight:700;color:var(--mid-grey);">(${pctCSQs}%)</span></div></div>
       <div class="card" style="margin-bottom:0;"><div style="font-size:11px;color:var(--mid-grey);font-weight:600;">% Clean Sheet Games</div><div style="font-size:24px;font-weight:900;color:var(--navy);">${pctCS}%</div></div>
     </div>
     ${hBar('Goals For per Game', hgfpg, agfpg)}
@@ -2491,22 +2504,22 @@ function renderPlayersTab(data) {
 
   const tagColour = p => TEAM_TAG_COLOURS[teamMap[p]]||'#888';
   const teamTag = p => `<span class="team-pill ${teamMap[p]||''}" style="margin-right:6px;">${teamMap[p]||''}</span>`;
-  const lb = (map,colour) => {
+  const lb = (map) => {
     const sorted = Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,20);
     if(!sorted.length) return '<div style="color:var(--mid-grey);font-size:13px;">No data</div>';
-    return sorted.map(([p,v],i)=>`<div class="stat-row"><span class="rank">${i+1}</span>${teamTag(p)}<span class="name">${p}</span><span class="val" style="color:${colour}">${v}</span></div>`).join('');
+    return sorted.map(([p,v],i)=>`<div class="stat-row"><span class="rank">${i+1}</span>${teamTag(p)}<span class="name">${p}</span><span class="val" style="color:var(--navy)">${v}</span></div>`).join('');
   };
 
   return `
-    <div class="card" style="margin-bottom:10px;"><div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:8px;">Goals</div>${lb(goalMap,'var(--navy)')}</div>
-    <div class="card" style="margin-bottom:10px;"><div style="font-size:13px;font-weight:700;color:var(--red);margin-bottom:8px;">Goal Assists</div>${lb(assistMap,'var(--red)')}</div>
-    <div class="card" style="margin-bottom:10px;"><div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:8px;">Goal Contribution</div>${lb(gcMap,'var(--navy)')}</div>
-    <div class="card" style="margin-bottom:10px;"><div style="font-size:13px;font-weight:700;color:#92400e;margin-bottom:8px;">Clean Sheet GK</div>${lb(csGKMap,'#92400e')}</div>
-    <div class="card" style="margin-bottom:10px;"><div style="font-size:13px;font-weight:700;color:#92400e;margin-bottom:8px;">Clean Sheet DEF</div>${lb(csDefMap,'#92400e')}</div>
-    <div class="card" style="margin-bottom:10px;"><div style="font-size:13px;font-weight:700;color:#92400e;margin-bottom:8px;">Clean Sheet Contribution</div>${lb(csContribMap,'#92400e')}</div>
-    <div class="card" style="margin-bottom:10px;"><div style="font-size:13px;font-weight:700;color:var(--gold);margin-bottom:8px;">Star Players</div>${lb(starMap,'var(--gold)')}</div>
-    <div class="card" style="margin-bottom:10px;"><div style="font-size:13px;font-weight:700;color:var(--gold);margin-bottom:8px;">Best Passers</div>${lb(passerMap,'var(--gold)')}</div>
-    <div class="card" style="margin-bottom:10px;"><div style="font-size:13px;font-weight:700;color:var(--gold);margin-bottom:8px;">Honours</div>${lb(honoursMap,'var(--gold)')}</div>
+    <div class="card" style="margin-bottom:10px;"><div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:8px;">Goals</div>${lb(goalMap)}</div>
+    <div class="card" style="margin-bottom:10px;"><div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:8px;">Goal Assists</div>${lb(assistMap)}</div>
+    <div class="card" style="margin-bottom:10px;"><div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:8px;">Goal Contribution</div>${lb(gcMap)}</div>
+    <div class="card" style="margin-bottom:10px;"><div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:8px;">Clean Sheet GK</div>${lb(csGKMap)}</div>
+    <div class="card" style="margin-bottom:10px;"><div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:8px;">Clean Sheet DEF</div>${lb(csDefMap)}</div>
+    <div class="card" style="margin-bottom:10px;"><div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:8px;">Clean Sheet Contribution</div>${lb(csContribMap)}</div>
+    <div class="card" style="margin-bottom:10px;"><div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:8px;">Star Players</div>${lb(starMap)}</div>
+    <div class="card" style="margin-bottom:10px;"><div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:8px;">Best Passers</div>${lb(passerMap)}</div>
+    <div class="card" style="margin-bottom:10px;"><div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:8px;">Honours</div>${lb(honoursMap)}</div>
   `;
 }
 
@@ -2645,22 +2658,30 @@ function renderOpponentsTab(data) {
       name, played: o.played, teams: o.teams.size,
       w: o.w, d: o.d, l: o.l,
       wr: o.played ? Math.round(o.w/o.played*100) : 0,
-      ppg: o.played ? ((o.w*3+o.d)/o.played).toFixed(2) : '0.00',
+      ppg: o.played ? ((o.w*3+o.d)/o.played).toFixed(1) : '0.0',
       gf: o.gf, ga: o.ga, gd: o.gf - o.ga
     }))
     .sort((a,b) => b.played - a.played || b.gf - a.gf);
 
-  const row = (lbl, val) => `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-top:1px solid var(--light-grey);"><span style="font-size:13px;color:var(--mid-grey);">${lbl}</span><span style="font-size:13px;font-weight:700;">${val}</span></div>`;
-
   return rows.map(o => {
     const gdCol = o.gd > 0 ? 'var(--green)' : o.gd < 0 ? 'var(--red)' : 'var(--mid-grey)';
-    const record = `<span style="color:var(--green);">W${o.w}</span> <span style="color:var(--mid-grey);">D${o.d}</span> <span style="color:var(--red);">L${o.l}</span>`;
-    const goals = `<span style="color:var(--green);">${o.gf}</span> · <span style="color:var(--red);">${o.ga}</span> · <span style="color:${gdCol};">${o.gd > 0 ? '+' : ''}${o.gd}</span>`;
+    const inline = (label, value, colour) => `<span style="font-size:13px;color:var(--mid-grey);">${label}: </span><span style="font-size:13px;font-weight:700;color:${colour||'var(--text)'};">${value}</span>`;
     return `<div style="background:white;border-radius:12px;margin-bottom:10px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.07);">
       <div style="background:var(--navy);color:white;padding:11px 14px;font-size:14px;font-weight:700;">${o.name}</div>
-      ${row('Games played · Record', `${o.played} · ${record}`)}
-      ${row('Win rate · Points per game', `${o.wr}% · ${o.ppg}`)}
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-top:1px solid var(--light-grey);"><span style="font-size:13px;color:var(--mid-grey);">For · Against · Difference</span><span style="font-size:13px;font-weight:700;">${goals}</span></div>
+      <div style="display:flex;flex-wrap:wrap;gap:14px;align-items:center;padding:10px 14px;border-top:1px solid var(--light-grey);">
+        ${inline('Games played', o.played)}
+        ${inline('Teams played', o.teams)}
+        <span style="font-size:13px;color:var(--mid-grey);">Record: </span><span style="font-size:13px;font-weight:700;"><span style="color:var(--green);">W${o.w}</span> <span style="color:var(--mid-grey);">D${o.d}</span> <span style="color:var(--red);">L${o.l}</span></span>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:14px;align-items:center;padding:10px 14px;border-top:1px solid var(--light-grey);">
+        ${inline('Win rate', o.wr+'%')}
+        ${inline('Points per game', o.ppg)}
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:14px;align-items:center;padding:10px 14px;border-top:1px solid var(--light-grey);">
+        ${inline('For', o.gf, 'var(--green)')}
+        ${inline('Against', o.ga, 'var(--red)')}
+        ${inline('Diff', (o.gd > 0 ? '+' : '') + o.gd, gdCol)}
+      </div>
     </div>`;
   }).join('');
 }
