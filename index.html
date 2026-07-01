@@ -1206,15 +1206,22 @@
       <button class="qevent-btn oppo" style="flex:1;" onclick="hdAddEvent('oppo')">Add Opp Goal</button>
       <button class="qevent-btn cs" style="flex:1;" onclick="hdAddEvent('cs')">Add Clean Sheet</button>
     </div>
-    <div id="hdActionArea" style="margin-top:16px;">
+
+    <!-- View mode buttons -->
+    <div id="hdViewBtns" style="margin-top:16px;">
       <div style="display:flex;gap:8px;">
         <button id="hdEditBtn" class="btn-secondary" style="flex:1;" onclick="toggleHistoryEdit()">Edit</button>
         <button id="hdDeleteBtn" class="btn-danger" style="flex:1;" onclick="deleteHistoryMatch()">Delete match</button>
       </div>
       <div id="hdLockedMsg" style="display:none;font-size:13px;color:var(--mid-grey);text-align:center;padding:10px 0;">Results for prior seasons cannot be edited or deleted</div>
     </div>
-    <button id="hdSaveBtn" class="btn-primary" style="width:100%;margin-top:8px;display:none;" onclick="saveHistoryEdit()">Save changes</button>
-    <button class="btn-secondary" style="margin-top:8px;width:100%;" onclick="closeHistoryDetail()">Close</button>
+    <button id="hdCloseBtn" class="btn-secondary" style="margin-top:8px;width:100%;" onclick="closeHistoryDetail()">Close</button>
+
+    <!-- Edit mode buttons -->
+    <div id="hdEditBtns" style="display:none;margin-top:16px;">
+      <button id="hdSaveBtn" class="btn-primary" style="width:100%;" onclick="saveHistoryEdit()">Save changes</button>
+      <button class="btn-secondary" style="width:100%;margin-top:8px;" onclick="toggleHistoryEdit()">Cancel edit</button>
+    </div>
   </div>
 </div>
 
@@ -1294,7 +1301,7 @@
 
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyRiGa5jg1roJh3drjIvHv96axQiX_bTDnGiGAeeGFsxb94_G1xA1z6GFkk5n0eZ97B5g/exec";
-const APP_VERSION = "2026-07-01-14"; // bumped automatically on every update
+const APP_VERSION = "2026-07-01-15"; // bumped automatically on every update
 const AGE = "U11";
 
 const DEFAULT_SQUADS = {
@@ -2860,9 +2867,9 @@ function renderOpponentsTab(data) {
     const inline = (label, value, colour) => `<span style="font-size:13px;color:var(--mid-grey);">${label}: </span><span style="font-size:13px;font-weight:700;color:${colour||'var(--text)'};">${value}</span>`;
     return `<div style="background:white;border-radius:12px;margin-bottom:10px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.07);">
       <div style="background:var(--navy);color:white;padding:11px 14px;font-size:14px;font-weight:700;">${o.name}</div>
-      <div style="display:flex;flex-wrap:wrap;gap:14px;align-items:center;padding:10px 14px;border-top:1px solid var(--light-grey);">
-        ${inline('Games played', o.played)}
-        ${inline('Teams played', o.teams)}
+      <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:10px 14px;border-top:1px solid var(--light-grey);">
+        ${inline('Matches', o.played)}
+        ${inline('KPR Teams', o.teams)}
         <span style="font-size:13px;color:var(--mid-grey);">Record: </span><span style="font-size:13px;font-weight:700;"><span style="color:var(--green);">W${o.w}</span> <span style="color:var(--mid-grey);">D${o.d}</span> <span style="color:var(--red);">L${o.l}</span></span>
       </div>
       <div style="display:flex;flex-wrap:wrap;gap:14px;align-items:center;padding:10px 14px;border-top:1px solid var(--light-grey);">
@@ -3220,7 +3227,9 @@ function renderHistoryDetailModal(m) {
   document.getElementById('hdAwardsEdit').style.display = 'none';
   document.getElementById('hdEditNote').style.display = 'none';
   document.getElementById('hdEditAddBtns').style.display = 'none';
-  document.getElementById('hdSaveBtn').style.display = 'none';
+  document.getElementById('hdViewBtns').style.display = 'block';
+  document.getElementById('hdCloseBtn').style.display = 'block';
+  document.getElementById('hdEditBtns').style.display = 'none';
   const editBtn = document.getElementById('hdEditBtn');
   const deleteBtn = document.getElementById('hdDeleteBtn');
   const lockedMsg = document.getElementById('hdLockedMsg');
@@ -3276,8 +3285,9 @@ function toggleHistoryEdit() {
     renderHdAwardsEdit();
     document.getElementById('hdEditNote').style.display = '';
     document.getElementById('hdEditAddBtns').style.display = 'flex';
-    document.getElementById('hdSaveBtn').style.display = 'block';
-    document.getElementById('hdEditBtn').textContent = 'Cancel edit';
+    document.getElementById('hdViewBtns').style.display = 'none';
+    document.getElementById('hdCloseBtn').style.display = 'none';
+    document.getElementById('hdEditBtns').style.display = 'block';
   } else {
     renderHistoryDetailModal(m);
   }
