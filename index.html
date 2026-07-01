@@ -1301,7 +1301,7 @@
 
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyRiGa5jg1roJh3drjIvHv96axQiX_bTDnGiGAeeGFsxb94_G1xA1z6GFkk5n0eZ97B5g/exec";
-const APP_VERSION = "2026-07-01-15"; // bumped automatically on every update
+const APP_VERSION = "2026-07-01-16"; // bumped automatically on every update
 const AGE = "U11";
 
 const DEFAULT_SQUADS = {
@@ -2856,33 +2856,53 @@ function renderOpponentsTab(data) {
     .map(([name, o]) => ({
       name, played: o.played, teams: o.teams.size,
       w: o.w, d: o.d, l: o.l,
-      wr: o.played ? Math.round(o.w/o.played*100) : 0,
       ppg: o.played ? ((o.w*3+o.d)/o.played).toFixed(1) : '0.0',
       gf: o.gf, ga: o.ga, gd: o.gf - o.ga
     }))
     .sort((a,b) => b.played - a.played || b.gf - a.gf);
 
-  return rows.map(o => {
+  const td = (val, opts={}) =>
+    `<td style="padding:7px ${opts.last?'8px':'4px'} 7px ${opts.first?'10px':'4px'};border-bottom:0.5px solid var(--light-grey);text-align:${opts.left?'left':'right'};color:${opts.col||'inherit'};font-weight:${opts.bold?'600':'400'};">${val}</td>`;
+
+  const trs = rows.map(o => {
     const gdCol = o.gd > 0 ? 'var(--green)' : o.gd < 0 ? 'var(--red)' : 'var(--mid-grey)';
-    const inline = (label, value, colour) => `<span style="font-size:13px;color:var(--mid-grey);">${label}: </span><span style="font-size:13px;font-weight:700;color:${colour||'var(--text)'};">${value}</span>`;
-    return `<div style="background:white;border-radius:12px;margin-bottom:10px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.07);">
-      <div style="background:var(--navy);color:white;padding:11px 14px;font-size:14px;font-weight:700;">${o.name}</div>
-      <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:10px 14px;border-top:1px solid var(--light-grey);">
-        ${inline('Matches', o.played)}
-        ${inline('KPR Teams', o.teams)}
-        <span style="font-size:13px;color:var(--mid-grey);">Record: </span><span style="font-size:13px;font-weight:700;"><span style="color:var(--green);">W${o.w}</span> <span style="color:var(--mid-grey);">D${o.d}</span> <span style="color:var(--red);">L${o.l}</span></span>
-      </div>
-      <div style="display:flex;flex-wrap:wrap;gap:14px;align-items:center;padding:10px 14px;border-top:1px solid var(--light-grey);">
-        ${inline('Win rate', o.wr+'%')}
-        ${inline('Points per game', o.ppg)}
-      </div>
-      <div style="display:flex;flex-wrap:wrap;gap:14px;align-items:center;padding:10px 14px;border-top:1px solid var(--light-grey);">
-        ${inline('For', o.gf, 'var(--green)')}
-        ${inline('Against', o.ga, 'var(--red)')}
-        ${inline('Diff', (o.gd > 0 ? '+' : '') + o.gd, gdCol)}
-      </div>
-    </div>`;
+    const gdStr = (o.gd > 0 ? '+' : '') + o.gd;
+    return `<tr>
+      ${td(o.name, {left:true, first:true, bold:true})}
+      ${td(o.played)}
+      ${td(o.w, {col:'var(--green)', bold:true})}
+      ${td(o.d)}
+      ${td(o.l, {col:'var(--red)', bold:true})}
+      ${td(o.gf)}
+      ${td(o.ga)}
+      ${td(gdStr, {col:gdCol, bold:true})}
+      ${td(o.ppg, {last:true})}
+    </tr>`;
   }).join('');
+
+  return `<div style="border-radius:8px;overflow:hidden;border:0.5px solid var(--light-grey);">
+    <table style="width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed;">
+      <colgroup>
+        <col style="width:32%">
+        <col style="width:7%"><col style="width:7%"><col style="width:7%"><col style="width:7%">
+        <col style="width:8%"><col style="width:8%"><col style="width:9%"><col style="width:9%">
+      </colgroup>
+      <thead>
+        <tr style="background:#00295c;color:white;">
+          <th style="text-align:left;padding:8px 4px 8px 10px;font-weight:600;">Opponent</th>
+          <th style="text-align:right;padding:8px 4px;font-weight:600;">P</th>
+          <th style="text-align:right;padding:8px 4px;font-weight:600;">W</th>
+          <th style="text-align:right;padding:8px 4px;font-weight:600;">D</th>
+          <th style="text-align:right;padding:8px 4px;font-weight:600;">L</th>
+          <th style="text-align:right;padding:8px 4px;font-weight:600;">GF</th>
+          <th style="text-align:right;padding:8px 4px;font-weight:600;">GA</th>
+          <th style="text-align:right;padding:8px 4px;font-weight:600;">+/-</th>
+          <th style="text-align:right;padding:8px 8px 8px 4px;font-weight:600;">PPG</th>
+        </tr>
+      </thead>
+      <tbody style="background:white;">${trs}</tbody>
+    </table>
+  </div>`;
 }
 
 // ── MATCH HISTORY ──
@@ -3234,13 +3254,17 @@ function renderHistoryDetailModal(m) {
   const deleteBtn = document.getElementById('hdDeleteBtn');
   const lockedMsg = document.getElementById('hdLockedMsg');
   const isLocked = m.age === 'U9' || m.age === 'U10';
+  const isOtherTeam = state.team && m.team !== state.team;
 
-  editBtn.style.display = isLocked ? 'none' : '';
+  editBtn.style.display = (isLocked || isOtherTeam) ? 'none' : '';
   editBtn.disabled = false;
   editBtn.textContent = 'Edit';
   editBtn.style.opacity = '';
-  deleteBtn.style.display = isLocked ? 'none' : '';
-  lockedMsg.style.display = isLocked ? 'block' : 'none';
+  deleteBtn.style.display = (isLocked || isOtherTeam) ? 'none' : '';
+  lockedMsg.style.display = (isLocked || isOtherTeam) ? 'block' : 'none';
+  lockedMsg.textContent = isLocked
+    ? 'Results for prior seasons cannot be edited or deleted'
+    : `You can only edit or delete ${state.team} matches`;
 }
 
 function renderHdAwardsEdit() {
@@ -3276,6 +3300,13 @@ function hdClearAward(type) {
 function toggleHistoryEdit() {
   const m = hdMatchRef;
   hdEditMode = !hdEditMode;
+
+  // Lock: can only edit matches for the currently selected team
+  if (hdEditMode && state.team && m.team !== state.team) {
+    hdEditMode = false;
+    showToast(`You can only edit ${state.team} matches`);
+    return;
+  }
 
   if (hdEditMode) {
     hdDraftRows = JSON.parse(JSON.stringify(m.sheetRows || []));
@@ -3355,6 +3386,10 @@ async function deleteHistoryMatch() {
   if (!m) return;
   if (m.age === 'U9' || m.age === 'U10') {
     showToast('Results for prior seasons cannot be deleted');
+    return;
+  }
+  if (state.team && m.team !== state.team) {
+    showToast(`You can only delete ${state.team} matches`);
     return;
   }
   if (!confirm(`Delete this match (${m.date} · ${m.team} vs ${m.opponent})? This cannot be undone.`)) return;
