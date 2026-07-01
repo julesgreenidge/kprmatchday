@@ -825,7 +825,7 @@
 </head>
 <body>
 
-<div class="update-banner" id="updateBanner" onclick="forceReload()">Update available — tap to refresh</div>
+<div class="update-banner" id="updateBanner" onclick="forceReload()">Update available - tap to refresh</div>
 
 <!-- HEADER -->
 <div class="app-header">
@@ -1000,13 +1000,13 @@
 
   <!-- Clean sheet GK -->
   <div class="card" id="summaryCSGKCard" style="margin-bottom:12px;display:none;">
-    <div style="font-size:15px;font-weight:700;color:#92400e;margin-bottom:10px;">Clean Sheets — Goalkeeper</div>
+    <div style="font-size:15px;font-weight:700;color:#92400e;margin-bottom:10px;">Clean Sheets: Goalkeeper</div>
     <div style="background:#fef3c7;border-radius:8px;padding:10px;" id="summaryCSGKList"></div>
   </div>
 
   <!-- Clean sheet DEF -->
   <div class="card" id="summaryCSDefCard" style="margin-bottom:12px;display:none;">
-    <div style="font-size:15px;font-weight:700;color:#92400e;margin-bottom:10px;">Clean Sheets — Defenders</div>
+    <div style="font-size:15px;font-weight:700;color:#92400e;margin-bottom:10px;">Clean Sheets: Defenders</div>
     <div style="background:#fef3c7;border-radius:8px;padding:10px;" id="summaryCSDefList"></div>
   </div>
 
@@ -1123,7 +1123,7 @@
       <div class="modal-player-grid" id="goalScorerGrid"></div>
     </div>
     <div id="goalStep2" style="display:none;">
-      <div class="modal-step">Goal by <span id="goalScorerLabel" style="color:var(--green);"></span> — who assisted?</div>
+      <div class="modal-step">Goal by <span id="goalScorerLabel" style="color:var(--green);"></span> - who assisted?</div>
       <div class="modal-player-grid" id="goalAssistGrid"></div>
     </div>
   </div>
@@ -1191,16 +1191,16 @@
     <div id="hdQuarters"></div>
     <div style="border-top:1px solid var(--light-grey);margin:12px 0;"></div>
     <div id="hdAwardsView">
-      <div style="font-size:13px;"><strong>Star Player:</strong> <span id="hdStar"></span></div>
-      <div style="font-size:13px;margin-top:4px;"><strong>Over-achiever:</strong> <span id="hdPasser"></span></div>
+      <div style="padding:8px 10px;background:var(--off-white);border-radius:8px;margin-bottom:5px;font-size:13px;"><span style="color:var(--gold);font-weight:600;">Star Player</span>: <span id="hdStar">None</span></div>
+      <div style="padding:8px 10px;background:var(--off-white);border-radius:8px;font-size:13px;"><span style="color:var(--gold);font-weight:600;">Over-achiever</span>: <span id="hdPasser">None</span></div>
     </div>
-    <div id="hdAwardsEdit" style="display:none;">
-      <div style="font-size:12px;font-weight:700;color:var(--mid-grey);margin-bottom:6px;">Star Player</div>
-      <div class="modal-player-grid" id="hdStarGrid"></div>
-      <div style="font-size:12px;font-weight:700;color:var(--mid-grey);margin:10px 0 6px;">Over-achiever</div>
-      <div class="modal-player-grid" id="hdPasserGrid"></div>
+    <div id="hdAwardsEdit" style="display:none;width:100%;">
+      <div style="font-size:12px;font-weight:700;color:var(--mid-grey);margin-bottom:8px;">Star Player</div>
+      <div id="hdStarGrid" style="width:100%;"></div>
+      <div style="font-size:12px;font-weight:700;color:var(--mid-grey);margin:12px 0 8px;">Over-achiever</div>
+      <div id="hdPasserGrid" style="width:100%;"></div>
     </div>
-    <div id="hdEditNote" style="font-size:11px;color:var(--mid-grey);margin-top:14px;display:none;">Add or remove events below, then save. Saving replaces all stats for this match in Google Sheets.</div>
+    <div id="hdEditNote" style="font-size:11px;color:var(--mid-grey);margin-top:14px;display:none;">Add or remove events below, then save. Saving replaces all stats for this match.</div>
     <div id="hdEditAddBtns" style="display:none;gap:8px;margin-top:10px;">
       <button class="qevent-btn goal" style="flex:1;" onclick="hdAddEvent('goal')">Add Goal</button>
       <button class="qevent-btn oppo" style="flex:1;" onclick="hdAddEvent('oppo')">Add Opp Goal</button>
@@ -1224,7 +1224,7 @@
     <div class="modal-handle"></div>
     <div class="modal-title" id="hdAddEventTitle">Add event</div>
     <div id="hdAddEventContent"></div>
-    <button class="btn-secondary" style="margin-top:12px;width:100%;" onclick="closeModal('hdAddEventModal')">Cancel</button>
+    <button class="btn-secondary" style="margin-top:12px;width:100%;" onclick="closeModal('hdAddEventModal')">Close</button>
   </div>
 </div>
 
@@ -1294,7 +1294,7 @@
 
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyRiGa5jg1roJh3drjIvHv96axQiX_bTDnGiGAeeGFsxb94_G1xA1z6GFkk5n0eZ97B5g/exec";
-const APP_VERSION = "2026-07-01-09"; // bumped automatically on every update
+const APP_VERSION = "2026-07-01-12"; // bumped automatically on every update
 const AGE = "U11";
 
 const DEFAULT_SQUADS = {
@@ -2149,7 +2149,7 @@ async function submitMatch() {
   } catch(err) {
     showToast('Error: ' + err.message);
     btn.disabled = false;
-    btn.textContent = 'Submit to Google Sheets ↗';
+    btn.textContent = 'Submit results';
   }
 }
 
@@ -2984,19 +2984,50 @@ function renderHdQuartersFromSheet(m, editMode) {
     if (events.length === 0) {
       html += `<div style="font-size:12px;color:var(--mid-grey);">No events</div>`;
     } else {
-      const row = (label, colour, text, rowIdx) => `<div style="display:flex;align-items:center;gap:8px;padding:3px 0;">
-        <span style="flex:1;font-size:13px;"><span style="color:${colour};">${label}</span> — ${text}</span>
-        ${editMode ? `<button onclick="hdRemoveRow(${rowIdx})" style="background:none;border:none;color:var(--red);font-size:17px;cursor:pointer;padding:0 4px;flex-shrink:0;">×</button>` : ''}
-      </div>`;
-      events.filter(e=>e.type==='goal').forEach(g => html += row('Goal', 'var(--green)', g.player, g.rowIdx));
-      const assists = events.filter(e=>e.type==='assist');
-      if (assists.length) {
-        if (editMode) assists.forEach(a => html += row('Assist', 'var(--mid-grey)', a.player, a.rowIdx));
-        else html += `<div style="font-size:12px;color:var(--mid-grey);padding:2px 0;">Assists: ${assists.map(a=>a.player).join(', ')}</div>`;
+      if (editMode) {
+        // Group goals with their assists into one card
+        const goals = events.filter(e=>e.type==='goal');
+        const assists = events.filter(e=>e.type==='assist');
+        goals.forEach((g, i) => {
+          const assist = assists[i];
+          html += `<div style="padding:8px 10px;background:var(--off-white);border-radius:8px;margin-bottom:5px;display:flex;align-items:center;gap:8px;">
+            <div style="flex:1;font-size:13px;">
+              <span style="color:var(--green);font-weight:600;">Goal</span>: ${g.player}
+              ${assist ? `<span style="color:var(--mid-grey);"> · <span style="font-weight:600;">Assist</span>: ${assist.player}</span>` : ''}
+            </div>
+            <button onclick="hdRemoveRow(${g.rowIdx})" style="background:none;border:none;color:var(--red);font-size:20px;cursor:pointer;padding:0 2px;line-height:1;flex-shrink:0;">×</button>
+          </div>`;
+        });
+
+        // Opposition goals
+        events.filter(e=>e.type==='oppo').forEach(o => {
+          html += `<div style="padding:8px 10px;background:var(--off-white);border-radius:8px;margin-bottom:5px;display:flex;align-items:center;gap:8px;">
+            <span style="flex:1;font-size:13px;color:var(--red);font-weight:600;">Opposition Goal</span>
+            <button onclick="hdRemoveRow(${o.rowIdx})" style="background:none;border:none;color:var(--red);font-size:20px;cursor:pointer;padding:0 2px;line-height:1;flex-shrink:0;">×</button>
+          </div>`;
+        });
+
+        // Group CS GK with all DEF into one card
+        const csGKs = events.filter(e=>e.type==='csGK');
+        const csDefs = events.filter(e=>e.type==='csDef');
+        if (csGKs.length > 0) {
+          const gk = csGKs[0];
+          html += `<div style="padding:8px 10px;background:var(--off-white);border-radius:8px;margin-bottom:5px;display:flex;align-items:center;gap:8px;">
+            <div style="flex:1;font-size:13px;">
+              <span style="color:var(--gold);font-weight:600;">Clean Sheet GK</span>: ${gk.player}
+              ${csDefs.length ? `<span style="color:var(--mid-grey);"> · <span style="color:var(--gold);font-weight:600;">DEF</span>: ${csDefs.map(d=>d.player).join(', ')}</span>` : ''}
+            </div>
+            <button onclick="hdRemoveRow(${gk.rowIdx})" style="background:none;border:none;color:var(--red);font-size:20px;cursor:pointer;padding:0 2px;line-height:1;flex-shrink:0;">×</button>
+          </div>`;
+        }
+      } else {
+        events.filter(e=>e.type==='goal').forEach(g => html += row('Goal', 'var(--green)', g.player, g.rowIdx));
+        const assists = events.filter(e=>e.type==='assist');
+        assists.forEach(a => html += `<div style="padding:8px 10px;background:var(--off-white);border-radius:8px;margin-bottom:5px;font-size:13px;"><span style="color:var(--mid-grey);font-weight:600;">Assist</span>: ${a.player}</div>`);
+        events.filter(e=>e.type==='oppo').forEach(o => html += row('Opposition Goal', 'var(--red)', '', o.rowIdx).replace(': ', ''));
+        events.filter(e=>e.type==='csGK').forEach(g => html += row('Clean Sheet GK', 'var(--gold)', g.player, g.rowIdx));
+        events.filter(e=>e.type==='csDef').forEach(d => html += row('Clean Sheet DEF', 'var(--gold)', d.player, d.rowIdx));
       }
-      events.filter(e=>e.type==='oppo').forEach(o => html += row('Opposition Goal', 'var(--red)', '', o.rowIdx).replace(' — ', ''));
-      events.filter(e=>e.type==='csGK').forEach(g => html += row('Clean Sheet GK', 'var(--gold)', g.player, g.rowIdx));
-      events.filter(e=>e.type==='csDef').forEach(d => html += row('Clean Sheet DEF', 'var(--gold)', d.player, d.rowIdx));
     }
     html += '</div>';
   });
@@ -3004,7 +3035,35 @@ function renderHdQuartersFromSheet(m, editMode) {
 }
 
 function hdRemoveRow(idx) {
-  hdDraftRows.splice(idx, 1);
+  const row = hdDraftRows[idx];
+  const q = row.quarter;
+
+  if (row.stat === '1. Goal') {
+    // Find and remove paired assist in the same quarter (if any)
+    // Count how many goals already in this quarter before this one
+    let goalCount = 0;
+    for (let i = 0; i < idx; i++) {
+      if (hdDraftRows[i].stat === '1. Goal' && hdDraftRows[i].quarter === q) goalCount++;
+    }
+    // Remove paired assist (nth assist in same quarter where n = goalCount)
+    let assistFound = 0;
+    const toRemove = [idx];
+    for (let i = 0; i < hdDraftRows.length; i++) {
+      if (i !== idx && hdDraftRows[i].stat === '2. Assist' && hdDraftRows[i].quarter === q) {
+        if (assistFound === goalCount) { toRemove.push(i); break; }
+        assistFound++;
+      }
+    }
+    hdDraftRows = hdDraftRows.filter((_, i) => !toRemove.includes(i));
+  } else if (row.stat === '4. Clean Sheet GK') {
+    // Remove GK and all CS DEF in the same quarter
+    hdDraftRows = hdDraftRows.filter((r, i) =>
+      i !== idx && !(r.stat === '3. Clean Sheet DEF' && r.quarter === q)
+    );
+  } else {
+    hdDraftRows.splice(idx, 1);
+  }
+
   refreshHdEditView();
 }
 
@@ -3126,8 +3185,8 @@ function renderHistoryDetailModal(m) {
   const isHome = m.venue === 'Home';
   const opp = m.opponent || 'Opposition';
   const scoreLine = isHome
-    ? `KPR ${m.team} ${m.goalsFor} – ${m.goalsAgainst} ${opp}`
-    : `${opp} ${m.goalsAgainst} – ${m.goalsFor} KPR ${m.team}`;
+    ? `KPR ${m.team} ${m.goalsFor} - ${m.goalsAgainst} ${opp}`
+    : `${opp} ${m.goalsAgainst} - ${m.goalsFor} KPR ${m.team}`;
   const result = m.result || (m.goalsFor > m.goalsAgainst ? 'W' : m.goalsFor === m.goalsAgainst ? 'D' : 'L');
   const chipCls = result==='W'?'chip-w':result==='D'?'chip-d':'chip-l';
 
@@ -3135,8 +3194,8 @@ function renderHistoryDetailModal(m) {
   document.getElementById('hdDate').textContent = m.date + (m.league ? ' · ' + m.league : '');
   document.getElementById('hdResult').innerHTML = `<span class="result-chip ${chipCls}">${result}</span>`;
   document.getElementById('hdQuarters').innerHTML = renderHdQuartersFromSheet(m, false);
-  document.getElementById('hdStar').textContent = m.starPlayer || '—';
-  document.getElementById('hdPasser').textContent = m.bestPasser || '—';
+  document.getElementById('hdStar').textContent = m.starPlayer || 'None';
+  document.getElementById('hdPasser').textContent = m.bestPasser || 'None';
 
   document.getElementById('hdAwardsView').style.display = '';
   document.getElementById('hdAwardsEdit').style.display = 'none';
@@ -3162,11 +3221,11 @@ function renderHdAwardsEdit() {
   const draftPasser = (hdDraftRows.find(r=>r.stat==='6. Best Passer')||{}).player || null;
 
   const awardRow = (label, player, type) => player
-    ? `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;">
-        <span style="flex:1;font-size:13px;"><span style="color:var(--gold);">${label}</span> — ${player}</span>
-        <button onclick="hdClearAward('${type}')" style="background:none;border:none;color:var(--red);font-size:18px;cursor:pointer;padding:0 4px;">×</button>
+    ? `<div style="padding:8px 10px;background:var(--off-white);border-radius:8px;margin-bottom:5px;display:flex;align-items:center;gap:8px;">
+        <span style="flex:1;font-size:13px;"><span style="color:var(--gold);font-weight:600;">${label}</span>: ${player}</span>
+        <button onclick="hdClearAward('${type}')" style="background:none;border:none;color:var(--red);font-size:20px;cursor:pointer;padding:0 2px;line-height:1;flex-shrink:0;">×</button>
       </div>`
-    : `<div style="padding:6px 0;">
+    : `<div style="margin-bottom:8px;">
         <div class="modal-player-grid">${players.map(p =>
           `<button class="modal-player-btn" onclick="hdSetAward('${type}','${p}')">${p}</button>`
         ).join('')}</div>
@@ -3190,7 +3249,7 @@ function toggleHistoryEdit() {
     hdDraftRows = JSON.parse(JSON.stringify(m.sheetRows || []));
     document.getElementById('hdQuarters').innerHTML = renderHdQuartersFromSheet(m, true);
     document.getElementById('hdAwardsView').style.display = 'none';
-    document.getElementById('hdAwardsEdit').style.display = '';
+    document.getElementById('hdAwardsEdit').style.display = 'block';
     renderHdAwardsEdit();
     document.getElementById('hdEditNote').style.display = '';
     document.getElementById('hdEditAddBtns').style.display = 'flex';
@@ -3261,7 +3320,7 @@ async function deleteHistoryMatch() {
     showToast('Results for prior seasons cannot be deleted');
     return;
   }
-  if (!confirm(`Delete this match (${m.date} · ${m.team} vs ${m.opponent})? This permanently removes it from Google Sheets and cannot be undone.`)) return;
+  if (!confirm(`Delete this match (${m.date} · ${m.team} vs ${m.opponent})? This cannot be undone.`)) return;
 
   try {
     const resp = await fetch(SCRIPT_URL, {
