@@ -1044,13 +1044,21 @@
 <div class="screen" id="screen-history">
   <div style="padding-bottom:4px;">
     <div style="font-size:18px;font-weight:800;color:var(--navy);margin-bottom:8px;padding-top:4px;">Results</div>
-    <select id="historyFilterTeam" onchange="renderHistoryList()" style="width:100%;padding:8px 10px;border:1.5px solid var(--light-grey);border-radius:8px;font-size:13px;background:white;margin-bottom:12px;">
-      <option value="">All teams</option>
-      <option value="Blues">Blues</option>
-      <option value="Reds">Reds</option>
-      <option value="Royals">Royals</option>
-      <option value="Stripes">Stripes</option>
-    </select>
+    <div style="display:flex;gap:8px;margin-bottom:12px;">
+      <select id="historyFilterTeam" onchange="renderHistoryList()" style="flex:1;padding:8px 10px;border:1.5px solid var(--light-grey);border-radius:8px;font-size:13px;background:white;">
+        <option value="">All teams</option>
+        <option value="Blues">Blues</option>
+        <option value="Reds">Reds</option>
+        <option value="Royals">Royals</option>
+        <option value="Stripes">Stripes</option>
+      </select>
+      <select id="historyFilterAge" onchange="renderHistoryList()" style="flex:1;padding:8px 10px;border:1.5px solid var(--light-grey);border-radius:8px;font-size:13px;background:white;">
+        <option value="">All seasons</option>
+        <option value="U9">U9</option>
+        <option value="U10">U10</option>
+        <option value="U11">U11</option>
+      </select>
+    </div>
     <div id="historyList"></div>
   </div>
 </div>
@@ -1200,7 +1208,7 @@
     </div>
     <div style="display:flex;gap:8px;margin-top:16px;">
       <button id="hdEditBtn" class="btn-secondary" style="flex:1;" onclick="toggleHistoryEdit()">Edit</button>
-      <button class="btn-danger" style="flex:1;" onclick="deleteHistoryMatch()">Delete</button>
+      <button id="hdDeleteBtn" class="btn-danger" style="flex:1;" onclick="deleteHistoryMatch()">Delete</button>
     </div>
     <button id="hdSaveBtn" class="btn-primary" style="width:100%;margin-top:8px;display:none;" onclick="saveHistoryEdit()">Save changes</button>
     <button class="btn-secondary" style="margin-top:8px;width:100%;" onclick="closeHistoryDetail()">Close</button>
@@ -1283,7 +1291,7 @@
 
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyRiGa5jg1roJh3drjIvHv96axQiX_bTDnGiGAeeGFsxb94_G1xA1z6GFkk5n0eZ97B5g/exec";
-const APP_VERSION = "2026-07-01-06"; // bumped automatically on every update
+const APP_VERSION = "2026-07-01-08"; // bumped automatically on every update
 const AGE = "U11";
 
 const DEFAULT_SQUADS = {
@@ -2897,7 +2905,9 @@ function renderHistoryList() {
 
   let matches = SHEET_DATA;
   const teamFilter = document.getElementById('historyFilterTeam')?.value || '';
+  const ageFilter = document.getElementById('historyFilterAge')?.value || '';
   if (teamFilter) matches = matches.filter(m => m.team === teamFilter);
+  if (ageFilter) matches = matches.filter(m => m.age === ageFilter);
 
   const el = document.getElementById('historyList');
   if (!matches.length) {
@@ -3130,7 +3140,11 @@ function renderHistoryDetailModal(m) {
   document.getElementById('hdEditNote').style.display = 'none';
   document.getElementById('hdEditAddBtns').style.display = 'none';
   document.getElementById('hdSaveBtn').style.display = 'none';
-  document.getElementById('hdEditBtn').textContent = 'Edit';
+  const editBtn = document.getElementById('hdEditBtn');
+  editBtn.textContent = 'Edit';
+  editBtn.disabled = false;
+  editBtn.style.opacity = '';
+  document.getElementById('hdDeleteBtn').style.display = '';
 }
 
 function renderHdAwardsEdit() {
@@ -3160,8 +3174,18 @@ function hdClearAward(type) {
 }
 
 function toggleHistoryEdit() {
-  hdEditMode = !hdEditMode;
   const m = hdMatchRef;
+
+  // Prior seasons (U9/U10) are locked — no edits or deletes
+  if (!hdEditMode && (m.age === 'U9' || m.age === 'U10')) {
+    const btn = document.getElementById('hdEditBtn');
+    btn.textContent = 'Results for prior seasons cannot be edited or deleted';
+    btn.disabled = true;
+    btn.style.opacity = '0.5';
+    document.getElementById('hdDeleteBtn').style.display = 'none';
+    return;
+  }
+  hdEditMode = !hdEditMode;
 
   if (hdEditMode) {
     hdDraftRows = JSON.parse(JSON.stringify(m.sheetRows || []));
@@ -3234,6 +3258,10 @@ function closeHistoryDetail() {
 async function deleteHistoryMatch() {
   const m = hdMatchRef;
   if (!m) return;
+  if (m.age === 'U9' || m.age === 'U10') {
+    showToast('Results for prior seasons cannot be deleted');
+    return;
+  }
   if (!confirm(`Delete this match (${m.date} · ${m.team} vs ${m.opponent})? This permanently removes it from Google Sheets and cannot be undone.`)) return;
 
   try {
