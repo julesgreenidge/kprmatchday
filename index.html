@@ -1301,7 +1301,7 @@
 
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyRiGa5jg1roJh3drjIvHv96axQiX_bTDnGiGAeeGFsxb94_G1xA1z6GFkk5n0eZ97B5g/exec";
-const APP_VERSION = "2026-07-01-16"; // bumped automatically on every update
+const APP_VERSION = "2026-07-01-18"; // bumped automatically on every update
 const AGE = "U11";
 
 const DEFAULT_SQUADS = {
@@ -2857,25 +2857,25 @@ function renderOpponentsTab(data) {
       name, played: o.played, teams: o.teams.size,
       w: o.w, d: o.d, l: o.l,
       ppg: o.played ? ((o.w*3+o.d)/o.played).toFixed(1) : '0.0',
+      ppgNum: o.played ? (o.w*3+o.d)/o.played : 0,
       gf: o.gf, ga: o.ga, gd: o.gf - o.ga
     }))
-    .sort((a,b) => b.played - a.played || b.gf - a.gf);
+    .sort((a,b) => b.played - a.played || b.ppgNum - a.ppgNum);
 
   const td = (val, opts={}) =>
-    `<td style="padding:7px ${opts.last?'8px':'4px'} 7px ${opts.first?'10px':'4px'};border-bottom:0.5px solid var(--light-grey);text-align:${opts.left?'left':'right'};color:${opts.col||'inherit'};font-weight:${opts.bold?'600':'400'};">${val}</td>`;
+    `<td style="padding:8px ${opts.last?'8px':'4px'} 8px ${opts.first?'10px':'4px'};border-bottom:0.5px solid var(--light-grey);text-align:${opts.left?'left':'right'};vertical-align:middle;">${val}</td>`;
 
   const trs = rows.map(o => {
-    const gdCol = o.gd > 0 ? 'var(--green)' : o.gd < 0 ? 'var(--red)' : 'var(--mid-grey)';
     const gdStr = (o.gd > 0 ? '+' : '') + o.gd;
     return `<tr>
-      ${td(o.name, {left:true, first:true, bold:true})}
+      ${td(o.name, {left:true, first:true})}
       ${td(o.played)}
-      ${td(o.w, {col:'var(--green)', bold:true})}
+      ${td(o.w)}
       ${td(o.d)}
-      ${td(o.l, {col:'var(--red)', bold:true})}
+      ${td(o.l)}
       ${td(o.gf)}
       ${td(o.ga)}
-      ${td(gdStr, {col:gdCol, bold:true})}
+      ${td(gdStr)}
       ${td(o.ppg, {last:true})}
     </tr>`;
   }).join('');
@@ -2985,6 +2985,45 @@ let historyDetailId = null;
 let hdEditMode = false;
 let hdDraftRows = []; // working copy of m.sheetRows while editing
 let hdMatchRef = null; // the match object currently open
+
+function renderHdPlayerStats(m) {
+  const stripTeam = name => name ? name.replace(/^[^-]+ - /, '') : name;
+  const rows = m.sheetRows || [];
+
+  const group = (stat) => rows.filter(r => r.stat === stat).map(r => stripTeam(r.player));
+  const goals    = group('1. Goal');
+  const assists  = group('2. Assist');
+  const csGK     = group('4. Clean Sheet GK');
+  const csDef    = group('3. Clean Sheet DEF');
+  const star     = group('5. Star Player');
+  const passer   = group('6. Best Passer');
+  const concede  = rows.filter(r => r.stat === '7. Concede').reduce((s,r) => s + Math.abs(r.count), 0);
+
+  const statRow = (label, colour, players) => {
+    if (!players.length) return '';
+    return `<div style="padding:8px 10px;background:var(--off-white);border-radius:8px;margin-bottom:5px;font-size:13px;">
+      <span style="color:${colour};font-weight:600;">${label}</span>: ${players.join(', ')}
+    </div>`;
+  };
+  const numRow = (label, colour, count) => {
+    if (!count) return '';
+    return `<div style="padding:8px 10px;background:var(--off-white);border-radius:8px;margin-bottom:5px;font-size:13px;">
+      <span style="color:${colour};font-weight:600;">${label}</span>: ${count}
+    </div>`;
+  };
+
+  const html = [
+    statRow('Goals', 'var(--green)', goals),
+    statRow('Assists', 'var(--mid-grey)', assists),
+    statRow('Clean Sheet GK', 'var(--gold)', csGK),
+    statRow('Clean Sheet DEF', 'var(--gold)', csDef),
+    statRow('Star Player', 'var(--gold)', star),
+    statRow('Over-achiever', 'var(--gold)', passer),
+    numRow('Opposition Goals', 'var(--red)', concede),
+  ].filter(Boolean).join('');
+
+  return html || `<div style="font-size:12px;color:var(--mid-grey);">No stats recorded</div>`;
+}
 
 function renderHdQuartersFromSheet(m, editMode) {
   const isHome = m.venue === 'Home';
@@ -3238,7 +3277,10 @@ function renderHistoryDetailModal(m) {
   document.getElementById('hdScoreLine').textContent = scoreLine;
   document.getElementById('hdDate').textContent = m.date + (m.league ? ' · ' + m.league : '');
   document.getElementById('hdResult').innerHTML = `<span class="result-chip ${chipCls}">${result}</span>`;
-  document.getElementById('hdQuarters').innerHTML = renderHdQuartersFromSheet(m, false);
+  document.getElementById('hdQuarters').innerHTML = 
+    (m.age === 'U9' || m.age === 'U10')
+      ? renderHdPlayerStats(m)
+      : renderHdQuartersFromSheet(m, false);
   const stripTeam = name => name ? name.replace(/^[^-]+ - /, '') : name;
   document.getElementById('hdStar').textContent = stripTeam(m.starPlayer) || 'None';
   document.getElementById('hdPasser').textContent = stripTeam(m.bestPasser) || 'None';
@@ -3264,7 +3306,7 @@ function renderHistoryDetailModal(m) {
   lockedMsg.style.display = (isLocked || isOtherTeam) ? 'block' : 'none';
   lockedMsg.textContent = isLocked
     ? 'Results for prior seasons cannot be edited or deleted'
-    : `You can only edit or delete ${state.team} matches`;
+    : `To edit or delete ${m.team} results, select ${m.team} from the home screen`;
 }
 
 function renderHdAwardsEdit() {
