@@ -1294,7 +1294,7 @@
 
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyRiGa5jg1roJh3drjIvHv96axQiX_bTDnGiGAeeGFsxb94_G1xA1z6GFkk5n0eZ97B5g/exec";
-const APP_VERSION = "2026-07-01-12"; // bumped automatically on every update
+const APP_VERSION = "2026-07-01-13"; // bumped automatically on every update
 const AGE = "U11";
 
 const DEFAULT_SQUADS = {
@@ -2984,6 +2984,8 @@ function renderHdQuartersFromSheet(m, editMode) {
     if (events.length === 0) {
       html += `<div style="font-size:12px;color:var(--mid-grey);">No events</div>`;
     } else {
+      const row = (label, colour, text) => `<div style="padding:8px 10px;background:var(--off-white);border-radius:8px;margin-bottom:5px;font-size:13px;"><span style="color:${colour};font-weight:600;">${label}</span>${text ? ': ' + text : ''}</div>`;
+
       if (editMode) {
         // Group goals with their assists into one card
         const goals = events.filter(e=>e.type==='goal');
@@ -3021,12 +3023,12 @@ function renderHdQuartersFromSheet(m, editMode) {
           </div>`;
         }
       } else {
-        events.filter(e=>e.type==='goal').forEach(g => html += row('Goal', 'var(--green)', g.player, g.rowIdx));
+        events.filter(e=>e.type==='goal').forEach(g => html += row('Goal', 'var(--green)', g.player));
         const assists = events.filter(e=>e.type==='assist');
-        assists.forEach(a => html += `<div style="padding:8px 10px;background:var(--off-white);border-radius:8px;margin-bottom:5px;font-size:13px;"><span style="color:var(--mid-grey);font-weight:600;">Assist</span>: ${a.player}</div>`);
-        events.filter(e=>e.type==='oppo').forEach(o => html += row('Opposition Goal', 'var(--red)', '', o.rowIdx).replace(': ', ''));
-        events.filter(e=>e.type==='csGK').forEach(g => html += row('Clean Sheet GK', 'var(--gold)', g.player, g.rowIdx));
-        events.filter(e=>e.type==='csDef').forEach(d => html += row('Clean Sheet DEF', 'var(--gold)', d.player, d.rowIdx));
+        assists.forEach(a => html += row('Assist', 'var(--mid-grey)', a.player));
+        events.filter(e=>e.type==='oppo').forEach(() => html += row('Opposition Goal', 'var(--red)', ''));
+        events.filter(e=>e.type==='csGK').forEach(g => html += row('Clean Sheet GK', 'var(--gold)', g.player));
+        events.filter(e=>e.type==='csDef').forEach(d => html += row('Clean Sheet DEF', 'var(--gold)', d.player));
       }
     }
     html += '</div>';
