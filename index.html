@@ -1209,7 +1209,7 @@
     <div id="hdActionArea" style="margin-top:16px;">
       <div style="display:flex;gap:8px;">
         <button id="hdEditBtn" class="btn-secondary" style="flex:1;" onclick="toggleHistoryEdit()">Edit</button>
-        <button id="hdDeleteBtn" class="btn-danger" style="flex:1;" onclick="deleteHistoryMatch()">Delete</button>
+        <button id="hdDeleteBtn" class="btn-danger" style="flex:1;" onclick="deleteHistoryMatch()">Delete match</button>
       </div>
       <div id="hdLockedMsg" style="display:none;font-size:13px;color:var(--mid-grey);text-align:center;padding:10px 0;">Results for prior seasons cannot be edited or deleted</div>
     </div>
@@ -1294,7 +1294,7 @@
 
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyRiGa5jg1roJh3drjIvHv96axQiX_bTDnGiGAeeGFsxb94_G1xA1z6GFkk5n0eZ97B5g/exec";
-const APP_VERSION = "2026-07-01-13"; // bumped automatically on every update
+const APP_VERSION = "2026-07-01-14"; // bumped automatically on every update
 const AGE = "U11";
 
 const DEFAULT_SQUADS = {
@@ -2961,15 +2961,17 @@ let hdMatchRef = null; // the match object currently open
 
 function renderHdQuartersFromSheet(m, editMode) {
   const isHome = m.venue === 'Home';
+  const stripTeam = name => name ? name.replace(/^[^-]+ - /, '') : name;
   const sourceRows = editMode ? hdDraftRows : (m.sheetRows||[]);
   const byQ = {1:[],2:[],3:[],4:[]};
   sourceRows.forEach((r, idx) => {
     const qNum = parseInt((r.quarter||'').replace('Q',''));
     if (!qNum || qNum < 1 || qNum > 4) return;
-    if (r.stat === '1. Goal') for (let i=0;i<r.count;i++) byQ[qNum].push({type:'goal', player:r.player, rowIdx:idx});
-    else if (r.stat === '2. Assist') for (let i=0;i<r.count;i++) byQ[qNum].push({type:'assist', player:r.player, rowIdx:idx});
-    else if (r.stat === '4. Clean Sheet GK') for (let i=0;i<r.count;i++) byQ[qNum].push({type:'csGK', player:r.player, rowIdx:idx});
-    else if (r.stat === '3. Clean Sheet DEF') for (let i=0;i<r.count;i++) byQ[qNum].push({type:'csDef', player:r.player, rowIdx:idx});
+    const p = stripTeam(r.player);
+    if (r.stat === '1. Goal') for (let i=0;i<r.count;i++) byQ[qNum].push({type:'goal', player:p, rowIdx:idx});
+    else if (r.stat === '2. Assist') for (let i=0;i<r.count;i++) byQ[qNum].push({type:'assist', player:p, rowIdx:idx});
+    else if (r.stat === '4. Clean Sheet GK') for (let i=0;i<r.count;i++) byQ[qNum].push({type:'csGK', player:p, rowIdx:idx});
+    else if (r.stat === '3. Clean Sheet DEF') for (let i=0;i<r.count;i++) byQ[qNum].push({type:'csDef', player:p, rowIdx:idx});
     else if (r.stat === '7. Concede') for (let i=0;i<Math.abs(r.count);i++) byQ[qNum].push({type:'oppo', rowIdx:idx});
   });
 
@@ -3023,12 +3025,26 @@ function renderHdQuartersFromSheet(m, editMode) {
           </div>`;
         }
       } else {
-        events.filter(e=>e.type==='goal').forEach(g => html += row('Goal', 'var(--green)', g.player));
+        // Goal + Assist paired on same card
+        const goals = events.filter(e=>e.type==='goal');
         const assists = events.filter(e=>e.type==='assist');
-        assists.forEach(a => html += row('Assist', 'var(--mid-grey)', a.player));
+        goals.forEach((g, i) => {
+          const assist = assists[i];
+          html += `<div style="padding:8px 10px;background:var(--off-white);border-radius:8px;margin-bottom:5px;font-size:13px;">
+            <span style="color:var(--green);font-weight:600;">Goal</span>: ${g.player}
+            ${assist ? `<span style="color:var(--mid-grey);"> · <span style="font-weight:600;">Assist</span>: ${assist.player}</span>` : ''}
+          </div>`;
+        });
         events.filter(e=>e.type==='oppo').forEach(() => html += row('Opposition Goal', 'var(--red)', ''));
-        events.filter(e=>e.type==='csGK').forEach(g => html += row('Clean Sheet GK', 'var(--gold)', g.player));
-        events.filter(e=>e.type==='csDef').forEach(d => html += row('Clean Sheet DEF', 'var(--gold)', d.player));
+        // CS GK + all DEF on same card
+        const csGKs = events.filter(e=>e.type==='csGK');
+        const csDefs = events.filter(e=>e.type==='csDef');
+        if (csGKs.length > 0) {
+          html += `<div style="padding:8px 10px;background:var(--off-white);border-radius:8px;margin-bottom:5px;font-size:13px;">
+            <span style="color:var(--gold);font-weight:600;">Clean Sheet GK</span>: ${csGKs[0].player}
+            ${csDefs.length ? `<span style="color:var(--mid-grey);"> · <span style="color:var(--gold);font-weight:600;">DEF</span>: ${csDefs.map(d=>d.player).join(', ')}</span>` : ''}
+          </div>`;
+        }
       }
     }
     html += '</div>';
@@ -3196,8 +3212,9 @@ function renderHistoryDetailModal(m) {
   document.getElementById('hdDate').textContent = m.date + (m.league ? ' · ' + m.league : '');
   document.getElementById('hdResult').innerHTML = `<span class="result-chip ${chipCls}">${result}</span>`;
   document.getElementById('hdQuarters').innerHTML = renderHdQuartersFromSheet(m, false);
-  document.getElementById('hdStar').textContent = m.starPlayer || 'None';
-  document.getElementById('hdPasser').textContent = m.bestPasser || 'None';
+  const stripTeam = name => name ? name.replace(/^[^-]+ - /, '') : name;
+  document.getElementById('hdStar').textContent = stripTeam(m.starPlayer) || 'None';
+  document.getElementById('hdPasser').textContent = stripTeam(m.bestPasser) || 'None';
 
   document.getElementById('hdAwardsView').style.display = '';
   document.getElementById('hdAwardsEdit').style.display = 'none';
@@ -3219,18 +3236,22 @@ function renderHistoryDetailModal(m) {
 
 function renderHdAwardsEdit() {
   const players = getSquad(hdMatchRef.team);
+  const stripTeam = name => name ? name.replace(/^[^-]+ - /, '') : name;
   const draftStar = (hdDraftRows.find(r=>r.stat==='5. Star Player')||{}).player || null;
   const draftPasser = (hdDraftRows.find(r=>r.stat==='6. Best Passer')||{}).player || null;
 
   const awardRow = (label, player, type) => player
     ? `<div style="padding:8px 10px;background:var(--off-white);border-radius:8px;margin-bottom:5px;display:flex;align-items:center;gap:8px;">
-        <span style="flex:1;font-size:13px;"><span style="color:var(--gold);font-weight:600;">${label}</span>: ${player}</span>
+        <span style="flex:1;font-size:13px;"><span style="color:var(--gold);font-weight:600;">${label}</span>: ${stripTeam(player)}</span>
         <button onclick="hdClearAward('${type}')" style="background:none;border:none;color:var(--red);font-size:20px;cursor:pointer;padding:0 2px;line-height:1;flex-shrink:0;">×</button>
       </div>`
     : `<div style="margin-bottom:8px;">
-        <div class="modal-player-grid">${players.map(p =>
-          `<button class="modal-player-btn" onclick="hdSetAward('${type}','${p}')">${p}</button>`
-        ).join('')}</div>
+        <div class="modal-player-grid">
+          <button class="modal-player-btn no-assist" onclick="hdSetAward('${type}',null)" style="grid-column:span 3;font-size:12px;">None</button>
+          ${players.map(p =>
+            `<button class="modal-player-btn" onclick="hdSetAward('${type}','${p}')">${p}</button>`
+          ).join('')}
+        </div>
       </div>`;
 
   document.getElementById('hdStarGrid').innerHTML = awardRow('Star Player', draftStar, 'star');
@@ -3256,7 +3277,7 @@ function toggleHistoryEdit() {
     document.getElementById('hdEditNote').style.display = '';
     document.getElementById('hdEditAddBtns').style.display = 'flex';
     document.getElementById('hdSaveBtn').style.display = 'block';
-    document.getElementById('hdEditBtn').textContent = 'Cancel';
+    document.getElementById('hdEditBtn').textContent = 'Cancel edit';
   } else {
     renderHistoryDetailModal(m);
   }
@@ -3265,7 +3286,11 @@ function toggleHistoryEdit() {
 function hdSetAward(type, player) {
   const stat = type === 'star' ? '5. Star Player' : '6. Best Passer';
   hdDraftRows = hdDraftRows.filter(r => r.stat !== stat);
-  hdDraftRows.push({ player, stat, count: 1, quarter: '-' });
+  if (player) {
+    const team = hdMatchRef.team;
+    const storedPlayer = player.startsWith(team + ' - ') ? player : team + ' - ' + player;
+    hdDraftRows.push({ player: storedPlayer, stat, count: 1, quarter: '-' });
+  }
   renderHdAwardsEdit();
 }
 
