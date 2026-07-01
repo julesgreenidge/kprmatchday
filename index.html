@@ -861,12 +861,12 @@
 <div class="screen" id="screen-setup">
 
   <!-- Team indicator -->
-  <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:4px 0 14px;">
-    <div style="display:flex;align-items:center;gap:10px;">
-      <div id="setupTeamBadge" style="padding:6px 14px;border-radius:20px;font-size:14px;font-weight:700;color:white;background:var(--navy);">Blues</div>
-      <button id="changeTeamLink" onclick="openTeamChangeModal()" style="background:none;border:none;font-size:13px;color:var(--mid-grey);cursor:pointer;text-decoration:underline;padding:0;">Select team</button>
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:4px 0 14px;">
+    <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+      <div id="setupTeamBadge" style="padding:6px 14px;border-radius:20px;font-size:14px;font-weight:700;color:white;background:var(--navy);white-space:nowrap;line-height:1.4;">Blues</div>
+      <button id="changeTeamLink" onclick="openTeamChangeModal()" style="background:none;border:none;font-size:13px;color:var(--mid-grey);cursor:pointer;text-decoration:underline;padding:0;white-space:nowrap;line-height:1.4;">Select team</button>
     </div>
-    <button onclick="openSquadManager(state.team)" class="btn-secondary" style="font-size:13px;padding:6px 12px;white-space:nowrap;">Add or remove players</button>
+    <button onclick="openSquadManager(state.team)" style="background:transparent;border:2px solid var(--navy);border-radius:10px;font-size:12px;font-weight:700;color:var(--navy);cursor:pointer;padding:5px 10px;white-space:nowrap;line-height:1.4;">Add / remove players</button>
   </div>
 
   <div class="card">
@@ -1236,10 +1236,11 @@
 <div class="modal-overlay hidden" id="submitConfirmModal">
   <div class="modal">
     <div class="modal-handle"></div>
-    <div class="modal-title">Submit results?</div>
+    <div class="modal-title" id="submitConfirmTitle">Submit results?</div>
     <div class="modal-sub" id="submitConfirmSub"></div>
-    <button class="btn-primary" onclick="closeModal('submitConfirmModal');submitMatch();">Confirm</button>
-    <button class="btn-secondary" onclick="closeModal('submitConfirmModal')">Cancel</button>
+    <div id="submitConfirmErrors" style="display:none;margin:10px 0;"></div>
+    <button class="btn-primary" id="submitConfirmBtn" onclick="closeModal('submitConfirmModal');submitMatch();">Confirm</button>
+    <button class="btn-secondary" id="submitCancelBtn" onclick="closeModal('submitConfirmModal')">Cancel</button>
   </div>
 </div>
 
@@ -1282,7 +1283,7 @@
 
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyRiGa5jg1roJh3drjIvHv96axQiX_bTDnGiGAeeGFsxb94_G1xA1z6GFkk5n0eZ97B5g/exec";
-const APP_VERSION = "2026-07-01-01"; // bumped automatically on every update
+const APP_VERSION = "2026-07-01-06"; // bumped automatically on every update
 const AGE = "U11";
 
 const DEFAULT_SQUADS = {
@@ -1815,42 +1816,41 @@ function goToSetup() {
 }
 
 function endMatch() {
-  // Hard block: a quarter cannot have both an opposition goal and a clean sheet —
-  // a clean sheet means zero goals conceded that quarter, so these are contradictory.
   const conflicting = [1,2,3,4].filter(q => {
     const hasOppo = state.events.some(e => e.quarter === q && e.type === 'oppo');
     const hasCS = state.events.some(e => e.quarter === q && e.type === 'cs');
     return hasOppo && hasCS;
   });
 
-  if (conflicting.length > 0) {
-    const qList = conflicting.map(q => 'Q' + q).join(', ');
-    document.getElementById('endMatchWarningTitle').textContent = 'Conflicting data';
-    document.getElementById('endMatchWarningSub').textContent =
-      `${qList} has both an opposition goal and a clean sheet — these can't both be true. Please fix before continuing.`;
-    document.getElementById('endMatchWarningContinueBtn').style.display = 'none';
-    openModal('endMatchWarningModal');
-    return;
-  }
-
-  // Soft warning: quarters with neither an opposition goal nor a clean sheet recorded
   const missingCS = [1,2,3,4].filter(q => {
     const hasOppo = state.events.some(e => e.quarter === q && e.type === 'oppo');
     const hasCS = state.events.some(e => e.quarter === q && e.type === 'cs');
     return !hasOppo && !hasCS;
   });
 
-  if (missingCS.length > 0) {
-    const qList = missingCS.map(q => 'Q' + q).join(', ');
-    document.getElementById('endMatchWarningTitle').textContent = 'Check quarters';
-    document.getElementById('endMatchWarningSub').textContent =
-      `${qList} has no opposition goal or clean sheet recorded. Was it a clean sheet?`;
-    document.getElementById('endMatchWarningContinueBtn').style.display = 'block';
-    openModal('endMatchWarningModal');
+  if (conflicting.length === 0 && missingCS.length === 0) {
+    proceedToEndMatch();
     return;
   }
 
-  proceedToEndMatch();
+  const triangle = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;flex-shrink:0;margin-right:6px;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
+
+  let messages = [];
+  if (conflicting.length > 0) {
+    const qList = conflicting.map(q => 'Q' + q).join(', ');
+    messages.push(`<div style="display:flex;align-items:flex-start;margin-bottom:${missingCS.length?'10px':'0'};color:var(--navy);">${triangle}<span>${qList} has both an opposition goal and a clean sheet - remove one before continuing.</span></div>`);
+  }
+  if (missingCS.length > 0) {
+    const qList = missingCS.map(q => 'Q' + q).join(', ');
+    messages.push(`<div style="display:flex;align-items:flex-start;color:var(--navy);">${triangle}<span>${qList} has no opposition goal or clean sheet - add one before ending the match.</span></div>`);
+  }
+
+  const title = conflicting.length > 0 ? 'Conflicting data' : 'Check quarters';
+  document.getElementById('endMatchWarningTitle').textContent = title;
+  document.getElementById('endMatchWarningSub').innerHTML = messages.join('');
+  document.getElementById('endMatchWarningContinueBtn').style.display = 'block';
+
+  openModal('endMatchWarningModal');
 }
 
 function proceedToEndMatch() {
@@ -2015,13 +2015,73 @@ function buildRows() {
 }
 
 // ── SUBMIT ──
+function goFixSetup() { closeModal('submitConfirmModal'); goToSetup(); }
+function goFixMatchDay() { closeModal('submitConfirmModal'); showScreen('screen-match'); document.getElementById('headerTitle').textContent = 'KPR ' + state.team + ' · Match Day'; setHeaderBack(true, goToSetup); }
+function goFixSummary() { closeModal('submitConfirmModal'); /* already on summary */ }
+
 function confirmSubmit() {
-  if (!state.opponent) { showToast('Enter an opponent before submitting'); return; }
   const gf = state.events.filter(e=>e.type==='goal').length;
   const ga = state.events.filter(e=>e.type==='oppo').length;
   const opp = state.opponent || 'Opposition';
   const scoreStr = state.venue === 'Home' ? `KPR ${state.team} ${gf}–${ga} ${opp}` : `${opp} ${ga}–${gf} KPR ${state.team}`;
   document.getElementById('submitConfirmSub').textContent = scoreStr + ' · ' + formatDate(state.matchDate);
+
+  const triangle = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;flex-shrink:0;margin-right:6px;margin-top:1px;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
+
+  // Each error: { message, fixFn }
+  const errors = [];
+
+  if (!state.opponent) {
+    errors.push({ msg: 'No opponent entered.', fix: 'goFixSetup()' });
+  }
+
+  const conflicting = [1,2,3,4].filter(q =>
+    state.events.some(e=>e.quarter===q&&e.type==='oppo') &&
+    state.events.some(e=>e.quarter===q&&e.type==='cs')
+  );
+  if (conflicting.length > 0) {
+    const qList = conflicting.map(q=>'Q'+q).join(', ');
+    errors.push({ msg: `${qList} has both an opposition goal and a clean sheet.`, fix: 'goFixMatchDay()' });
+  }
+
+  const missingCS = [1,2,3,4].filter(q =>
+    !state.events.some(e=>e.quarter===q&&e.type==='oppo') &&
+    !state.events.some(e=>e.quarter===q&&e.type==='cs')
+  );
+  if (missingCS.length > 0) {
+    const qList = missingCS.map(q=>'Q'+q).join(', ');
+    errors.push({ msg: `${qList} has no opposition goal or clean sheet.`, fix: 'goFixMatchDay()' });
+  }
+
+  if (!state.starPlayer) errors.push({ msg: 'No Star Player selected.', fix: 'goFixSummary()' });
+  if (!state.bestPasser) errors.push({ msg: 'No Over-achiever selected.', fix: 'goFixSummary()' });
+
+  const errorsEl = document.getElementById('submitConfirmErrors');
+  const confirmBtn = document.getElementById('submitConfirmBtn');
+
+  if (errors.length > 0) {
+    document.getElementById('submitConfirmTitle').textContent = 'Submit with errors?';
+    errorsEl.style.display = 'block';
+    errorsEl.innerHTML = errors.map(e =>
+      `<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;color:var(--navy);padding:10px 0;border-bottom:1px solid var(--light-grey);">
+        <div style="display:flex;align-items:flex-start;gap:8px;flex:1;font-size:13px;">${triangle}<span>${e.msg}</span></div>
+        <button onclick="${e.fix}" style="background:var(--navy);border:none;color:white;font-size:12px;font-weight:700;cursor:pointer;padding:6px 12px;border-radius:7px;white-space:nowrap;flex-shrink:0;">Fix</button>
+      </div>`
+    ).join('');
+    confirmBtn.textContent = 'Submit with errors';
+    confirmBtn.style.background = 'var(--red)';
+    confirmBtn.style.borderColor = 'var(--red)';
+    document.getElementById('submitCancelBtn').textContent = 'Cancel';
+  } else {
+    document.getElementById('submitConfirmTitle').textContent = 'Submit results?';
+    errorsEl.style.display = 'none';
+    errorsEl.innerHTML = '';
+    confirmBtn.textContent = 'Confirm';
+    confirmBtn.style.background = '';
+    confirmBtn.style.borderColor = '';
+    document.getElementById('submitCancelBtn').textContent = 'Cancel';
+  }
+
   openModal('submitConfirmModal');
 }
 
