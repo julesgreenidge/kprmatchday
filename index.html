@@ -1206,9 +1206,12 @@
       <button class="qevent-btn oppo" style="flex:1;" onclick="hdAddEvent('oppo')">Add Opp Goal</button>
       <button class="qevent-btn cs" style="flex:1;" onclick="hdAddEvent('cs')">Add Clean Sheet</button>
     </div>
-    <div style="display:flex;gap:8px;margin-top:16px;">
-      <button id="hdEditBtn" class="btn-secondary" style="flex:1;" onclick="toggleHistoryEdit()">Edit</button>
-      <button id="hdDeleteBtn" class="btn-danger" style="flex:1;" onclick="deleteHistoryMatch()">Delete</button>
+    <div id="hdActionArea" style="margin-top:16px;">
+      <div style="display:flex;gap:8px;">
+        <button id="hdEditBtn" class="btn-secondary" style="flex:1;" onclick="toggleHistoryEdit()">Edit</button>
+        <button id="hdDeleteBtn" class="btn-danger" style="flex:1;" onclick="deleteHistoryMatch()">Delete</button>
+      </div>
+      <div id="hdLockedMsg" style="display:none;font-size:13px;color:var(--mid-grey);text-align:center;padding:10px 0;">Results for prior seasons cannot be edited or deleted</div>
     </div>
     <button id="hdSaveBtn" class="btn-primary" style="width:100%;margin-top:8px;display:none;" onclick="saveHistoryEdit()">Save changes</button>
     <button class="btn-secondary" style="margin-top:8px;width:100%;" onclick="closeHistoryDetail()">Close</button>
@@ -1291,7 +1294,7 @@
 
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyRiGa5jg1roJh3drjIvHv96axQiX_bTDnGiGAeeGFsxb94_G1xA1z6GFkk5n0eZ97B5g/exec";
-const APP_VERSION = "2026-07-01-08"; // bumped automatically on every update
+const APP_VERSION = "2026-07-01-09"; // bumped automatically on every update
 const AGE = "U11";
 
 const DEFAULT_SQUADS = {
@@ -3141,10 +3144,16 @@ function renderHistoryDetailModal(m) {
   document.getElementById('hdEditAddBtns').style.display = 'none';
   document.getElementById('hdSaveBtn').style.display = 'none';
   const editBtn = document.getElementById('hdEditBtn');
-  editBtn.textContent = 'Edit';
+  const deleteBtn = document.getElementById('hdDeleteBtn');
+  const lockedMsg = document.getElementById('hdLockedMsg');
+  const isLocked = m.age === 'U9' || m.age === 'U10';
+
+  editBtn.style.display = isLocked ? 'none' : '';
   editBtn.disabled = false;
+  editBtn.textContent = 'Edit';
   editBtn.style.opacity = '';
-  document.getElementById('hdDeleteBtn').style.display = '';
+  deleteBtn.style.display = isLocked ? 'none' : '';
+  lockedMsg.style.display = isLocked ? 'block' : 'none';
 }
 
 function renderHdAwardsEdit() {
@@ -3175,16 +3184,6 @@ function hdClearAward(type) {
 
 function toggleHistoryEdit() {
   const m = hdMatchRef;
-
-  // Prior seasons (U9/U10) are locked — no edits or deletes
-  if (!hdEditMode && (m.age === 'U9' || m.age === 'U10')) {
-    const btn = document.getElementById('hdEditBtn');
-    btn.textContent = 'Results for prior seasons cannot be edited or deleted';
-    btn.disabled = true;
-    btn.style.opacity = '0.5';
-    document.getElementById('hdDeleteBtn').style.display = 'none';
-    return;
-  }
   hdEditMode = !hdEditMode;
 
   if (hdEditMode) {
