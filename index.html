@@ -227,7 +227,11 @@
     color: var(--text);
     appearance: none;
     -webkit-appearance: none;
+    box-sizing: border-box;
+    height: 46px;
   }
+  input[type="date"]:not([value=""]):not(:focus) { color: var(--text); }
+  input[type="date"]:invalid, input[type="date"][value=""] { color: var(--mid-grey); }
   .field input:focus, .field select:focus {
     outline: none;
     border-color: var(--navy);
@@ -874,7 +878,7 @@
     <div class="card-title">Match details</div>
     <div class="field">
       <label>Date</label>
-      <input type="date" id="matchDate" onchange="state.matchDate=this.value;this.blur()" placeholder="Select date" style="width:100%;">
+      <input type="date" id="matchDate" onchange="state.matchDate=this.value" style="width:100%;color-scheme:light;">
     </div>
     <div class="field" style="position:relative;">
       <label>Opponent</label>
@@ -1310,7 +1314,7 @@
 
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyRiGa5jg1roJh3drjIvHv96axQiX_bTDnGiGAeeGFsxb94_G1xA1z6GFkk5n0eZ97B5g/exec";
-const APP_VERSION = "2026-07-01-23"; // bumped automatically on every update
+const APP_VERSION = "2026-07-01-24"; // bumped automatically on every update
 const AGE = "U11";
 
 const DEFAULT_SQUADS = {
@@ -2401,7 +2405,7 @@ function newMatch() {
 
   const team = state.team; // preserve team
   const league = state.league;
-  state = { team, league, matchDate: '', opponent: '', venue: 'Home', selectedPlayers: [], currentQ: 1, events: [], starPlayer: null, bestPasser: null, _matchStarted: false, _matchEnded: false };
+  state = { team, league, matchDate: '', opponent: '', venue: 'Home', selectedPlayers: [], currentQ: 1, events: [], starPlayer: null, bestPasser: null, _matchStarted: true, _matchEnded: false };
 
   const submitBtn = document.getElementById('submitBtn');
   if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Submit results'; }
@@ -2883,7 +2887,7 @@ function renderOpponentsTab(data) {
     .sort((a,b) => b.played - a.played || b.ppgNum - a.ppgNum);
 
   const td = (val, opts={}) =>
-    `<td style="padding:8px ${opts.last?'8px':'4px'} 8px ${opts.first?'10px':'4px'};border-bottom:0.5px solid var(--light-grey);text-align:${opts.left?'left':'right'};vertical-align:middle;height:44px;${opts.col?'color:'+opts.col+';font-weight:600;':''}">${val}</td>`;
+    `<td style="padding:8px ${opts.last?'8px':'4px'} 8px ${opts.first?'10px':'4px'};border-bottom:0.5px solid var(--light-grey);text-align:${opts.left?'left':'right'};vertical-align:${opts.first?'top':'top'};height:44px;${opts.col?'color:'+opts.col+';font-weight:600;':''}">${val}</td>`;
 
   const trs = rows.map(o => {
     const gdStr = (o.gd > 0 ? '+' : '') + o.gd;
@@ -3545,6 +3549,9 @@ if (lastTeam && ['Blues','Reds','Royals','Stripes'].includes(lastTeam)) {
   document.getElementById('changeTeamLink').textContent = 'Change team';
   showScreen('screen-setup');
   document.getElementById('matchDate').value = '';
+  // Show New match button since manager has used the app before
+  const snb = document.getElementById('setupNewMatchBtn');
+  if (snb) snb.style.display = 'block';
 } else {
   showScreen('screen-setup');
   openTeamChangeModal();
