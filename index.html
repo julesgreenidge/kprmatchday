@@ -896,7 +896,6 @@
   </div>
 
   <button class="btn-primary" onclick="startMatch()" id="startMatchBtn">Start match</button>
-  <button class="btn-secondary" id="setupNewMatchBtn" onclick="confirmNewMatchFromSetup()" style="display:none;margin-top:8px;">New match</button>
 </div>
 
 <!-- ③ MATCH DAY -->
@@ -1314,7 +1313,7 @@
 
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyRiGa5jg1roJh3drjIvHv96axQiX_bTDnGiGAeeGFsxb94_G1xA1z6GFkk5n0eZ97B5g/exec";
-const APP_VERSION = "2026-07-01-24"; // bumped automatically on every update
+const APP_VERSION = "2026-07-01-26"; // bumped automatically on every update
 const AGE = "U11";
 
 const DEFAULT_SQUADS = {
@@ -1577,8 +1576,6 @@ function startMatch() {
   }
   state._matchStarted = true;
   // Show "New match" button on setup for next time manager returns
-  const setupNewBtn = document.getElementById('setupNewMatchBtn');
-  if (setupNewBtn) setupNewBtn.style.display = 'block';
 
   // Score bar: home = KPR left, away = KPR right
   updateScoreBarLayout();
@@ -1843,7 +1840,7 @@ function goToSetup() {
   document.getElementById('headerTitle').textContent = 'Match Day';
   setHeaderBack(false);
   // Restore current match details in the form
-  if (state.matchDate) document.getElementById('matchDate').value = state.matchDate;
+  document.getElementById('matchDate').value = state.matchDate || new Date().toISOString().split('T')[0];
   if (state.opponent) document.getElementById('matchOpponent').value = state.opponent;
   setVenue(state.venue || 'Home');
 }
@@ -2390,11 +2387,6 @@ function doReset() {
   renderAllQuarters();
 }
 
-function confirmNewMatchFromSetup() {
-  if (!confirm('Start a new match? This will clear all current match data.')) return;
-  newMatch();
-}
-
 function confirmNewMatchFromSummary() {
   if (!confirm('Start a new match? This will clear all current match data.')) return;
   newMatch();
@@ -2418,7 +2410,9 @@ function newMatch() {
   setHeaderBack(false);
 
   // Reset form fields
-  document.getElementById('matchDate').value = '';
+  const _today = new Date().toISOString().split('T')[0];
+  state.matchDate = _today;
+  document.getElementById('matchDate').value = _today;
   document.getElementById('matchOpponent').value = '';
   setVenue('Home');
 }
@@ -3548,10 +3542,8 @@ if (lastTeam && ['Blues','Reds','Royals','Stripes'].includes(lastTeam)) {
   document.getElementById('scoreLeftLabel').textContent = 'KPR ' + lastTeam;
   document.getElementById('changeTeamLink').textContent = 'Change team';
   showScreen('screen-setup');
-  document.getElementById('matchDate').value = '';
-  // Show New match button since manager has used the app before
-  const snb = document.getElementById('setupNewMatchBtn');
-  if (snb) snb.style.display = 'block';
+  document.getElementById('matchDate').value = new Date().toISOString().split('T')[0];
+  state.matchDate = new Date().toISOString().split('T')[0];
 } else {
   showScreen('screen-setup');
   openTeamChangeModal();
