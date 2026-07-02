@@ -202,7 +202,7 @@
   .team-tile.blues { background: #2196F3; }
   .team-tile.reds { background: #cc1818; }
   .team-tile.royals { background: #1a3a8f; }
-  .team-tile.stripes { background: repeating-linear-gradient(90deg, #cc1818 0px, #cc1818 20%, #1a3a8f 20%, #1a3a8f 40%, #cc1818 40%, #cc1818 60%, #1a3a8f 60%, #1a3a8f 80%, #cc1818 80%, #cc1818 100%); }
+  .team-tile.stripes { background: repeating-linear-gradient(90deg, #1a3a8f 0px, #1a3a8f 20%, #cc1818 20%, #cc1818 40%, #1a3a8f 40%, #1a3a8f 60%, #cc1818 60%, #cc1818 80%, #1a3a8f 80%, #1a3a8f 100%); }
   .team-tile .team-name { font-size: 18px; margin-bottom: 2px; }
   .team-tile .team-sub { font-size: 11px; opacity: 0.75; font-weight: 500; }
 
@@ -791,7 +791,7 @@
   .team-pill.Blues   { background: #2196F3; }
   .team-pill.Reds    { background: #cc1818; }
   .team-pill.Royals  { background: #1a3a8f; }
-  .team-pill.Stripes { background: linear-gradient(90deg, #cc1818 50%, #1a3a8f 50%); }
+  .team-pill.Stripes { background: linear-gradient(90deg, #1a3a8f 50%, #cc1818 50%); }
 
   /* ── MANAGE SQUAD INLINE BTN ── */
   .squad-mgr-btn {
@@ -866,14 +866,14 @@
       <div id="setupTeamBadge" style="padding:6px 14px;border-radius:20px;font-size:14px;font-weight:700;color:white;background:var(--navy);white-space:nowrap;line-height:1.4;">Blues</div>
       <button id="changeTeamLink" onclick="openTeamChangeModal()" style="background:none;border:none;font-size:13px;color:var(--mid-grey);cursor:pointer;text-decoration:underline;padding:0;white-space:nowrap;line-height:1.4;">Select team</button>
     </div>
-    <button onclick="openSquadManager(state.team)" style="background:transparent;border:2px solid var(--navy);border-radius:10px;font-size:12px;font-weight:700;color:var(--navy);cursor:pointer;padding:5px 10px;white-space:nowrap;line-height:1.4;">Add / remove players</button>
+    <button onclick="openSquadManager(state.team)" style="background:none;border:none;font-size:12px;color:var(--mid-grey);cursor:pointer;padding:0;text-decoration:underline;line-height:1.4;">Manage players</button>
   </div>
 
   <div class="card">
     <div class="card-title">Match details</div>
     <div class="field">
       <label>Date</label>
-      <input type="date" id="matchDate">
+      <input type="date" id="matchDate" onchange="state.matchDate=this.value">
     </div>
     <div class="field" style="position:relative;">
       <label>Opponent</label>
@@ -891,6 +891,7 @@
   </div>
 
   <button class="btn-primary" onclick="startMatch()" id="startMatchBtn">Start match</button>
+  <button class="btn-secondary" id="setupNewMatchBtn" onclick="confirmNewMatchFromSetup()" style="display:none;margin-top:8px;">New match</button>
 </div>
 
 <!-- ③ MATCH DAY -->
@@ -1021,7 +1022,7 @@
 
   <button class="btn-primary" id="submitBtn" onclick="confirmSubmit()">Submit results</button>
   <button class="btn-secondary" id="whatsappBtn" onclick="shareWhatsApp()" style="background:#25D366;color:white;border-color:#25D366;margin-top:8px;">WhatsApp Summary <svg width="16" height="16" viewBox="0 0 24 24" fill="white" style="vertical-align:middle;margin-left:4px;"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.123.555 4.116 1.523 5.845L.057 23.428a.75.75 0 0 0 .915.915l5.638-1.481A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.75a9.703 9.703 0 0 1-4.953-1.355l-.355-.211-3.683.967.983-3.595-.231-.369A9.712 9.712 0 0 1 2.25 12C2.25 6.615 6.615 2.25 12 2.25S21.75 6.615 21.75 12 17.385 21.75 12 21.75z"/></svg></button>
-  <button class="btn-danger" onclick="newMatch()" style="margin-top:8px;">New match</button>
+  <button class="btn-danger" onclick="confirmNewMatchFromSummary()" style="margin-top:8px;">New match</button>
 </div>
 
 <!-- BOTTOM NAV -->
@@ -1054,9 +1055,9 @@
       </select>
       <select id="historyFilterAge" onchange="renderHistoryList()" style="flex:1;padding:8px 10px;border:1.5px solid var(--light-grey);border-radius:8px;font-size:13px;background:white;">
         <option value="">All seasons</option>
-        <option value="U9">U9</option>
-        <option value="U10">U10</option>
         <option value="U11">U11</option>
+        <option value="U10">U10</option>
+        <option value="U9">U9</option>
       </select>
     </div>
     <div id="historyList"></div>
@@ -1087,9 +1088,9 @@
         </select>
         <select id="statsFilterAge" onchange="renderStats()" style="flex:1;padding:7px 8px;border:1.5px solid var(--light-grey);border-radius:8px;font-size:13px;background:white;">
           <option value="">All seasons</option>
-          <option value="U9">U9</option>
-          <option value="U10" selected>U10</option>
           <option value="U11">U11</option>
+          <option value="U10" selected>U10</option>
+          <option value="U9">U9</option>
         </select>
         <button onclick="sheetDataLoaded=false;sheetDataLoading=false;localStorage.removeItem('kprSheetData');loadSheetData(true);" title="Refresh" style="background:none;border:1.5px solid var(--light-grey);border-radius:8px;padding:7px 10px;cursor:pointer;color:var(--mid-grey);display:flex;align-items:center;flex-shrink:0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button>
       </div>
@@ -1186,6 +1187,13 @@
         <div style="font-size:12px;color:var(--mid-grey);margin-top:2px;" id="hdDate"></div>
       </div>
       <div id="hdResult" style="margin-left:8px;"></div>
+    </div>
+    <!-- Edit mode: date and opponent fields -->
+    <div id="hdEditMatchDetails" style="display:none;margin-bottom:12px;">
+      <div style="font-size:12px;font-weight:700;color:var(--mid-grey);margin-bottom:4px;">Date</div>
+      <input type="date" id="hdEditDate" style="width:100%;padding:8px 10px;border:1.5px solid var(--light-grey);border-radius:8px;font-size:13px;background:white;margin-bottom:8px;">
+      <div style="font-size:12px;font-weight:700;color:var(--mid-grey);margin-bottom:4px;">Opponent</div>
+      <input type="text" id="hdEditOpponent" autocomplete="off" autocapitalize="words" style="width:100%;padding:8px 10px;border:1.5px solid var(--light-grey);border-radius:8px;font-size:13px;background:white;">
     </div>
     <div style="border-top:1px solid var(--light-grey);margin:12px 0;"></div>
     <div id="hdQuarters"></div>
@@ -1301,7 +1309,7 @@
 
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyRiGa5jg1roJh3drjIvHv96axQiX_bTDnGiGAeeGFsxb94_G1xA1z6GFkk5n0eZ97B5g/exec";
-const APP_VERSION = "2026-07-01-18"; // bumped automatically on every update
+const APP_VERSION = "2026-07-01-20"; // bumped automatically on every update
 const AGE = "U11";
 
 const DEFAULT_SQUADS = {
@@ -1318,7 +1326,7 @@ const TEAM_COLOURS = {
   Blues: '#2196F3', Reds: '#cc1818', Royals: '#1a3a8f', Stripes: '#1565C0'
 };
 function getTeamBackground(team) {
-  if (team === 'Stripes') return 'linear-gradient(90deg, #cc1818 50%, #1a3a8f 50%)';
+  if (team === 'Stripes') return 'linear-gradient(90deg, #1a3a8f 50%, #cc1818 50%)';
   return TEAM_COLOURS[team] || 'var(--navy)';
 }
 const TEAM_TAG_COLOURS_MAP = {
@@ -1520,8 +1528,7 @@ function selectTeam(team) {
   const changeLink = document.getElementById('changeTeamLink');
   if (changeLink) changeLink.textContent = 'Change team';
 
-  const today = new Date().toISOString().split('T')[0];
-  document.getElementById('matchDate').value = today;
+  document.getElementById('matchDate').value = '';
 
   showScreen('screen-setup');
   document.getElementById('headerTitle').textContent = 'Match Day';
@@ -1564,6 +1571,9 @@ function startMatch() {
     state.bestPasser = null;
   }
   state._matchStarted = true;
+  // Show "New match" button on setup for next time manager returns
+  const setupNewBtn = document.getElementById('setupNewMatchBtn');
+  if (setupNewBtn) setupNewBtn.style.display = 'block';
 
   // Score bar: home = KPR left, away = KPR right
   updateScoreBarLayout();
@@ -1671,9 +1681,9 @@ function openGoalModal() {
   document.getElementById('goalStep2').style.display = 'none';
 
   const grid = document.getElementById('goalScorerGrid');
-  const players = [...state.selectedPlayers, 'OG'];
+  const players = [...state.selectedPlayers, 'Own Goal'];
   grid.innerHTML = players.map(p =>
-    `<button class="modal-player-btn" onclick="selectScorer('${p}')">${p}</button>`
+    `<button class="modal-player-btn${p === 'Own Goal' ? '" style="background:var(--off-white);color:var(--mid-grey);border-color:var(--light-grey);' : '"'} onclick="selectScorer('${p}')">${p}</button>`
   ).join('');
 
   openModal('goalModal');
@@ -1906,7 +1916,7 @@ function proceedToEndMatch() {
   let ogGoals = 0;
   state.events.forEach(e => {
     if (e.type === 'goal') {
-      if (e.scorer === 'OG') ogGoals++;
+      if (e.scorer === 'Own Goal') ogGoals++;
       else if (stats[e.scorer]) stats[e.scorer].goals++;
       if (e.assister && stats[e.assister]) stats[e.assister].assists++;
     } else if (e.type === 'cs') {
@@ -1925,7 +1935,7 @@ function proceedToEndMatch() {
   const scorers = Object.entries(stats).filter(([,s]) => s.goals > 0).sort((a,b) => b[1].goals - a[1].goals);
   if (scorers.length > 0 || ogGoals > 0) {
     let html = scorers.map(([n,s]) => statRow(n, s.goals, 'var(--navy)')).join('');
-    if (ogGoals > 0) html += statRow('OG', ogGoals, 'var(--navy)');
+    if (ogGoals > 0) html += statRow('Own Goal', ogGoals, 'var(--navy)');
     document.getElementById('summaryGoalsList').innerHTML = html;
     document.getElementById('summaryGoalsCard').style.display = '';
   } else { document.getElementById('summaryGoalsCard').style.display = 'none'; }
@@ -1995,7 +2005,7 @@ function buildRows() {
 
   // Goals
   state.events.filter(e => e.type === 'goal').forEach(e => {
-    const playerName = e.scorer === 'OG' ? state.team + ' - Oppo' : state.team + ' - ' + e.scorer;
+    const playerName = e.scorer === 'Own Goal' ? state.team + ' - Oppo' : state.team + ' - ' + e.scorer;
     rows.push({ ...base, Player: playerName, Stat: '1. Goal', Quarter: 'Q' + e.quarter, Count: 1 });
     if (e.assister) {
       rows.push({ ...base, Player: state.team + ' - ' + e.assister, Stat: '2. Assist', Quarter: 'Q' + e.quarter, Count: 1 });
@@ -2177,7 +2187,7 @@ function buildWhatsAppText() {
   let ogGoals = 0;
   state.events.forEach(e => {
     if (e.type === 'goal') {
-      if (e.scorer === 'OG') ogGoals++;
+      if (e.scorer === 'Own Goal') ogGoals++;
       else if (stats[e.scorer]) stats[e.scorer].goals++;
       if (e.assister && stats[e.assister]) stats[e.assister].assists++;
     } else if (e.type === 'cs') {
@@ -2192,7 +2202,7 @@ function buildWhatsAppText() {
   const scorers = sortedBy('goals');
   if (scorers.length > 0 || ogGoals > 0) {
     scorers.forEach(([n,s]) => { msg += `• ${n} x ${s.goals}\n`; });
-    if (ogGoals > 0) msg += `• OG x ${ogGoals}\n`;
+    if (ogGoals > 0) msg += `• Own Goal x ${ogGoals}\n`;
   } else { msg += '• NA\n'; }
   msg += '\n';
 
@@ -2232,13 +2242,17 @@ function setWaBtnCopied(btn) {
 
 function shareWhatsApp() {
   const text = buildWhatsAppText();
-  const btn = document.getElementById('whatsappBtn');
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(text).then(() => {
-      setWaBtnCopied(btn);
-    }).catch(() => fallbackCopy(text, btn));
-  } else {
-    fallbackCopy(text, btn);
+  // Try to open WhatsApp directly; fall back to clipboard copy
+  const waUrl = 'https://wa.me/?text=' + encodeURIComponent(text);
+  const win = window.open(waUrl, '_blank');
+  if (!win) {
+    // If popup blocked, fall back to clipboard
+    const btn = document.getElementById('whatsappBtn');
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(() => setWaBtnCopied(btn)).catch(() => fallbackCopy(text, btn));
+    } else {
+      fallbackCopy(text, btn);
+    }
   }
 }
 
@@ -2270,7 +2284,7 @@ function openEditModal(id) {
     title.textContent = '✏️ Edit Goal';
     sub.textContent = 'Q' + e.quarter + ' · Select new scorer';
     // Step 1: scorer
-    const players = [...state.selectedPlayers, 'OG'];
+    const players = [...state.selectedPlayers, 'Own Goal'];
     content.innerHTML = `
       <div class="modal-step" id="editStep1Label">Who scored?</div>
       <div class="modal-player-grid" id="editScorerGrid"></div>
@@ -2279,7 +2293,7 @@ function openEditModal(id) {
         <div class="modal-player-grid" id="editAssistGrid"></div>
       </div>`;
     document.getElementById('editScorerGrid').innerHTML = players.map(p =>
-      `<button class="modal-player-btn ${p === e.scorer ? 'selected-scorer' : ''}" onclick="editSelectScorer('${p}')">${p}</button>`
+      `<button class="modal-player-btn ${p === e.scorer ? 'selected-scorer' : ''}${p === 'Own Goal' ? '" style="background:var(--off-white);color:var(--mid-grey);border-color:var(--light-grey);' : '"'} onclick="editSelectScorer('${p}')">${p}</button>`
     ).join('');
   } else if (e.type === 'oppo') {
     title.textContent = '✏️ Opposition Goal';
@@ -2373,6 +2387,16 @@ function doReset() {
   state._matchStarted = true;
   closeModal('resetModal');
   renderAllQuarters();
+}
+
+function confirmNewMatchFromSetup() {
+  if (!confirm('Start a new match? This will clear all current match data.')) return;
+  newMatch();
+}
+
+function confirmNewMatchFromSummary() {
+  if (!confirm('Start a new match? This will clear all current match data.')) return;
+  newMatch();
 }
 
 function newMatch() {
@@ -3292,6 +3316,7 @@ function renderHistoryDetailModal(m) {
   document.getElementById('hdViewBtns').style.display = 'block';
   document.getElementById('hdCloseBtn').style.display = 'block';
   document.getElementById('hdEditBtns').style.display = 'none';
+  document.getElementById('hdEditMatchDetails').style.display = 'none';
   const editBtn = document.getElementById('hdEditBtn');
   const deleteBtn = document.getElementById('hdDeleteBtn');
   const lockedMsg = document.getElementById('hdLockedMsg');
@@ -3361,7 +3386,15 @@ function toggleHistoryEdit() {
     document.getElementById('hdViewBtns').style.display = 'none';
     document.getElementById('hdCloseBtn').style.display = 'none';
     document.getElementById('hdEditBtns').style.display = 'block';
+    // Show date/opponent edit fields
+    document.getElementById('hdEditMatchDetails').style.display = 'block';
+    const rawIso = m.rawDate instanceof Date ? m.rawDate.toISOString().split('T')[0]
+      : (typeof m.rawDate === 'string' && m.rawDate.includes('T') ? m.rawDate.split('T')[0]
+      : (m.date ? (() => { const [d,mo,y]=m.date.split(' '); const months={Jan:'01',Feb:'02',Mar:'03',Apr:'04',May:'05',Jun:'06',Jul:'07',Aug:'08',Sep:'09',Oct:'10',Nov:'11',Dec:'12'}; return `${y}-${months[mo]}-${d.padStart(2,'0')}`; })() : ''));
+    document.getElementById('hdEditDate').value = rawIso;
+    document.getElementById('hdEditOpponent').value = m.opponent || '';
   } else {
+    document.getElementById('hdEditMatchDetails').style.display = 'none';
     renderHistoryDetailModal(m);
   }
 }
@@ -3382,14 +3415,26 @@ async function saveHistoryEdit() {
   const btn = document.getElementById('hdSaveBtn');
   btn.disabled = true; btn.textContent = 'Saving...';
 
+  // Pick up any date/opponent edits
+  const editedDateRaw = document.getElementById('hdEditDate').value; // YYYY-MM-DD
+  const editedOpponent = document.getElementById('hdEditOpponent').value.trim() || m.opponent;
+  // Convert YYYY-MM-DD to display format "29 Jun 2026"
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  let displayDate = m.date;
+  if (editedDateRaw) {
+    const [y,mo,d] = editedDateRaw.split('-');
+    displayDate = `${parseInt(d)} ${months[parseInt(mo)-1]} ${y}`;
+  }
+  const matchDateForSheet = editedDateRaw || m.rawDate;
+
   // Recompute result/score from draft rows
   const goalsFor = hdDraftRows.filter(r=>r.stat==='1. Goal').reduce((s,r)=>s+r.count,0);
   const goalsAgainst = Math.abs(hdDraftRows.filter(r=>r.stat==='7. Concede').reduce((s,r)=>s+r.count,0));
   const result = goalsFor > goalsAgainst ? 'W' : goalsFor === goalsAgainst ? 'D' : 'L';
 
   const rows = hdDraftRows.map(r => ({
-    Date: m.date, Age: m.age, Team: m.team, League: m.league,
-    Opponent: m.opponent, Result: result, Venue: m.venue,
+    Date: displayDate, Age: m.age, Team: m.team, League: m.league,
+    Opponent: editedOpponent, Result: result, Venue: m.venue,
     Player: r.player, Stat: r.stat, Quarter: r.quarter, Count: r.count
   }));
 
@@ -3403,12 +3448,13 @@ async function saveHistoryEdit() {
     if (!data.success) throw new Error(data.error);
     showToast('Match updated');
 
-    // Patch the in-memory + cached data directly instead of re-fetching the whole sheet
-    const patched = parseSheetRows(rows)[0]; // rows only contains this one match
+    // Patch in-memory data
+    const patched = parseSheetRows(rows)[0];
     const idx = SHEET_DATA.findIndex(x => x.id === m.id);
     if (idx !== -1 && patched) SHEET_DATA[idx] = patched;
     localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data: SHEET_DATA }));
 
+    document.getElementById('hdEditMatchDetails').style.display = 'none';
     closeHistoryDetail();
     renderHistoryList();
   } catch (err) {
@@ -3499,8 +3545,7 @@ if (lastTeam && ['Blues','Reds','Royals','Stripes'].includes(lastTeam)) {
   document.getElementById('scoreLeftLabel').textContent = 'KPR ' + lastTeam;
   document.getElementById('changeTeamLink').textContent = 'Change team';
   showScreen('screen-setup');
-  const today = new Date().toISOString().split('T')[0];
-  document.getElementById('matchDate').value = today;
+  document.getElementById('matchDate').value = '';
 } else {
   showScreen('screen-setup');
   openTeamChangeModal();
