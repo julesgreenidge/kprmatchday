@@ -1077,20 +1077,20 @@
   <div style="padding-bottom:4px;">
     <!-- Filter bar -->
     <div class="card" id="statsFilters" style="margin-bottom:10px;padding:10px 12px;">
-      <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;">
-        <select id="statsFilterTeam" onchange="renderStats()" style="flex:1;padding:7px 8px;border:1.5px solid var(--light-grey);border-radius:8px;font-size:13px;background:white;">
+      <div id="mainFilterRow" style="display:flex;gap:8px;align-items:center;margin-bottom:6px;flex-wrap:nowrap;">
+        <select id="statsFilterTeam" onchange="renderStats()" style="flex:1;min-width:0;padding:7px 8px;border:1.5px solid var(--light-grey);border-radius:8px;font-size:13px;background:white;">
           <option value="">All teams</option>
           <option value="Blues">Blues</option>
           <option value="Reds">Reds</option>
           <option value="Royals">Royals</option>
           <option value="Stripes">Stripes</option>
         </select>
-        <select id="statsFilterVenue" onchange="renderStats()" style="flex:1;padding:7px 8px;border:1.5px solid var(--light-grey);border-radius:8px;font-size:13px;background:white;">
+        <select id="statsFilterVenue" onchange="renderStats()" style="flex:1;min-width:0;padding:7px 8px;border:1.5px solid var(--light-grey);border-radius:8px;font-size:13px;background:white;">
           <option value="">Venue</option>
           <option value="Home">Home</option>
           <option value="Away">Away</option>
         </select>
-        <select id="statsFilterAge" onchange="renderStats()" style="flex:1;padding:7px 8px;border:1.5px solid var(--light-grey);border-radius:8px;font-size:13px;background:white;">
+        <select id="statsFilterAge" onchange="renderStats()" style="flex:1;min-width:0;padding:7px 8px;border:1.5px solid var(--light-grey);border-radius:8px;font-size:13px;background:white;">
           <option value="">All seasons</option>
           <option value="U11">U11</option>
           <option value="U10" selected>U10</option>
@@ -1098,25 +1098,27 @@
         </select>
         <button onclick="sheetDataLoaded=false;sheetDataLoading=false;localStorage.removeItem('kprSheetData');loadSheetData(true);" title="Refresh" style="background:none;border:1.5px solid var(--light-grey);border-radius:8px;padding:7px 10px;cursor:pointer;color:var(--mid-grey);display:flex;align-items:center;flex-shrink:0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button>
       </div>
-      <select id="statsFilterOpponent" onchange="renderStats()" style="width:100%;padding:7px 8px;border:1.5px solid var(--light-grey);border-radius:8px;font-size:13px;background:white;" id="statsFilterOpponent">
-        <option value="">All opponents</option>
-      </select>
+      <div id="opponentFilterRow">
+        <select id="statsFilterOpponent" onchange="renderStats()" style="width:100%;padding:7px 8px;border:1.5px solid var(--light-grey);border-radius:8px;font-size:13px;background:white;">
+          <option value="">All opponents</option>
+        </select>
+      </div>
       <!-- Quarters-specific filters (shown only on Quarters tab) -->
-      <div id="quartersFilters" style="display:none;margin-top:6px;">
-        <div style="display:flex;gap:8px;">
-          <select id="qFilterTeam" onchange="renderStats()" style="flex:1;padding:7px 8px;border:1.5px solid var(--light-grey);border-radius:8px;font-size:13px;background:white;">
+      <div id="quartersFilters" style="display:none;">
+        <div style="display:flex;gap:8px;flex-wrap:nowrap;">
+          <select id="qFilterTeam" onchange="renderStats()" style="flex:1;min-width:0;padding:7px 8px;border:1.5px solid var(--light-grey);border-radius:8px;font-size:13px;background:white;">
             <option value="">All teams</option>
             <option value="Blues">Blues</option>
             <option value="Reds">Reds</option>
             <option value="Royals">Royals</option>
             <option value="Stripes">Stripes</option>
           </select>
-          <select id="qFilterVenue" onchange="renderStats()" style="flex:1;padding:7px 8px;border:1.5px solid var(--light-grey);border-radius:8px;font-size:13px;background:white;">
+          <select id="qFilterVenue" onchange="renderStats()" style="flex:1;min-width:0;padding:7px 8px;border:1.5px solid var(--light-grey);border-radius:8px;font-size:13px;background:white;">
             <option value="">All venues</option>
             <option value="Home">Home</option>
             <option value="Away">Away</option>
           </select>
-          <select id="qFilterAge" onchange="renderStats()" style="flex:1;padding:7px 8px;border:1.5px solid var(--light-grey);border-radius:8px;font-size:13px;background:white;">
+          <select id="qFilterAge" onchange="renderStats()" style="flex:1;min-width:0;padding:7px 8px;border:1.5px solid var(--light-grey);border-radius:8px;font-size:13px;background:white;">
             <option value="">All seasons</option>
             <option value="U11">U11</option>
             <option value="U10">U10</option>
@@ -1337,7 +1339,7 @@
 
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyRiGa5jg1roJh3drjIvHv96axQiX_bTDnGiGAeeGFsxb94_G1xA1z6GFkk5n0eZ97B5g/exec";
-const APP_VERSION = "2026-07-01-28"; // bumped automatically on every update
+const APP_VERSION = "2026-07-01-29"; // bumped automatically on every update
 const AGE = "U11";
 
 const DEFAULT_SQUADS = {
@@ -2587,13 +2589,13 @@ function switchStatTab(tab) {
     const map = {club:'Club',players:'Players',teams:'Teams',opponents:'Opponents',quarters:'Quarters'};
     b.classList.toggle('active', b.textContent === map[tab]);
   });
-  // On quarters tab: hide main filters, show quarters filters inside card
-  const mainRow = document.getElementById('statsFilters')?.querySelector('div');
-  const opponentRow = document.getElementById('statsFilterOpponent');
+  const isQ = tab === 'quarters';
+  const mainRow = document.getElementById('mainFilterRow');
+  const opponentRow = document.getElementById('opponentFilterRow');
   const qFilters = document.getElementById('quartersFilters');
-  if (mainRow) mainRow.style.display = tab === 'quarters' ? 'none' : '';
-  if (opponentRow) opponentRow.style.display = tab === 'quarters' ? 'none' : '';
-  if (qFilters) qFilters.style.display = tab === 'quarters' ? 'block' : 'none';
+  if (mainRow) mainRow.style.display = isQ ? 'none' : 'flex';
+  if (opponentRow) opponentRow.style.display = isQ ? 'none' : 'block';
+  if (qFilters) qFilters.style.display = isQ ? 'block' : 'none';
   renderStats();
 }
 
