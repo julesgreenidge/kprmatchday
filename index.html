@@ -1101,6 +1101,29 @@
       <select id="statsFilterOpponent" onchange="renderStats()" style="width:100%;padding:7px 8px;border:1.5px solid var(--light-grey);border-radius:8px;font-size:13px;background:white;" id="statsFilterOpponent">
         <option value="">All opponents</option>
       </select>
+      <!-- Quarters-specific filters (shown only on Quarters tab) -->
+      <div id="quartersFilters" style="display:none;margin-top:6px;">
+        <div style="display:flex;gap:8px;">
+          <select id="qFilterTeam" onchange="renderStats()" style="flex:1;padding:7px 8px;border:1.5px solid var(--light-grey);border-radius:8px;font-size:13px;background:white;">
+            <option value="">All teams</option>
+            <option value="Blues">Blues</option>
+            <option value="Reds">Reds</option>
+            <option value="Royals">Royals</option>
+            <option value="Stripes">Stripes</option>
+          </select>
+          <select id="qFilterVenue" onchange="renderStats()" style="flex:1;padding:7px 8px;border:1.5px solid var(--light-grey);border-radius:8px;font-size:13px;background:white;">
+            <option value="">All venues</option>
+            <option value="Home">Home</option>
+            <option value="Away">Away</option>
+          </select>
+          <select id="qFilterAge" onchange="renderStats()" style="flex:1;padding:7px 8px;border:1.5px solid var(--light-grey);border-radius:8px;font-size:13px;background:white;">
+            <option value="">All seasons</option>
+            <option value="U11">U11</option>
+            <option value="U10">U10</option>
+            <option value="U9">U9</option>
+          </select>
+        </div>
+      </div>
     </div>
 
     <!-- Stat tabs -->
@@ -1110,29 +1133,6 @@
       <button class="stat-tab" onclick="switchStatTab('teams')">Teams</button>
       <button class="stat-tab" onclick="switchStatTab('opponents')">Opponents</button>
       <button class="stat-tab" onclick="switchStatTab('quarters')">Quarters</button>
-    </div>
-
-    <div id="quartersFilters" style="display:none;gap:8px;margin-bottom:10px;">
-      <div style="display:flex;gap:8px;">
-        <select id="qFilterTeam" onchange="renderStats()" style="flex:1;padding:7px 8px;border:1.5px solid var(--light-grey);border-radius:8px;font-size:13px;background:white;">
-          <option value="">All teams</option>
-          <option value="Blues">Blues</option>
-          <option value="Reds">Reds</option>
-          <option value="Royals">Royals</option>
-          <option value="Stripes">Stripes</option>
-        </select>
-        <select id="qFilterVenue" onchange="renderStats()" style="flex:1;padding:7px 8px;border:1.5px solid var(--light-grey);border-radius:8px;font-size:13px;background:white;">
-          <option value="">All venues</option>
-          <option value="Home">Home</option>
-          <option value="Away">Away</option>
-        </select>
-        <select id="qFilterAge" onchange="renderStats()" style="flex:1;padding:7px 8px;border:1.5px solid var(--light-grey);border-radius:8px;font-size:13px;background:white;">
-          <option value="">All seasons</option>
-          <option value="U11">U11</option>
-          <option value="U10">U10</option>
-          <option value="U9">U9</option>
-        </select>
-      </div>
     </div>
 
     <div id="statsContent"></div>
@@ -1337,7 +1337,7 @@
 
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyRiGa5jg1roJh3drjIvHv96axQiX_bTDnGiGAeeGFsxb94_G1xA1z6GFkk5n0eZ97B5g/exec";
-const APP_VERSION = "2026-07-01-27"; // bumped automatically on every update
+const APP_VERSION = "2026-07-01-28"; // bumped automatically on every update
 const AGE = "U11";
 
 const DEFAULT_SQUADS = {
@@ -2587,10 +2587,12 @@ function switchStatTab(tab) {
     const map = {club:'Club',players:'Players',teams:'Teams',opponents:'Opponents',quarters:'Quarters'};
     b.classList.toggle('active', b.textContent === map[tab]);
   });
-  // Show quarters-specific filters only on quarters tab; hide main filters there
-  const mainFilters = document.getElementById('statsFilters');
+  // On quarters tab: hide main filters, show quarters filters inside card
+  const mainRow = document.getElementById('statsFilters')?.querySelector('div');
+  const opponentRow = document.getElementById('statsFilterOpponent');
   const qFilters = document.getElementById('quartersFilters');
-  if (mainFilters) mainFilters.style.display = tab === 'quarters' ? 'none' : '';
+  if (mainRow) mainRow.style.display = tab === 'quarters' ? 'none' : '';
+  if (opponentRow) opponentRow.style.display = tab === 'quarters' ? 'none' : '';
   if (qFilters) qFilters.style.display = tab === 'quarters' ? 'block' : 'none';
   renderStats();
 }
@@ -2901,14 +2903,12 @@ function renderTeamsTab(data) {
 }
 
 function renderQuartersTab(data) {
-  if (!data.length) return '<div style="color:var(--mid-grey);text-align:center;padding:40px 0;">No data — check filters</div>';
+  if (!data.length) return '<div style="color:var(--mid-grey);text-align:center;padding:40px 0;">No data - check filters</div>';
 
-  // Aggregate per-quarter stats from sheetRows
-  const qs = {1:{gf:0,ga:0,cs:0,total:0},2:{gf:0,ga:0,cs:0,total:0},3:{gf:0,ga:0,cs:0,total:0},4:{gf:0,ga:0,cs:0,total:0}};
+  const qs = {1:{gf:0,ga:0,cs:0,gfMatches:0,gaMatches:0},2:{gf:0,ga:0,cs:0,gfMatches:0,gaMatches:0},3:{gf:0,ga:0,cs:0,gfMatches:0,gaMatches:0},4:{gf:0,ga:0,cs:0,gfMatches:0,gaMatches:0}};
   const matchCount = data.length;
 
   data.forEach(m => {
-    // Track which quarters had what for this match
     const qData = {1:{gf:0,ga:0,hasCS:false},2:{gf:0,ga:0,hasCS:false},3:{gf:0,ga:0,hasCS:false},4:{gf:0,ga:0,hasCS:false}};
     (m.sheetRows||[]).forEach(r => {
       const q = parseInt((r.quarter||'').replace('Q',''));
@@ -2921,178 +2921,51 @@ function renderQuartersTab(data) {
       qs[q].gf += qData[q].gf;
       qs[q].ga += qData[q].ga;
       if (qData[q].hasCS) qs[q].cs++;
-      qs[q].total += 1;
+      if (qData[q].gf > 0) qs[q].gfMatches++;
+      if (qData[q].ga > 0) qs[q].gaMatches++;
     });
   });
 
-  // Totals
-  const totalGF = [1,2,3,4].reduce((s,q) => s + qs[q].gf, 0) || 1;
-  const totalGA = [1,2,3,4].reduce((s,q) => s + qs[q].ga, 0) || 1;
-  const totalCS = [1,2,3,4].reduce((s,q) => s + qs[q].cs, 0) || 1;
+  const labels = ['Q1','Q2','Q3','Q4'];
+  const navy = '#00295c';
+  const red = '#cc1818';
+  const gold = '#b8860b';
 
-  // Percentages
-  const gfPct = [1,2,3,4].map(q => Math.round(qs[q].gf / totalGF * 100));
-  const gaPct = [1,2,3,4].map(q => Math.round(qs[q].ga / totalGA * 100));
-  const csPct = [1,2,3,4].map(q => Math.round(qs[q].cs / matchCount * 100));
-
-  // Max for scaling
-  const maxGoalPct = Math.max(...gfPct, ...gaPct, 26);
-  const maxCSPct = Math.max(...csPct, 26);
-
-  const barH = 140;
-  const barBottom = 160;
-  const barTop = barBottom - barH;
-  const refY_goals = barBottom - (25 / maxGoalPct * barH);
-  const refY_cs = barBottom - (25 / maxCSPct * barH);
-
-  const barGroup = (i, scored, conceded, color1, color2, maxPct) => {
-    const x = 50 + i * 70;
-    const h1 = scored / maxPct * barH;
-    const h2 = conceded / maxPct * barH;
-    const q = i + 1;
-    return `
-      <rect x="${x}" y="${barBottom - h1}" width="22" height="${h1}" fill="${color1}" rx="2"/>
-      ${color2 ? `<rect x="${x+24}" y="${barBottom - h2}" width="22" height="${h2}" fill="${color2}" rx="2"/>` : ''}
-      <text x="${x + (color2 ? 23 : 11)}" y="${barBottom + 14}" text-anchor="middle" fill="var(--mid-grey)" font-size="12">Q${q}</text>
-    `;
-  };
-
-  const roseChart = (values, color, bgColor, cx, maxVal, label) => {
-    const cy = 180;
-    const maxR = 130;
-    // 25% ref circle
-    const refR = Math.round(25 / maxVal * maxR);
-    const petals = values.map((v, i) => {
-      const r = Math.round(v / maxVal * maxR);
-      if (r < 2) return '';
-      const angles = [[270,360],[0,90],[90,180],[180,270]]; // Q1 top-right, Q2 bottom-right, Q3 bottom-left, Q4 top-left
-      const [a1, a2] = angles[i];
-      const toXY = (deg, rr) => {
-        const rad = (deg - 90) * Math.PI / 180;
-        return [cx + rr * Math.cos(rad), cy + rr * Math.sin(rad)];
-      };
-      const steps = 30;
-      let d = `M${cx} ${cy} `;
-      const [sx, sy] = toXY(a1, r);
-      d += `L${sx.toFixed(1)} ${sy.toFixed(1)} `;
-      for (let s = 1; s <= steps; s++) {
-        const a = a1 + (a2 - a1) * s / steps;
-        const [px, py] = toXY(a, r);
-        d += `L${px.toFixed(1)} ${py.toFixed(1)} `;
-      }
-      d += 'Z';
-      return `<path d="${d}" fill="${color}" fill-opacity="0.85" stroke="white" stroke-width="1.5"/>`;
-    });
-
-    const bgPetals = [[270,360],[0,90],[90,180],[180,270]].map(([a1,a2]) => {
-      const toXY = (deg, rr) => {
-        const rad = (deg - 90) * Math.PI / 180;
-        return [cx + rr * Math.cos(rad), cy + rr * Math.sin(rad)];
-      };
-      const steps = 30;
-      let d = `M${cx} ${cy} `;
-      const [sx, sy] = toXY(a1, maxR);
-      d += `L${sx.toFixed(1)} ${sy.toFixed(1)} `;
-      for (let s = 1; s <= steps; s++) {
-        const a = a1 + (a2 - a1) * s / steps;
-        const [px, py] = toXY(a, maxR);
-        d += `L${px.toFixed(1)} ${py.toFixed(1)} `;
-      }
-      d += 'Z';
-      return `<path d="${d}" fill="${bgColor}" stroke="white" stroke-width="1.5"/>`;
-    }).join('');
-
-    const axisLines = [
-      `<line x1="${cx}" y1="${cy}" x2="${cx}" y2="${cy-maxR}" stroke="white" stroke-width="1.5"/>`,
-      `<line x1="${cx}" y1="${cy}" x2="${cx+maxR}" y2="${cy}" stroke="white" stroke-width="1.5"/>`,
-      `<line x1="${cx}" y1="${cy}" x2="${cx}" y2="${cy+maxR}" stroke="white" stroke-width="1.5"/>`,
-      `<line x1="${cx}" y1="${cy}" x2="${cx-maxR}" y2="${cy}" stroke="white" stroke-width="1.5"/>`,
-    ].join('');
-
-    const labels = [
-      `<text x="${cx+maxR+16}" y="${cy-maxR+10}" text-anchor="middle" fill="var(--text)" font-size="12" font-weight="600">Q1</text>`,
-      `<text x="${cx+maxR+16}" y="${cy+maxR-5}" text-anchor="middle" fill="var(--text)" font-size="12" font-weight="600">Q2</text>`,
-      `<text x="${cx-maxR-16}" y="${cy+maxR-5}" text-anchor="middle" fill="var(--text)" font-size="12" font-weight="600">Q3</text>`,
-      `<text x="${cx-maxR-16}" y="${cy-maxR+10}" text-anchor="middle" fill="var(--text)" font-size="12" font-weight="600">Q4</text>`,
-    ].join('');
-
-    // Value labels inside petals
-    const valuePcts = values.map(v => Math.round(v / (label === 'cs' ? matchCount : (label === 'gf' ? totalGF : totalGA)) * 100));
-    const midAngles = [315, 45, 135, 225];
-    const valueLabels = values.map((v, i) => {
-      const r = Math.round(v / maxVal * maxR);
-      if (r < 20) return '';
-      const rad = (midAngles[i] - 90) * Math.PI / 180;
-      const lx = (cx + r * 0.55 * Math.cos(rad)).toFixed(1);
-      const ly = (cy + r * 0.55 * Math.sin(rad)).toFixed(1);
-      return `<text x="${lx}" y="${ly}" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="11" font-weight="500">${valuePcts[i]}%</text>`;
-    }).join('');
-
-    return bgPetals + petals.join('') + axisLines + labels + valueLabels +
-      `<circle cx="${cx}" cy="${cy}" r="${refR}" fill="none" stroke="#888" stroke-width="1" stroke-dasharray="4 3"/>`;
-  };
-
-  const svgBar = (rows, refY, legend) => `
-    <svg width="100%" viewBox="0 0 340 185" style="display:block;">
-      <line x1="38" y1="${barTop - 10}" x2="38" y2="${barBottom}" stroke="var(--light-grey)" stroke-width="0.5"/>
-      <line x1="38" y1="${barBottom}" x2="320" y2="${barBottom}" stroke="var(--light-grey)" stroke-width="0.5"/>
-      <line x1="38" y1="${refY.toFixed(0)}" x2="320" y2="${refY.toFixed(0)}" stroke="#aaa" stroke-width="1" stroke-dasharray="4 3"/>
-      <text x="34" y="${(refY+3).toFixed(0)}" text-anchor="end" fill="var(--mid-grey)" font-size="10">25%</text>
-      ${rows}
-    </svg>`;
-
-  const card = (title, content) =>
-    `<div style="background:white;border-radius:12px;border:0.5px solid var(--light-grey);padding:14px;margin-bottom:12px;">
-      <div style="font-size:13px;font-weight:600;color:var(--navy);margin-bottom:10px;">${title}</div>
-      ${content}
+  // Horizontal bar metric — matches Teams tab styling exactly
+  const metric = (title, rows) => {
+    const maxVal = Math.max(...rows.map(r => r.v), 0.01);
+    return `<div class="card" style="margin-bottom:10px;">
+      <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:10px;">${title}</div>
+      ${rows.map(({label, v, colour, display}) => {
+        const pct = Math.round(v / maxVal * 100);
+        return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <span style="font-size:12px;font-weight:700;color:var(--dark-grey);width:28px;">${label}</span>
+          <div style="flex:1;background:var(--light-grey);border-radius:4px;height:20px;position:relative;">
+            <div style="width:${pct}%;height:100%;border-radius:4px;background:${colour};opacity:0.85;"></div>
+            <span style="position:absolute;left:8px;top:2px;font-size:11px;font-weight:800;color:white;line-height:16px;">${display}</span>
+          </div>
+        </div>`;
+      }).join('')}
     </div>`;
+  };
 
-  const legend = (items) => `<div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;">
-    ${items.map(([col,label]) => `<div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--mid-grey);">
-      <div style="width:10px;height:10px;background:${col};border-radius:2px;flex-shrink:0;"></div>${label}</div>`).join('')}
-    <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--mid-grey);">
-      <svg width="18" height="8"><line x1="0" y1="4" x2="18" y2="4" stroke="#aaa" stroke-width="1" stroke-dasharray="4 3"/></svg>25% even</div>
-  </div>`;
-
-  // Bar chart 1: Goals %
-  const goalsBarRows = [0,1,2,3].map(i =>
-    barGroup(i, gfPct[i], gaPct[i], '#00295c', '#cc1818', maxGoalPct)
-  ).join('');
-
-  // Bar chart 2: Clean sheets %
-  const csBarRows = [0,1,2,3].map(i =>
-    barGroup(i, csPct[i], 0, '#b8860b', null, maxCSPct)
-  ).join('');
-
-  const cx = 170;
-  const maxGFVal = Math.max(...[1,2,3,4].map(q=>qs[q].gf)) || 1;
-  const maxGAVal = Math.max(...[1,2,3,4].map(q=>qs[q].ga)) || 1;
-  const maxCSVal = Math.max(...[1,2,3,4].map(q=>qs[q].cs)) || 1;
-  const gfVals = [1,2,3,4].map(q => qs[q].gf);
-  const gaVals = [1,2,3,4].map(q => qs[q].ga);
-  const csVals = [1,2,3,4].map(q => qs[q].cs);
-
-  const roseSVG = (innerContent) =>
-    `<svg width="100%" viewBox="0 0 340 360" style="display:block;">${innerContent}</svg>`;
+  // Goals for: frequency %
+  const gfFreq = labels.map((l,i) => ({label:l, v: Math.round(qs[i+1].gfMatches/matchCount*100), colour:navy, display: Math.round(qs[i+1].gfMatches/matchCount*100)+'%'}));
+  // Goals for: avg per quarter
+  const gfAvg = labels.map((l,i) => ({label:l, v: qs[i+1].gf/matchCount, colour:navy, display: (qs[i+1].gf/matchCount).toFixed(1)}));
+  // Goals against: frequency %
+  const gaFreq = labels.map((l,i) => ({label:l, v: Math.round(qs[i+1].gaMatches/matchCount*100), colour:red, display: Math.round(qs[i+1].gaMatches/matchCount*100)+'%'}));
+  // Goals against: avg per quarter
+  const gaAvg = labels.map((l,i) => ({label:l, v: qs[i+1].ga/matchCount, colour:red, display: (qs[i+1].ga/matchCount).toFixed(1)}));
+  // Clean sheets: frequency %
+  const csFreq = labels.map((l,i) => ({label:l, v: Math.round(qs[i+1].cs/matchCount*100), colour:gold, display: Math.round(qs[i+1].cs/matchCount*100)+'%'}));
 
   return [
-    card('Goals % by quarter',
-      svgBar(goalsBarRows, refY_goals, '') +
-      legend([['#00295c','Goals for'],['#cc1818','Goals against']])
-    ),
-    card('Clean sheets % by quarter',
-      svgBar(csBarRows, refY_cs, '') +
-      legend([['#b8860b','Clean sheet kept']])
-    ),
-    card('Goals for by quarter',
-      roseSVG(roseChart(gfVals, '#00295c', '#e8edf4', cx, Math.max(...gfVals,1), 'gf'))
-    ),
-    card('Goals against by quarter',
-      roseSVG(roseChart(gaVals, '#cc1818', '#f5eaea', cx, Math.max(...gaVals,1), 'ga'))
-    ),
-    card('Clean sheets by quarter',
-      roseSVG(roseChart(csVals, '#b8860b', '#f5f0e0', cx, Math.max(...csVals,1), 'cs'))
-    ),
+    metric('Goals scored: % of quarters with ≥1 goal', gfFreq),
+    metric('Goals scored: avg goals per quarter', gfAvg),
+    metric('Goals conceded: % of quarters with ≥1 conceded', gaFreq),
+    metric('Goals conceded: avg conceded per quarter', gaAvg),
+    metric('Clean sheets: % of quarters kept', csFreq),
   ].join('');
 }
 
