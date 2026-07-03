@@ -868,9 +868,9 @@
   <div style="display:flex;align-items:center;padding:4px 0 14px;">
     <div id="setupTeamBadge" style="padding:11px 18px;border-radius:12px;font-size:14px;font-weight:700;color:white;background:var(--navy);white-space:nowrap;flex-shrink:0;position:relative;z-index:1;">Blues</div>
     <div style="display:flex;align-items:center;background:white;border:1.5px solid var(--light-grey);border-left:none;border-radius:0 12px 12px 0;flex:1;min-width:0;height:42px;margin-left:-12px;padding-left:18px;">
-      <button id="changeTeamLink" onclick="openTeamChangeModal()" style="background:none;border:none;font-size:9px;color:var(--mid-grey);cursor:pointer;text-decoration:underline;padding:0 8px;white-space:nowrap;flex-shrink:0;">Select team</button>
+      <button id="changeTeamLink" onclick="openTeamChangeModal()" style="background:none;border:none;font-size:11px;color:var(--mid-grey);cursor:pointer;text-decoration:underline;padding:0 8px;white-space:nowrap;flex-shrink:0;">Select team</button>
       <div style="flex:1;"></div>
-      <button onclick="openSquadManager(state.team)" style="background:none;border:none;font-size:9px;color:var(--mid-grey);cursor:pointer;padding:0 14px;text-decoration:underline;white-space:nowrap;flex-shrink:0;">Add / remove players</button>
+      <button onclick="openSquadManager(state.team)" style="background:none;border:none;font-size:11px;color:var(--mid-grey);cursor:pointer;padding:0 14px;text-decoration:underline;white-space:nowrap;flex-shrink:0;">Add / remove players</button>
     </div>
   </div>
 
@@ -1318,7 +1318,7 @@
 
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyRiGa5jg1roJh3drjIvHv96axQiX_bTDnGiGAeeGFsxb94_G1xA1z6GFkk5n0eZ97B5g/exec";
-const APP_VERSION = "2026-07-01-34"; // bumped automatically on every update
+const APP_VERSION = "2026-07-01-35"; // bumped automatically on every update
 const AGE = "U11";
 
 const DEFAULT_SQUADS = {
@@ -2456,6 +2456,7 @@ async function loadSheetData(force = false) {
   if (sheetDataLoaded && !force) {
     populateOpponentFilter();
     renderStats();
+    renderHistoryList();
     return;
   }
 
@@ -2470,6 +2471,7 @@ async function loadSheetData(force = false) {
           sheetDataLoaded = true;
           populateOpponentFilter();
           renderStats();
+          renderHistoryList();
           return;
         }
       }
@@ -2487,6 +2489,7 @@ async function loadSheetData(force = false) {
     localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data: SHEET_DATA }));
     populateOpponentFilter();
     renderStats();
+    renderHistoryList();
   } catch(err) {
     document.getElementById('statsContent').innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--red);">Could not load data: ' + err.message + '</div>';
   } finally {
@@ -2706,9 +2709,10 @@ function renderClubTab(data) {
 function renderPlayersTab(data) {
   if (!data.length) return '<div style="color:var(--mid-grey);text-align:center;padding:60px 0;font-size:14px;">No data — check filters</div>';
 
+  const stripTeam = p => p ? p.replace(/^[^-]+ - /, '') : p;
   const goalMap={}, assistMap={}, csGKMap={}, csDefMap={}, starMap={}, passerMap={}, teamMap={};
   data.forEach(m => {
-    const add = (map,p,n) => { map[p]=(map[p]||0)+n; if(!teamMap[p]) teamMap[p]=m.team; };
+    const add = (map,p,n) => { const name=stripTeam(p); map[name]=(map[name]||0)+n; if(!teamMap[name]) teamMap[name]=m.team; };
     Object.entries(m.goals).forEach(([p,n])=>add(goalMap,p,n));
     Object.entries(m.assists).forEach(([p,n])=>add(assistMap,p,n));
     Object.entries(m.csGK).forEach(([p,n])=>add(csGKMap,p,n));
@@ -2874,6 +2878,12 @@ function renderTeamsTab(data) {
 
 function renderQuartersTab(data) {
   if (!data.length) return '<div style="color:var(--mid-grey);text-align:center;padding:60px 0;font-size:14px;">No data — check filters</div>';
+
+  // Check if filtered data is entirely U9/U10 (no quarter data collected)
+  const ages = new Set(data.map(m => m.age));
+  if ([...ages].every(a => a === 'U9' || a === 'U10')) {
+    return '<div style="color:var(--mid-grey);text-align:center;padding:40px 20px;font-size:14px;">Results by quarter not collected for this season.</div>';
+  }
 
   const qs = {1:{gf:0,ga:0,cs:0,gfMatches:0,gaMatches:0},2:{gf:0,ga:0,cs:0,gfMatches:0,gaMatches:0},3:{gf:0,ga:0,cs:0,gfMatches:0,gaMatches:0},4:{gf:0,ga:0,cs:0,gfMatches:0,gaMatches:0}};
   const matchCount = data.length;
