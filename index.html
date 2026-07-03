@@ -227,7 +227,11 @@
     color: var(--text);
     appearance: none;
     -webkit-appearance: none;
+    box-sizing: border-box;
+    height: 46px;
   }
+  input[type="date"]:not([value=""]):not(:focus) { color: var(--text); }
+  input[type="date"]:invalid, input[type="date"][value=""] { color: var(--mid-grey); }
   .field input:focus, .field select:focus {
     outline: none;
     border-color: var(--navy);
@@ -861,12 +865,12 @@
 <div class="screen" id="screen-setup">
 
   <!-- Team indicator bar -->
-  <div style="display:flex;align-items:center;gap:0;padding:4px 0 14px;">
-    <div id="setupTeamBadge" style="padding:7px 14px;border-radius:10px 0 0 10px;font-size:13px;font-weight:700;color:white;background:var(--navy);white-space:nowrap;">Blues</div>
-    <div style="display:flex;align-items:center;background:white;border:1.5px solid var(--light-grey);border-left:none;border-radius:0 10px 10px 0;padding:0 2px;flex:1;min-width:0;">
-      <button id="changeTeamLink" onclick="openTeamChangeModal()" style="background:none;border:none;font-size:13px;color:var(--mid-grey);cursor:pointer;text-decoration:underline;padding:6px 10px;white-space:nowrap;">Select team</button>
-      <div style="width:1px;background:var(--light-grey);height:20px;flex-shrink:0;"></div>
-      <button onclick="openSquadManager(state.team)" style="background:none;border:none;font-size:13px;color:var(--mid-grey);cursor:pointer;padding:6px 10px;text-decoration:underline;white-space:nowrap;">Add / remove players</button>
+  <div style="display:flex;align-items:center;padding:4px 0 14px;">
+    <div id="setupTeamBadge" style="padding:11px 18px;border-radius:12px;font-size:14px;font-weight:700;color:white;background:var(--navy);white-space:nowrap;flex-shrink:0;position:relative;z-index:1;">Blues</div>
+    <div style="display:flex;align-items:center;background:white;border:1.5px solid var(--light-grey);border-left:none;border-radius:0 12px 12px 0;flex:1;min-width:0;height:42px;margin-left:-12px;padding-left:18px;">
+      <button id="changeTeamLink" onclick="openTeamChangeModal()" style="background:none;border:none;font-size:11px;color:var(--mid-grey);cursor:pointer;text-decoration:underline;padding:0 8px;white-space:nowrap;flex-shrink:0;">Select team</button>
+      <div style="flex:1;"></div>
+      <button onclick="openSquadManager(state.team)" style="background:none;border:none;font-size:11px;color:var(--mid-grey);cursor:pointer;padding:0 14px;text-decoration:underline;white-space:nowrap;flex-shrink:0;">Add / remove players</button>
     </div>
   </div>
 
@@ -874,7 +878,7 @@
     <div class="card-title">Match details</div>
     <div class="field">
       <label>Date</label>
-      <input type="date" id="matchDate" onchange="state.matchDate=this.value;this.blur()" placeholder="Select date" style="width:100%;">
+      <input type="date" id="matchDate" onchange="state.matchDate=this.value" style="width:100%;color-scheme:light;">
     </div>
     <div class="field" style="position:relative;">
       <label>Opponent</label>
@@ -892,7 +896,6 @@
   </div>
 
   <button class="btn-primary" onclick="startMatch()" id="startMatchBtn">Start match</button>
-  <button class="btn-secondary" id="setupNewMatchBtn" onclick="confirmNewMatchFromSetup()" style="display:none;margin-top:8px;">New match</button>
 </div>
 
 <!-- ③ MATCH DAY -->
@@ -1060,6 +1063,7 @@
         <option value="U10">U10</option>
         <option value="U9">U9</option>
       </select>
+      <button onclick="sheetDataLoaded=false;sheetDataLoading=false;localStorage.removeItem('kprSheetData');loadSheetData(true);" title="Refresh" style="background:none;border:1.5px solid var(--light-grey);border-radius:8px;padding:8px 10px;cursor:pointer;color:var(--mid-grey);display:flex;align-items:center;flex-shrink:0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button>
     </div>
     <div id="historyList"></div>
   </div>
@@ -1073,31 +1077,34 @@
 <div class="screen" id="screen-stats">
   <div style="padding-bottom:4px;">
     <!-- Filter bar -->
-    <div class="card" style="margin-bottom:10px;padding:10px 12px;">
-      <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;">
-        <select id="statsFilterTeam" onchange="renderStats()" style="flex:1;padding:7px 8px;border:1.5px solid var(--light-grey);border-radius:8px;font-size:13px;background:white;">
+    <div class="card" id="statsFilters" style="margin-bottom:10px;padding:10px 12px;">
+      <div id="mainFilterRow" style="display:flex;gap:8px;align-items:center;margin-bottom:6px;flex-wrap:nowrap;">
+        <select id="statsFilterTeam" onchange="renderStats()" style="flex:1;min-width:0;padding:7px 8px;border:1.5px solid var(--light-grey);border-radius:8px;font-size:13px;background:white;">
           <option value="">All teams</option>
           <option value="Blues">Blues</option>
           <option value="Reds">Reds</option>
           <option value="Royals">Royals</option>
           <option value="Stripes">Stripes</option>
         </select>
-        <select id="statsFilterVenue" onchange="renderStats()" style="flex:1;padding:7px 8px;border:1.5px solid var(--light-grey);border-radius:8px;font-size:13px;background:white;">
+        <select id="statsFilterVenue" onchange="renderStats()" style="flex:1;min-width:0;padding:7px 8px;border:1.5px solid var(--light-grey);border-radius:8px;font-size:13px;background:white;">
           <option value="">Venue</option>
           <option value="Home">Home</option>
           <option value="Away">Away</option>
         </select>
-        <select id="statsFilterAge" onchange="renderStats()" style="flex:1;padding:7px 8px;border:1.5px solid var(--light-grey);border-radius:8px;font-size:13px;background:white;">
+        <button onclick="sheetDataLoaded=false;sheetDataLoading=false;localStorage.removeItem('kprSheetData');loadSheetData(true);" title="Refresh" style="background:none;border:1.5px solid var(--light-grey);border-radius:8px;padding:7px 10px;cursor:pointer;color:var(--mid-grey);display:flex;align-items:center;flex-shrink:0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button>
+      </div>
+      <div id="opponentFilterRow" style="display:flex;gap:8px;">
+        <select id="statsFilterOpponent" onchange="renderStats()" style="flex:1;min-width:0;padding:7px 8px;border:1.5px solid var(--light-grey);border-radius:8px;font-size:13px;background:white;">
+          <option value="">All opponents</option>
+        </select>
+        <select id="statsFilterAge" onchange="renderStats()" style="flex:1;min-width:0;padding:7px 8px;border:1.5px solid var(--light-grey);border-radius:8px;font-size:13px;background:white;">
           <option value="">All seasons</option>
           <option value="U11">U11</option>
           <option value="U10" selected>U10</option>
           <option value="U9">U9</option>
         </select>
-        <button onclick="sheetDataLoaded=false;sheetDataLoading=false;localStorage.removeItem('kprSheetData');loadSheetData(true);" title="Refresh" style="background:none;border:1.5px solid var(--light-grey);border-radius:8px;padding:7px 10px;cursor:pointer;color:var(--mid-grey);display:flex;align-items:center;flex-shrink:0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button>
       </div>
-      <select id="statsFilterOpponent" onchange="renderStats()" style="width:100%;padding:7px 8px;border:1.5px solid var(--light-grey);border-radius:8px;font-size:13px;background:white;" id="statsFilterOpponent">
-        <option value="">All opponents</option>
-      </select>
+      <!-- Quarters-specific filters removed - uses same filters as other tabs -->
     </div>
 
     <!-- Stat tabs -->
@@ -1106,6 +1113,7 @@
       <button class="stat-tab" onclick="switchStatTab('players')">Players</button>
       <button class="stat-tab" onclick="switchStatTab('teams')">Teams</button>
       <button class="stat-tab" onclick="switchStatTab('opponents')">Opponents</button>
+      <button class="stat-tab" onclick="switchStatTab('quarters')">Quarters</button>
     </div>
 
     <div id="statsContent"></div>
@@ -1200,13 +1208,13 @@
     <div id="hdQuarters"></div>
     <div id="hdAwardsDivider" style="border-top:1px solid var(--light-grey);margin:12px 0;"></div>
     <div id="hdAwardsView">
-      <div style="padding:8px 10px;background:var(--off-white);border-radius:8px;margin-bottom:5px;font-size:13px;"><span style="color:var(--gold);font-weight:600;">Star Player</span>: <span id="hdStar">None</span></div>
-      <div style="padding:8px 10px;background:var(--off-white);border-radius:8px;font-size:13px;"><span style="color:var(--gold);font-weight:600;">Over-achiever</span>: <span id="hdPasser">None</span></div>
+      <div style="padding:8px 10px;background:var(--off-white);border-radius:8px;margin-bottom:5px;font-size:13px;"><span style="color:var(--navy);font-weight:600;">Star Player</span>: <span id="hdStar">None</span></div>
+      <div style="padding:8px 10px;background:var(--off-white);border-radius:8px;font-size:13px;"><span style="color:var(--navy);font-weight:600;">Over-achiever</span>: <span id="hdPasser">None</span></div>
     </div>
     <div id="hdAwardsEdit" style="display:none;width:100%;">
-      <div style="font-size:12px;font-weight:700;color:var(--mid-grey);margin-bottom:8px;">Star Player</div>
+      <div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:8px;">Star Player</div>
       <div id="hdStarGrid" style="width:100%;"></div>
-      <div style="font-size:12px;font-weight:700;color:var(--mid-grey);margin:12px 0 8px;">Over-achiever</div>
+      <div style="font-size:12px;font-weight:700;color:var(--navy);margin:12px 0 8px;">Over-achiever</div>
       <div id="hdPasserGrid" style="width:100%;"></div>
     </div>
     <div id="hdEditNote" style="font-size:11px;color:var(--mid-grey);margin-top:14px;display:none;">Add or remove events below, then save. Saving replaces all stats for this match.</div>
@@ -1310,7 +1318,7 @@
 
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyRiGa5jg1roJh3drjIvHv96axQiX_bTDnGiGAeeGFsxb94_G1xA1z6GFkk5n0eZ97B5g/exec";
-const APP_VERSION = "2026-07-01-21"; // bumped automatically on every update
+const APP_VERSION = "2026-07-01-35"; // bumped automatically on every update
 const AGE = "U11";
 
 const DEFAULT_SQUADS = {
@@ -1573,8 +1581,6 @@ function startMatch() {
   }
   state._matchStarted = true;
   // Show "New match" button on setup for next time manager returns
-  const setupNewBtn = document.getElementById('setupNewMatchBtn');
-  if (setupNewBtn) setupNewBtn.style.display = 'block';
 
   // Score bar: home = KPR left, away = KPR right
   updateScoreBarLayout();
@@ -1839,7 +1845,7 @@ function goToSetup() {
   document.getElementById('headerTitle').textContent = 'Match Day';
   setHeaderBack(false);
   // Restore current match details in the form
-  if (state.matchDate) document.getElementById('matchDate').value = state.matchDate;
+  document.getElementById('matchDate').value = state.matchDate || new Date().toISOString().split('T')[0];
   if (state.opponent) document.getElementById('matchOpponent').value = state.opponent;
   setVenue(state.venue || 'Home');
 }
@@ -2386,11 +2392,6 @@ function doReset() {
   renderAllQuarters();
 }
 
-function confirmNewMatchFromSetup() {
-  if (!confirm('Start a new match? This will clear all current match data.')) return;
-  newMatch();
-}
-
 function confirmNewMatchFromSummary() {
   if (!confirm('Start a new match? This will clear all current match data.')) return;
   newMatch();
@@ -2401,7 +2402,7 @@ function newMatch() {
 
   const team = state.team; // preserve team
   const league = state.league;
-  state = { team, league, matchDate: '', opponent: '', venue: 'Home', selectedPlayers: [], currentQ: 1, events: [], starPlayer: null, bestPasser: null, _matchStarted: false, _matchEnded: false };
+  state = { team, league, matchDate: '', opponent: '', venue: 'Home', selectedPlayers: [], currentQ: 1, events: [], starPlayer: null, bestPasser: null, _matchStarted: true, _matchEnded: false };
 
   const submitBtn = document.getElementById('submitBtn');
   if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Submit results'; }
@@ -2414,7 +2415,9 @@ function newMatch() {
   setHeaderBack(false);
 
   // Reset form fields
-  document.getElementById('matchDate').value = '';
+  const _today = new Date().toISOString().split('T')[0];
+  state.matchDate = _today;
+  document.getElementById('matchDate').value = _today;
   document.getElementById('matchOpponent').value = '';
   setVenue('Home');
 }
@@ -2453,6 +2456,7 @@ async function loadSheetData(force = false) {
   if (sheetDataLoaded && !force) {
     populateOpponentFilter();
     renderStats();
+    renderHistoryList();
     return;
   }
 
@@ -2467,6 +2471,7 @@ async function loadSheetData(force = false) {
           sheetDataLoaded = true;
           populateOpponentFilter();
           renderStats();
+          renderHistoryList();
           return;
         }
       }
@@ -2474,7 +2479,7 @@ async function loadSheetData(force = false) {
   }
 
   sheetDataLoading = true;
-  document.getElementById('statsContent').innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--mid-grey);">Loading data...</div>';
+  document.getElementById('statsContent').innerHTML = '<div style="text-align:center;padding:60px 0;color:var(--mid-grey);font-size:14px;">Loading data...</div>';
   try {
     const resp = await fetch(SCRIPT_URL);
     const json = await resp.json();
@@ -2484,6 +2489,7 @@ async function loadSheetData(force = false) {
     localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data: SHEET_DATA }));
     populateOpponentFilter();
     renderStats();
+    renderHistoryList();
   } catch(err) {
     document.getElementById('statsContent').innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--red);">Could not load data: ' + err.message + '</div>';
   } finally {
@@ -2562,7 +2568,7 @@ let currentStatTab = 'club';
 function switchStatTab(tab) {
   currentStatTab = tab;
   document.querySelectorAll('.stat-tab').forEach(b => {
-    const map = {club:'Club',players:'Players',teams:'Teams',opponents:'Opponents',results:'Results'};
+    const map = {club:'Club',players:'Players',teams:'Teams',opponents:'Opponents',quarters:'Quarters'};
     b.classList.toggle('active', b.textContent === map[tab]);
   });
   renderStats();
@@ -2591,18 +2597,23 @@ function getFilteredData() {
 }
 
 function renderStats() {
-  const data = getFilteredData();
   const el = document.getElementById('statsContent');
   if (!el) return;
+  if (!sheetDataLoaded) {
+    el.innerHTML = '<div style="text-align:center;padding:60px 0;color:var(--mid-grey);font-size:14px;">Loading data...</div>';
+    return;
+  }
+  const data = getFilteredData();
   if (currentStatTab === 'club') el.innerHTML = renderClubTab(data);
   else if (currentStatTab === 'players') el.innerHTML = renderPlayersTab(data);
   else if (currentStatTab === 'teams') el.innerHTML = renderTeamsTab(data);
   else if (currentStatTab === 'opponents') el.innerHTML = renderOpponentsTab(data);
+  else if (currentStatTab === 'quarters') el.innerHTML = renderQuartersTab(data);
   else el.innerHTML = renderResultsTab(data);
 }
 
 function renderClubTab(data) {
-  if (!data.length) return '<div style="color:var(--mid-grey);text-align:center;padding:40px 0;">No data — check filters</div>';
+  if (!data.length) return '<div style="color:var(--mid-grey);text-align:center;padding:60px 0;font-size:14px;">No data — check filters</div>';
   const played = data.length;
   const wins = data.filter(m=>m.result==='W').length;
   const draws = data.filter(m=>m.result==='D').length;
@@ -2696,11 +2707,12 @@ function renderClubTab(data) {
 }
 
 function renderPlayersTab(data) {
-  if (!data.length) return '<div style="color:var(--mid-grey);text-align:center;padding:40px 0;">No data — check filters</div>';
+  if (!data.length) return '<div style="color:var(--mid-grey);text-align:center;padding:60px 0;font-size:14px;">No data — check filters</div>';
 
+  const stripTeam = p => p ? p.replace(/^[^-]+ - /, '') : p;
   const goalMap={}, assistMap={}, csGKMap={}, csDefMap={}, starMap={}, passerMap={}, teamMap={};
   data.forEach(m => {
-    const add = (map,p,n) => { map[p]=(map[p]||0)+n; if(!teamMap[p]) teamMap[p]=m.team; };
+    const add = (map,p,n) => { const name=stripTeam(p); map[name]=(map[name]||0)+n; if(!teamMap[name]) teamMap[name]=m.team; };
     Object.entries(m.goals).forEach(([p,n])=>add(goalMap,p,n));
     Object.entries(m.assists).forEach(([p,n])=>add(assistMap,p,n));
     Object.entries(m.csGK).forEach(([p,n])=>add(csGKMap,p,n));
@@ -2724,9 +2736,12 @@ function renderPlayersTab(data) {
   const tagColour = p => TEAM_TAG_COLOURS[teamMap[p]]||'#888';
   const teamTag = p => `<span class="team-pill ${teamMap[p]||''}" style="margin-right:6px;">${teamMap[p]||''}</span>`;
   const lb = (map) => {
-    const sorted = Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,20);
+    const sorted = Object.entries(map).sort((a,b)=>b[1]-a[1]);
     if(!sorted.length) return '<div style="color:var(--mid-grey);font-size:13px;">No data</div>';
-    return sorted.map(([p,v],i)=>`<div class="stat-row"><span class="rank">${i+1}</span>${teamTag(p)}<span class="name">${p}</span><span class="val" style="color:var(--navy)">${v}</span></div>`).join('');
+    const rows = sorted.map(([p,v],i)=>`<div class="stat-row"><span class="rank">${i+1}</span>${teamTag(p)}<span class="name">${p}</span><span class="val" style="color:var(--navy)">${v}</span></div>`).join('');
+    if(sorted.length <= 5) return rows;
+    // Show 10 full rows + half of 11th to hint scrollability (~32px per row)
+    return `<div style="max-height:336px;overflow-y:auto;-webkit-overflow-scrolling:touch;">${rows}</div>`;
   };
 
   return `
@@ -2779,7 +2794,7 @@ function renderResultsTab(data) {
 }
 
 function renderTeamsTab(data) {
-  if (!data.length) return '<div style="color:var(--mid-grey);text-align:center;padding:40px 0;">No data</div>';
+  if (!data.length) return '<div style="color:var(--mid-grey);text-align:center;padding:60px 0;font-size:14px;">No data — check filters</div>';
   const teams = ['Blues','Reds','Royals','Stripes'];
   const colours = {Blues:'#2196F3',Reds:'#cc1818',Royals:'#1a3a8f',Stripes:'#1565C0'};
 
@@ -2829,7 +2844,7 @@ function renderTeamsTab(data) {
       ${vals.sort((a,b)=>b.v-a.v).map(({t,v}) => {
         const pct = max ? Math.round(v/max*100) : 0;
         const barStyle = t === 'Stripes'
-          ? `background:repeating-linear-gradient(90deg,#cc1818 0px,#cc1818 12px,#1a3a8f 12px,#1a3a8f 24px);opacity:0.9;`
+          ? `background:repeating-linear-gradient(90deg,#1a3a8f 0px,#1a3a8f 40px,#cc1818 40px,#cc1818 80px);opacity:0.9;`
           : `background:${colours[t]||'var(--navy)'};opacity:0.85;`;
         const valDisplay = fmt==='pct'?v+'%':fmt==='dec'?v.toFixed(1):v;
         return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
@@ -2861,8 +2876,81 @@ function renderTeamsTab(data) {
   ].join('');
 }
 
+function renderQuartersTab(data) {
+  if (!data.length) return '<div style="color:var(--mid-grey);text-align:center;padding:60px 0;font-size:14px;">No data — check filters</div>';
+
+  // Check if filtered data is entirely U9/U10 (no quarter data collected)
+  const ages = new Set(data.map(m => m.age));
+  if ([...ages].every(a => a === 'U9' || a === 'U10')) {
+    return '<div style="color:var(--mid-grey);text-align:center;padding:40px 20px;font-size:14px;">Results by quarter not collected for this season.</div>';
+  }
+
+  const qs = {1:{gf:0,ga:0,cs:0,gfMatches:0,gaMatches:0},2:{gf:0,ga:0,cs:0,gfMatches:0,gaMatches:0},3:{gf:0,ga:0,cs:0,gfMatches:0,gaMatches:0},4:{gf:0,ga:0,cs:0,gfMatches:0,gaMatches:0}};
+  const matchCount = data.length;
+
+  data.forEach(m => {
+    const qData = {1:{gf:0,ga:0,hasCS:false},2:{gf:0,ga:0,hasCS:false},3:{gf:0,ga:0,hasCS:false},4:{gf:0,ga:0,hasCS:false}};
+    (m.sheetRows||[]).forEach(r => {
+      const q = parseInt((r.quarter||'').replace('Q',''));
+      if (!q || q < 1 || q > 4) return;
+      if (r.stat === '1. Goal') qData[q].gf += r.count;
+      else if (r.stat === '7. Concede') qData[q].ga += Math.abs(r.count);
+      else if (r.stat === '4. Clean Sheet GK') qData[q].hasCS = true;
+    });
+    [1,2,3,4].forEach(q => {
+      qs[q].gf += qData[q].gf;
+      qs[q].ga += qData[q].ga;
+      if (qData[q].hasCS) qs[q].cs++;
+      if (qData[q].gf > 0) qs[q].gfMatches++;
+      if (qData[q].ga > 0) qs[q].gaMatches++;
+    });
+  });
+
+  const labels = ['Q1','Q2','Q3','Q4'];
+  const navy = '#00295c';
+  const red = '#cc1818';
+  const gold = '#b8860b';
+
+  // Horizontal bar metric — matches Teams tab styling exactly
+  const metric = (title, rows) => {
+    const maxVal = Math.max(...rows.map(r => r.v), 0.01);
+    return `<div class="card" style="margin-bottom:10px;">
+      <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:10px;">${title}</div>
+      ${rows.map(({label, v, colour, display}) => {
+        const pct = Math.round(v / maxVal * 100);
+        return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <span style="font-size:12px;font-weight:700;color:var(--dark-grey);width:28px;">${label}</span>
+          <div style="flex:1;background:var(--light-grey);border-radius:4px;height:20px;position:relative;">
+            <div style="width:${pct}%;height:100%;border-radius:4px;background:${colour};opacity:0.85;"></div>
+            <span style="position:absolute;left:8px;top:2px;font-size:11px;font-weight:800;color:white;line-height:16px;">${display}</span>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
+  };
+
+  // Goals for: frequency %
+  const gfFreq = labels.map((l,i) => ({label:l, v: Math.round(qs[i+1].gfMatches/matchCount*100), colour:navy, display: Math.round(qs[i+1].gfMatches/matchCount*100)+'%'}));
+  // Goals for: avg per quarter
+  const gfAvg = labels.map((l,i) => ({label:l, v: qs[i+1].gf/matchCount, colour:navy, display: (qs[i+1].gf/matchCount).toFixed(1)}));
+  // Goals against: frequency %
+  const gaFreq = labels.map((l,i) => ({label:l, v: Math.round(qs[i+1].gaMatches/matchCount*100), colour:red, display: Math.round(qs[i+1].gaMatches/matchCount*100)+'%'}));
+  // Goals against: avg per quarter
+  const gaAvg = labels.map((l,i) => ({label:l, v: qs[i+1].ga/matchCount, colour:red, display: (qs[i+1].ga/matchCount).toFixed(1)}));
+  // Clean sheets: frequency %
+  const csFreq = labels.map((l,i) => ({label:l, v: Math.round(qs[i+1].cs/matchCount*100), colour:gold, display: Math.round(qs[i+1].cs/matchCount*100)+'%'}));
+
+  return [
+    metric('Goals for: % of quarters with at least 1 goal', gfFreq),
+    metric('Goals for: avg per quarter', gfAvg),
+    metric('Goals against: % of quarters with at least 1 goal against', gaFreq),
+    metric('Goals against: avg per quarter', gaAvg),
+    metric('Clean sheets: % of quarters kept', csFreq),
+  ].join('');
+}
+
 function renderOpponentsTab(data) {
-  if (!data.length) return '<div style="color:var(--mid-grey);text-align:center;padding:40px 0;">No data</div>';
+  if (!data.length) return '<div style="color:var(--mid-grey);text-align:center;padding:60px 0;font-size:14px;">No data — check filters</div>';
   const oppMap = {};
   data.forEach(m => {
     if (!oppMap[m.opponent]) oppMap[m.opponent] = {played:0, teams:new Set(), w:0, d:0, l:0, gf:0, ga:0};
@@ -2883,12 +2971,13 @@ function renderOpponentsTab(data) {
     .sort((a,b) => b.played - a.played || b.ppgNum - a.ppgNum);
 
   const td = (val, opts={}) =>
-    `<td style="padding:8px ${opts.last?'8px':'4px'} 8px ${opts.first?'10px':'4px'};border-bottom:0.5px solid var(--light-grey);text-align:${opts.left?'left':'right'};vertical-align:middle;height:44px;${opts.col?'color:'+opts.col+';font-weight:600;':''}">${val}</td>`;
+    `<td style="padding:8px ${opts.last?'8px':'4px'} 8px ${opts.first?'10px':'4px'};text-align:${opts.left?'left':'right'};vertical-align:top;height:44px;${opts.col?'color:'+opts.col+';font-weight:600;':''}">${val}</td>`;
 
-  const trs = rows.map(o => {
+  const trs = rows.map((o, idx) => {
     const gdStr = (o.gd > 0 ? '+' : '') + o.gd;
     const gdCol = o.gd > 0 ? 'var(--green)' : o.gd < 0 ? 'var(--red)' : 'var(--mid-grey)';
-    return `<tr>
+    const rowBg = idx % 2 === 0 ? 'white' : 'var(--off-white)';
+    return `<tr style="background:${rowBg};">
       ${td(o.name, {left:true, first:true})}
       ${td(o.played)}
       ${td(o.w)}
@@ -3038,8 +3127,8 @@ function renderHdPlayerStats(m) {
     statRow('Assists', 'var(--mid-grey)', assists),
     statRow('Clean Sheet GK', 'var(--gold)', csGK),
     statRow('Clean Sheet DEF', 'var(--gold)', csDef),
-    statRow('Star Player', 'var(--gold)', star),
-    statRow('Over-achiever', 'var(--gold)', passer),
+    statRow('Star Player', 'var(--navy)', star),
+    statRow('Over-achiever', 'var(--navy)', passer),
     numRow('Opposition Goals', 'var(--red)', concede),
   ].filter(Boolean).join('');
 
@@ -3341,7 +3430,7 @@ function renderHdAwardsEdit() {
 
   const awardRow = (label, player, type) => player
     ? `<div style="padding:8px 10px;background:var(--off-white);border-radius:8px;margin-bottom:5px;display:flex;align-items:center;gap:8px;">
-        <span style="flex:1;font-size:13px;"><span style="color:var(--gold);font-weight:600;">${label}</span>: ${stripTeam(player)}</span>
+        <span style="flex:1;font-size:13px;"><span style="color:var(--navy);font-weight:600;">${label}</span>: ${stripTeam(player)}</span>
         <button onclick="hdClearAward('${type}')" style="background:none;border:none;color:var(--red);font-size:20px;cursor:pointer;padding:0 2px;line-height:1;flex-shrink:0;">×</button>
       </div>`
     : `<div style="margin-bottom:8px;">
@@ -3544,7 +3633,8 @@ if (lastTeam && ['Blues','Reds','Royals','Stripes'].includes(lastTeam)) {
   document.getElementById('scoreLeftLabel').textContent = 'KPR ' + lastTeam;
   document.getElementById('changeTeamLink').textContent = 'Change team';
   showScreen('screen-setup');
-  document.getElementById('matchDate').value = '';
+  document.getElementById('matchDate').value = new Date().toISOString().split('T')[0];
+  state.matchDate = new Date().toISOString().split('T')[0];
 } else {
   showScreen('screen-setup');
   openTeamChangeModal();
