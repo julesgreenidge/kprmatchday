@@ -1063,6 +1063,7 @@
         <option value="U10">U10</option>
         <option value="U9">U9</option>
       </select>
+      <button onclick="sheetDataLoaded=false;sheetDataLoading=false;localStorage.removeItem('kprSheetData');loadSheetData(true);" title="Refresh" style="background:none;border:1.5px solid var(--light-grey);border-radius:8px;padding:8px 10px;cursor:pointer;color:var(--mid-grey);display:flex;align-items:center;flex-shrink:0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button>
     </div>
     <div id="historyList"></div>
   </div>
@@ -1090,17 +1091,17 @@
           <option value="Home">Home</option>
           <option value="Away">Away</option>
         </select>
+        <button onclick="sheetDataLoaded=false;sheetDataLoading=false;localStorage.removeItem('kprSheetData');loadSheetData(true);" title="Refresh" style="background:none;border:1.5px solid var(--light-grey);border-radius:8px;padding:7px 10px;cursor:pointer;color:var(--mid-grey);display:flex;align-items:center;flex-shrink:0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button>
+      </div>
+      <div id="opponentFilterRow" style="display:flex;gap:8px;">
+        <select id="statsFilterOpponent" onchange="renderStats()" style="flex:1;min-width:0;padding:7px 8px;border:1.5px solid var(--light-grey);border-radius:8px;font-size:13px;background:white;">
+          <option value="">All opponents</option>
+        </select>
         <select id="statsFilterAge" onchange="renderStats()" style="flex:1;min-width:0;padding:7px 8px;border:1.5px solid var(--light-grey);border-radius:8px;font-size:13px;background:white;">
           <option value="">All seasons</option>
           <option value="U11">U11</option>
           <option value="U10" selected>U10</option>
           <option value="U9">U9</option>
-        </select>
-        <button onclick="sheetDataLoaded=false;sheetDataLoading=false;localStorage.removeItem('kprSheetData');loadSheetData(true);" title="Refresh" style="background:none;border:1.5px solid var(--light-grey);border-radius:8px;padding:7px 10px;cursor:pointer;color:var(--mid-grey);display:flex;align-items:center;flex-shrink:0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button>
-      </div>
-      <div id="opponentFilterRow">
-        <select id="statsFilterOpponent" onchange="renderStats()" style="width:100%;padding:7px 8px;border:1.5px solid var(--light-grey);border-radius:8px;font-size:13px;background:white;">
-          <option value="">All opponents</option>
         </select>
       </div>
       <!-- Quarters-specific filters removed - uses same filters as other tabs -->
@@ -1317,7 +1318,7 @@
 
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyRiGa5jg1roJh3drjIvHv96axQiX_bTDnGiGAeeGFsxb94_G1xA1z6GFkk5n0eZ97B5g/exec";
-const APP_VERSION = "2026-07-01-33"; // bumped automatically on every update
+const APP_VERSION = "2026-07-01-34"; // bumped automatically on every update
 const AGE = "U11";
 
 const DEFAULT_SQUADS = {
@@ -2735,9 +2736,8 @@ function renderPlayersTab(data) {
     if(!sorted.length) return '<div style="color:var(--mid-grey);font-size:13px;">No data</div>';
     const rows = sorted.map(([p,v],i)=>`<div class="stat-row"><span class="rank">${i+1}</span>${teamTag(p)}<span class="name">${p}</span><span class="val" style="color:var(--navy)">${v}</span></div>`).join('');
     if(sorted.length <= 5) return rows;
-    // Scrollable — show 12 full rows + half of 13th to hint there's more
-    // Each stat-row is ~34px; 12.5 rows = ~425px
-    return `<div style="max-height:425px;overflow-y:auto;-webkit-overflow-scrolling:touch;">${rows}</div>`;
+    // Show 10 full rows + half of 11th to hint scrollability (~32px per row)
+    return `<div style="max-height:336px;overflow-y:auto;-webkit-overflow-scrolling:touch;">${rows}</div>`;
   };
 
   return `
