@@ -1103,29 +1103,7 @@
           <option value="">All opponents</option>
         </select>
       </div>
-      <!-- Quarters-specific filters (shown only on Quarters tab) -->
-      <div id="quartersFilters" style="display:none;">
-        <div style="display:flex;gap:8px;flex-wrap:nowrap;">
-          <select id="qFilterTeam" onchange="renderStats()" style="flex:1;min-width:0;padding:7px 8px;border:1.5px solid var(--light-grey);border-radius:8px;font-size:13px;background:white;">
-            <option value="">All teams</option>
-            <option value="Blues">Blues</option>
-            <option value="Reds">Reds</option>
-            <option value="Royals">Royals</option>
-            <option value="Stripes">Stripes</option>
-          </select>
-          <select id="qFilterVenue" onchange="renderStats()" style="flex:1;min-width:0;padding:7px 8px;border:1.5px solid var(--light-grey);border-radius:8px;font-size:13px;background:white;">
-            <option value="">All venues</option>
-            <option value="Home">Home</option>
-            <option value="Away">Away</option>
-          </select>
-          <select id="qFilterAge" onchange="renderStats()" style="flex:1;min-width:0;padding:7px 8px;border:1.5px solid var(--light-grey);border-radius:8px;font-size:13px;background:white;">
-            <option value="">All seasons</option>
-            <option value="U11">U11</option>
-            <option value="U10">U10</option>
-            <option value="U9">U9</option>
-          </select>
-        </div>
-      </div>
+      <!-- Quarters-specific filters removed - uses same filters as other tabs -->
     </div>
 
     <!-- Stat tabs -->
@@ -1339,7 +1317,7 @@
 
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyRiGa5jg1roJh3drjIvHv96axQiX_bTDnGiGAeeGFsxb94_G1xA1z6GFkk5n0eZ97B5g/exec";
-const APP_VERSION = "2026-07-01-30"; // bumped automatically on every update
+const APP_VERSION = "2026-07-01-31"; // bumped automatically on every update
 const AGE = "U11";
 
 const DEFAULT_SQUADS = {
@@ -2498,7 +2476,7 @@ async function loadSheetData(force = false) {
   }
 
   sheetDataLoading = true;
-  document.getElementById('statsContent').innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--mid-grey);">Loading data...</div>';
+  document.getElementById('statsContent').innerHTML = '<div style="text-align:center;padding:60px 0;color:var(--mid-grey);font-size:14px;">Loading data...</div>';
   try {
     const resp = await fetch(SCRIPT_URL);
     const json = await resp.json();
@@ -2589,13 +2567,6 @@ function switchStatTab(tab) {
     const map = {club:'Club',players:'Players',teams:'Teams',opponents:'Opponents',quarters:'Quarters'};
     b.classList.toggle('active', b.textContent === map[tab]);
   });
-  const isQ = tab === 'quarters';
-  const mainRow = document.getElementById('mainFilterRow');
-  const opponentRow = document.getElementById('opponentFilterRow');
-  const qFilters = document.getElementById('quartersFilters');
-  if (mainRow) mainRow.style.display = isQ ? 'none' : 'flex';
-  if (opponentRow) opponentRow.style.display = isQ ? 'none' : 'block';
-  if (qFilters) qFilters.style.display = isQ ? 'block' : 'none';
   renderStats();
 }
 
@@ -2621,21 +2592,14 @@ function getFilteredData() {
   );
 }
 
-function getQuartersFilteredData() {
-  const team = document.getElementById('qFilterTeam')?.value || '';
-  const venue = document.getElementById('qFilterVenue')?.value || '';
-  const age = document.getElementById('qFilterAge')?.value || '';
-  return SHEET_DATA.filter(m =>
-    (!team || m.team === team) &&
-    (!venue || m.venue === venue) &&
-    (!age || m.age === age)
-  );
-}
-
 function renderStats() {
-  const data = currentStatTab === 'quarters' ? getQuartersFilteredData() : getFilteredData();
   const el = document.getElementById('statsContent');
   if (!el) return;
+  if (!sheetDataLoaded) {
+    el.innerHTML = '<div style="text-align:center;padding:60px 0;color:var(--mid-grey);font-size:14px;">Loading data...</div>';
+    return;
+  }
+  const data = getFilteredData();
   if (currentStatTab === 'club') el.innerHTML = renderClubTab(data);
   else if (currentStatTab === 'players') el.innerHTML = renderPlayersTab(data);
   else if (currentStatTab === 'teams') el.innerHTML = renderTeamsTab(data);
@@ -2645,7 +2609,7 @@ function renderStats() {
 }
 
 function renderClubTab(data) {
-  if (!data.length) return '<div style="color:var(--mid-grey);text-align:center;padding:40px 0;">No data — check filters</div>';
+  if (!data.length) return '<div style="color:var(--mid-grey);text-align:center;padding:60px 0;font-size:14px;">No data — check filters</div>';
   const played = data.length;
   const wins = data.filter(m=>m.result==='W').length;
   const draws = data.filter(m=>m.result==='D').length;
@@ -2739,7 +2703,7 @@ function renderClubTab(data) {
 }
 
 function renderPlayersTab(data) {
-  if (!data.length) return '<div style="color:var(--mid-grey);text-align:center;padding:40px 0;">No data — check filters</div>';
+  if (!data.length) return '<div style="color:var(--mid-grey);text-align:center;padding:60px 0;font-size:14px;">No data — check filters</div>';
 
   const goalMap={}, assistMap={}, csGKMap={}, csDefMap={}, starMap={}, passerMap={}, teamMap={};
   data.forEach(m => {
@@ -2822,7 +2786,7 @@ function renderResultsTab(data) {
 }
 
 function renderTeamsTab(data) {
-  if (!data.length) return '<div style="color:var(--mid-grey);text-align:center;padding:40px 0;">No data</div>';
+  if (!data.length) return '<div style="color:var(--mid-grey);text-align:center;padding:60px 0;font-size:14px;">No data — check filters</div>';
   const teams = ['Blues','Reds','Royals','Stripes'];
   const colours = {Blues:'#2196F3',Reds:'#cc1818',Royals:'#1a3a8f',Stripes:'#1565C0'};
 
@@ -2905,7 +2869,7 @@ function renderTeamsTab(data) {
 }
 
 function renderQuartersTab(data) {
-  if (!data.length) return '<div style="color:var(--mid-grey);text-align:center;padding:40px 0;">No data - check filters</div>';
+  if (!data.length) return '<div style="color:var(--mid-grey);text-align:center;padding:60px 0;font-size:14px;">No data — check filters</div>';
 
   const qs = {1:{gf:0,ga:0,cs:0,gfMatches:0,gaMatches:0},2:{gf:0,ga:0,cs:0,gfMatches:0,gaMatches:0},3:{gf:0,ga:0,cs:0,gfMatches:0,gaMatches:0},4:{gf:0,ga:0,cs:0,gfMatches:0,gaMatches:0}};
   const matchCount = data.length;
@@ -2972,7 +2936,7 @@ function renderQuartersTab(data) {
 }
 
 function renderOpponentsTab(data) {
-  if (!data.length) return '<div style="color:var(--mid-grey);text-align:center;padding:40px 0;">No data</div>';
+  if (!data.length) return '<div style="color:var(--mid-grey);text-align:center;padding:60px 0;font-size:14px;">No data — check filters</div>';
   const oppMap = {};
   data.forEach(m => {
     if (!oppMap[m.opponent]) oppMap[m.opponent] = {played:0, teams:new Set(), w:0, d:0, l:0, gf:0, ga:0};
