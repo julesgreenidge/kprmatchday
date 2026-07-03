@@ -866,8 +866,8 @@
 
   <!-- Team indicator bar -->
   <div style="display:flex;align-items:center;padding:4px 0 14px;">
-    <div id="setupTeamBadge" style="padding:8px 18px;border-radius:12px;font-size:14px;font-weight:700;color:white;background:var(--navy);white-space:nowrap;flex-shrink:0;position:relative;z-index:1;">Blues</div>
-    <div style="display:flex;align-items:center;background:white;border:1.5px solid var(--light-grey);border-left:none;border-radius:0 12px 12px 0;flex:1;min-width:0;height:36px;margin-left:-12px;padding-left:18px;">
+    <div id="setupTeamBadge" style="padding:11px 18px;border-radius:12px;font-size:14px;font-weight:700;color:white;background:var(--navy);white-space:nowrap;flex-shrink:0;position:relative;z-index:1;">Blues</div>
+    <div style="display:flex;align-items:center;background:white;border:1.5px solid var(--light-grey);border-left:none;border-radius:0 12px 12px 0;flex:1;min-width:0;height:42px;margin-left:-12px;padding-left:18px;">
       <button id="changeTeamLink" onclick="openTeamChangeModal()" style="background:none;border:none;font-size:9px;color:var(--mid-grey);cursor:pointer;text-decoration:underline;padding:0 8px;white-space:nowrap;flex-shrink:0;">Select team</button>
       <div style="flex:1;"></div>
       <button onclick="openSquadManager(state.team)" style="background:none;border:none;font-size:9px;color:var(--mid-grey);cursor:pointer;padding:0 14px;text-decoration:underline;white-space:nowrap;flex-shrink:0;">Add / remove players</button>
@@ -1317,7 +1317,7 @@
 
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyRiGa5jg1roJh3drjIvHv96axQiX_bTDnGiGAeeGFsxb94_G1xA1z6GFkk5n0eZ97B5g/exec";
-const APP_VERSION = "2026-07-01-32"; // bumped automatically on every update
+const APP_VERSION = "2026-07-01-33"; // bumped automatically on every update
 const AGE = "U11";
 
 const DEFAULT_SQUADS = {
@@ -2735,8 +2735,9 @@ function renderPlayersTab(data) {
     if(!sorted.length) return '<div style="color:var(--mid-grey);font-size:13px;">No data</div>';
     const rows = sorted.map(([p,v],i)=>`<div class="stat-row"><span class="rank">${i+1}</span>${teamTag(p)}<span class="name">${p}</span><span class="val" style="color:var(--navy)">${v}</span></div>`).join('');
     if(sorted.length <= 5) return rows;
-    // Scrollable if more than 5 entries
-    return `<div style="max-height:220px;overflow-y:auto;-webkit-overflow-scrolling:touch;">${rows}</div>`;
+    // Scrollable — show 12 full rows + half of 13th to hint there's more
+    // Each stat-row is ~34px; 12.5 rows = ~425px
+    return `<div style="max-height:425px;overflow-y:auto;-webkit-overflow-scrolling:touch;">${rows}</div>`;
   };
 
   return `
@@ -2839,7 +2840,7 @@ function renderTeamsTab(data) {
       ${vals.sort((a,b)=>b.v-a.v).map(({t,v}) => {
         const pct = max ? Math.round(v/max*100) : 0;
         const barStyle = t === 'Stripes'
-          ? `background:repeating-linear-gradient(90deg,#1a3a8f 0px,#1a3a8f 30px,#cc1818 30px,#cc1818 60px);opacity:0.9;`
+          ? `background:repeating-linear-gradient(90deg,#1a3a8f 0px,#1a3a8f 40px,#cc1818 40px,#cc1818 80px);opacity:0.9;`
           : `background:${colours[t]||'var(--navy)'};opacity:0.85;`;
         const valDisplay = fmt==='pct'?v+'%':fmt==='dec'?v.toFixed(1):v;
         return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
