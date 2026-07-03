@@ -972,7 +972,6 @@
 
   <div style="margin-top:16px;">
     <button class="btn-primary" onclick="endMatch()">End match →</button>
-    <button id="backToSummaryBtn" class="btn-secondary" onclick="showScreen('screen-end');document.getElementById('headerTitle').textContent='Match Day';setHeaderBack(false);" style="display:none;margin-top:8px;">← Back to summary</button>
   </div>
 </div>
 
@@ -1275,16 +1274,6 @@
     <div class="modal-title" id="submitConfirmTitle">Submit results?</div>
     <div class="modal-sub" id="submitConfirmSub"></div>
     <div id="submitConfirmErrors" style="display:none;margin:10px 0;"></div>
-    <!-- Inline fix: opponent -->
-    <div id="inlineFixOpponent" style="display:none;margin:8px 0 10px;">
-      <input type="text" id="inlineOpponentInput" placeholder="Enter opponent name…" autocapitalize="words"
-        style="width:100%;padding:9px 12px;border:1.5px solid var(--navy);border-radius:9px;font-size:14px;background:white;">
-      <button onclick="inlineFixOpponentSave()" class="btn-primary" style="margin-top:6px;">Save opponent</button>
-    </div>
-    <!-- Inline fix: SP/OA -->
-    <div id="inlineFixAwards" style="display:none;margin:8px 0 10px;">
-      <div id="inlineAwardsContent"></div>
-    </div>
     <button class="btn-primary" id="submitConfirmBtn" onclick="closeModal('submitConfirmModal');submitMatch();">Confirm</button>
     <button class="btn-secondary" id="submitCancelBtn" onclick="closeModal('submitConfirmModal')">Cancel</button>
   </div>
@@ -1329,7 +1318,7 @@
 
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyRiGa5jg1roJh3drjIvHv96axQiX_bTDnGiGAeeGFsxb94_G1xA1z6GFkk5n0eZ97B5g/exec";
-const APP_VERSION = "2026-07-01-37"; // bumped automatically on every update
+const APP_VERSION = "2026-07-01-38"; // bumped automatically on every update
 const AGE = "U11";
 
 const DEFAULT_SQUADS = {
@@ -2062,66 +2051,8 @@ function buildRows() {
 
 // ── SUBMIT ──
 function goFixSetup() { closeModal('submitConfirmModal'); goToSetup(); }
-function goFixMatchDay() {
-  closeModal('submitConfirmModal');
-  showScreen('screen-match');
-  document.getElementById('headerTitle').textContent = 'KPR ' + state.team + ' · Match Day';
-  setHeaderBack(true, goToSetup);
-  const btn = document.getElementById('backToSummaryBtn');
-  if (btn) btn.style.display = 'block';
-}
-function goFixSummary() { /* inline fixes handle SP/OA, no navigation needed */ }
-
-function showInlineFixOpponent() {
-  document.getElementById('inlineFixOpponent').style.display = 'block';
-  document.getElementById('inlineOpponentInput').value = state.opponent || '';
-  document.getElementById('inlineOpponentInput').focus();
-}
-
-function inlineFixOpponentSave() {
-  const val = document.getElementById('inlineOpponentInput').value.trim();
-  if (!val) return;
-  state.opponent = val;
-  saveCustomOpponent(val);
-  document.getElementById('inlineFixOpponent').style.display = 'none';
-  confirmSubmit(); // re-run to refresh errors
-}
-
-function showInlineFixAwards() {
-  const players = getSquad(state.team);
-  const el = document.getElementById('inlineFixAwards');
-  const content = document.getElementById('inlineAwardsContent');
-  el.style.display = 'block';
-
-  const renderAwards = () => {
-    const starSet = state.starPlayer;
-    const passerSet = state.bestPasser;
-    content.innerHTML = `
-      ${!starSet ? `<div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:6px;">Star Player</div>
-        <div class="modal-player-grid" style="margin-bottom:10px;">${players.map(p =>
-          `<button class="modal-player-btn" onclick="inlineSetAward('star','${p}')">${p}</button>`
-        ).join('')}</div>` : `<div style="font-size:13px;color:var(--navy);margin-bottom:8px;">⭐ Star Player: <strong>${starSet.replace(/^[^-]+ - /,'')}</strong></div>`}
-      ${!passerSet ? `<div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:6px;">Over-achiever</div>
-        <div class="modal-player-grid">${players.map(p =>
-          `<button class="modal-player-btn" onclick="inlineSetAward('passer','${p}')">${p}</button>`
-        ).join('')}</div>` : `<div style="font-size:13px;color:var(--navy);">⭐ Over-achiever: <strong>${passerSet.replace(/^[^-]+ - /,'')}</strong></div>`}
-    `;
-  };
-  renderAwards();
-}
-
-function inlineSetAward(type, player) {
-  const fullName = state.team + ' - ' + player;
-  if (type === 'star') state.starPlayer = fullName;
-  else state.bestPasser = fullName;
-  // If both now set, hide panel and refresh errors
-  if (state.starPlayer && state.bestPasser) {
-    document.getElementById('inlineFixAwards').style.display = 'none';
-    confirmSubmit();
-  } else {
-    showInlineFixAwards(); // re-render to show remaining picker
-  }
-}
+function goFixMatchDay() { closeModal('submitConfirmModal'); showScreen('screen-match'); document.getElementById('headerTitle').textContent = 'KPR ' + state.team + ' · Match Day'; setHeaderBack(true, goToSetup); }
+function goFixSummary() { closeModal('submitConfirmModal'); /* already on summary */ }
 
 function confirmSubmit() {
   const gf = state.events.filter(e=>e.type==='goal').length;
@@ -2136,7 +2067,7 @@ function confirmSubmit() {
   const errors = [];
 
   if (!state.opponent) {
-    errors.push({ msg: 'No opponent entered.', fix: 'showInlineFixOpponent()' });
+    errors.push({ msg: 'No opponent entered.', fix: 'goFixSetup()' });
   }
 
   const conflicting = [1,2,3,4].filter(q =>
@@ -2157,8 +2088,8 @@ function confirmSubmit() {
     errors.push({ msg: `${qList} has no opposition goal or clean sheet.`, fix: 'goFixMatchDay()' });
   }
 
-  if (!state.starPlayer) errors.push({ msg: 'No Star Player selected.', fix: 'showInlineFixAwards()' });
-  if (!state.bestPasser) errors.push({ msg: 'No Over-achiever selected.', fix: 'showInlineFixAwards()' });
+  if (!state.starPlayer) errors.push({ msg: 'No Star Player selected.', fix: 'goFixSummary()' });
+  if (!state.bestPasser) errors.push({ msg: 'No Over-achiever selected.', fix: 'goFixSummary()' });
 
   const errorsEl = document.getElementById('submitConfirmErrors');
   const confirmBtn = document.getElementById('submitConfirmBtn');
@@ -2184,8 +2115,6 @@ function confirmSubmit() {
     confirmBtn.style.background = '';
     confirmBtn.style.borderColor = '';
     document.getElementById('submitCancelBtn').textContent = 'Cancel';
-    document.getElementById('inlineFixOpponent').style.display = 'none';
-    document.getElementById('inlineFixAwards').style.display = 'none';
   }
 
   openModal('submitConfirmModal');
