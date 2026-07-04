@@ -1124,18 +1124,17 @@
 
 <!-- Goal modal -->
 <div class="modal-overlay hidden" id="goalModal">
-  <div class="modal">
+  <div class="modal" style="max-height:88vh;overflow-y:auto;">
     <div class="modal-handle"></div>
     <div class="modal-title">KPR Goal ⚽</div>
     <div class="modal-sub">Quarter <span id="goalModalQ"></span></div>
-    <div id="goalStep1">
-      <div class="modal-step">Who scored?</div>
-      <div class="modal-player-grid" id="goalScorerGrid"></div>
-    </div>
-    <div id="goalStep2" style="display:none;">
-      <div class="modal-step">Goal by <span id="goalScorerLabel" style="color:var(--green);"></span> - who assisted?</div>
-      <div class="modal-player-grid" id="goalAssistGrid"></div>
-    </div>
+    <div class="modal-step">Who scored?</div>
+    <div class="modal-player-grid" id="goalScorerGrid"></div>
+    <div style="border-top:1px solid var(--light-grey);margin:12px 0;"></div>
+    <div class="modal-step" id="goalAssistLabel">Who assisted?</div>
+    <div class="modal-player-grid" id="goalAssistGrid"></div>
+    <button class="btn-primary" style="margin-top:12px;" onclick="saveGoal()">Save goal</button>
+    <button class="btn-secondary" style="margin-top:8px;" onclick="closeModal('goalModal')">Cancel</button>
   </div>
 </div>
 
@@ -1143,20 +1142,17 @@
 
 <!-- Clean sheet modal -->
 <div class="modal-overlay hidden" id="csModal">
-  <div class="modal">
+  <div class="modal" style="max-height:88vh;overflow-y:auto;">
     <div class="modal-handle"></div>
     <div class="modal-title">Clean Sheet Quarter 🧤</div>
     <div class="modal-sub">Q<span id="csModalQ"></span></div>
-    <div id="csStep1">
-      <div class="modal-step">Goalkeeper this quarter?</div>
-      <div class="modal-player-grid" id="csGKGrid"></div>
-    </div>
-    <div id="csStep2" style="display:none;">
-      <div class="modal-step">GK: <span id="csGKLabel" style="color:var(--gold);font-weight:700;"></span> · Select defenders</div>
-      <div class="modal-player-grid" id="csDefGrid"></div>
-      <button class="btn-primary" style="margin-top:12px;" onclick="confirmCS()">Confirm clean sheet</button>
-      <button class="btn-secondary" onclick="csBack()">← Back</button>
-    </div>
+    <div class="modal-step">Goalkeeper this quarter?</div>
+    <div class="modal-player-grid" id="csGKGrid"></div>
+    <div style="border-top:1px solid var(--light-grey);margin:12px 0;"></div>
+    <div class="modal-step">Defenders this quarter? <span style="font-size:12px;color:var(--mid-grey);font-weight:400;">(select all that apply)</span></div>
+    <div class="modal-player-grid" id="csDefGrid"></div>
+    <button class="btn-primary" style="margin-top:12px;" onclick="confirmCS()">Confirm clean sheet</button>
+    <button class="btn-secondary" style="margin-top:8px;" onclick="closeModal('csModal')">Cancel</button>
   </div>
 </div>
 
@@ -1318,7 +1314,7 @@
 
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyRiGa5jg1roJh3drjIvHv96axQiX_bTDnGiGAeeGFsxb94_G1xA1z6GFkk5n0eZ97B5g/exec";
-const APP_VERSION = "2026-07-01-38"; // bumped automatically on every update
+const APP_VERSION = "2026-07-01-39"; // bumped automatically on every update
 const AGE = "U11";
 
 const DEFAULT_SQUADS = {
@@ -1681,36 +1677,42 @@ function addOppo(q) {
 function addCS(q) { activeQ = q; openCSModal(); }
 
 // ── GOAL MODAL ──
+let tempAssister = null;
+
 function openGoalModal() {
   tempScorer = null;
+  tempAssister = null;
   document.getElementById('goalModalQ').textContent = activeQ;
-  document.getElementById('goalStep1').style.display = '';
-  document.getElementById('goalStep2').style.display = 'none';
+  renderGoalModal();
+  openModal('goalModal');
+}
 
-  const grid = document.getElementById('goalScorerGrid');
+function renderGoalModal() {
   const players = [...state.selectedPlayers, 'Own Goal'];
-  grid.innerHTML = players.map(p =>
-    `<button class="modal-player-btn${p === 'Own Goal' ? '" style="background:var(--off-white);color:var(--mid-grey);border-color:var(--light-grey);' : '"'} onclick="selectScorer('${p}')">${p}</button>`
+  document.getElementById('goalScorerGrid').innerHTML = players.map(p =>
+    `<button class="modal-player-btn${p === tempScorer ? ' selected-scorer' : ''}" onclick="selectScorer('${p}')">${p}</button>`
   ).join('');
 
-  openModal('goalModal');
+  const assistOptions = ['No assist', ...state.selectedPlayers.filter(p => p !== tempScorer)];
+  document.getElementById('goalAssistGrid').innerHTML = assistOptions.map(p =>
+    `<button class="modal-player-btn${p === tempAssister ? ' selected-scorer' : ''}${p === 'No assist' ? ' no-assist' : ''}" onclick="selectAssist('${p}')">${p}</button>`
+  ).join('');
 }
 
 function selectScorer(name) {
   tempScorer = name;
-  document.getElementById('goalScorerLabel').textContent = name;
-  document.getElementById('goalStep1').style.display = 'none';
-  document.getElementById('goalStep2').style.display = '';
-
-  const grid = document.getElementById('goalAssistGrid');
-  const options = ['No assist', ...state.selectedPlayers.filter(p => p !== name)];
-  grid.innerHTML = options.map((p,i) =>
-    `<button class="modal-player-btn ${i===0?'no-assist':''}" onclick="selectAssist('${p}')">${p}</button>`
-  ).join('');
+  tempAssister = null;
+  renderGoalModal();
 }
 
 function selectAssist(name) {
-  const assister = name === 'No assist' ? null : name;
+  tempAssister = name;
+  renderGoalModal();
+}
+
+function saveGoal() {
+  if (!tempScorer) { showToast('Select a scorer'); return; }
+  const assister = (!tempAssister || tempAssister === 'No assist') ? null : tempAssister;
   state.events.push({
     id: Date.now() + Math.random(),
     type: 'goal',
@@ -1738,23 +1740,21 @@ function openCSModal() {
   tempGK = null;
   tempDefenders = [];
   document.getElementById('csModalQ').textContent = activeQ;
-  document.getElementById('csStep1').style.display = '';
-  document.getElementById('csStep2').style.display = 'none';
-
-  const grid = document.getElementById('csGKGrid');
-  grid.innerHTML = state.selectedPlayers.map(p =>
-    `<button class="modal-player-btn" onclick="selectCSGK('${p}')">${p}</button>`
-  ).join('');
-
+  renderCSModal();
   openModal('csModal');
+}
+
+function renderCSModal() {
+  document.getElementById('csGKGrid').innerHTML = state.selectedPlayers.map(p =>
+    `<button class="modal-player-btn${p === tempGK ? ' selected-scorer' : ''}" onclick="selectCSGK('${p}')">${p}</button>`
+  ).join('');
+  renderCSDefGrid();
 }
 
 function selectCSGK(name) {
   tempGK = name;
-  document.getElementById('csGKLabel').textContent = name;
-  document.getElementById('csStep1').style.display = 'none';
-  document.getElementById('csStep2').style.display = '';
-  renderCSDefGrid();
+  tempDefenders = tempDefenders.filter(p => p !== name);
+  renderCSModal();
 }
 
 function renderCSDefGrid() {
