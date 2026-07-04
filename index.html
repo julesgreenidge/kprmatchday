@@ -472,9 +472,9 @@
     color: white;
   }
   .modal-player-btn.no-assist {
-    border-color: var(--navy);
-    background: var(--navy);
-    color: white;
+    border-color: var(--light-grey);
+    background: white;
+    color: var(--text);
   }
   .modal-player-btn.cs-gk {
     border-color: var(--gold);
@@ -482,16 +482,21 @@
     color: white;
   }
   .modal-player-btn.cs-def-selected {
-    border-color: var(--navy);
-    background: var(--navy);
+    border-color: var(--gold);
+    background: var(--gold);
     color: white;
   }
+  .modal-player-btn.cs-player {
+    border-color: var(--gold);
+    color: var(--navy);
+    background: white;
+  }
   .modal-step {
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 700;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.03em;
     text-transform: uppercase;
-    color: var(--mid-grey);
+    color: var(--navy);
     margin-bottom: 10px;
   }
 
@@ -1130,7 +1135,7 @@
     <div class="modal-sub">Quarter <span id="goalModalQ"></span></div>
     <div class="modal-step">Who scored?</div>
     <div class="modal-player-grid" id="goalScorerGrid"></div>
-    <div style="border-top:1px solid var(--light-grey);margin:12px 0;"></div>
+    <div style="border-top:2px solid var(--navy);margin:12px 0;opacity:0.15;"></div>
     <div class="modal-step" id="goalAssistLabel">Who assisted?</div>
     <div class="modal-player-grid" id="goalAssistGrid"></div>
     <button class="btn-primary" style="margin-top:12px;" onclick="saveGoal()">Save goal</button>
@@ -1148,7 +1153,7 @@
     <div class="modal-sub">Q<span id="csModalQ"></span></div>
     <div class="modal-step">Goalkeeper this quarter?</div>
     <div class="modal-player-grid" id="csGKGrid"></div>
-    <div style="border-top:1px solid var(--light-grey);margin:12px 0;"></div>
+    <div style="border-top:2px solid var(--navy);margin:12px 0;opacity:0.15;"></div>
     <div class="modal-step">Defenders this quarter? <span style="font-size:12px;color:var(--mid-grey);font-weight:400;">(select all that apply)</span></div>
     <div class="modal-player-grid" id="csDefGrid"></div>
     <button class="btn-primary" style="margin-top:12px;" onclick="confirmCS()">Confirm clean sheet</button>
@@ -1314,7 +1319,7 @@
 
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyRiGa5jg1roJh3drjIvHv96axQiX_bTDnGiGAeeGFsxb94_G1xA1z6GFkk5n0eZ97B5g/exec";
-const APP_VERSION = "2026-07-01-39"; // bumped automatically on every update
+const APP_VERSION = "2026-07-01-40"; // bumped automatically on every update
 const AGE = "U11";
 
 const DEFAULT_SQUADS = {
@@ -1693,7 +1698,7 @@ function renderGoalModal() {
     `<button class="modal-player-btn${p === tempScorer ? ' selected-scorer' : ''}" onclick="selectScorer('${p}')">${p}</button>`
   ).join('');
 
-  const assistOptions = ['No assist', ...state.selectedPlayers.filter(p => p !== tempScorer)];
+  const assistOptions = [...state.selectedPlayers.filter(p => p !== tempScorer), 'No assist'];
   document.getElementById('goalAssistGrid').innerHTML = assistOptions.map(p =>
     `<button class="modal-player-btn${p === tempAssister ? ' selected-scorer' : ''}${p === 'No assist' ? ' no-assist' : ''}" onclick="selectAssist('${p}')">${p}</button>`
   ).join('');
@@ -1746,7 +1751,7 @@ function openCSModal() {
 
 function renderCSModal() {
   document.getElementById('csGKGrid').innerHTML = state.selectedPlayers.map(p =>
-    `<button class="modal-player-btn${p === tempGK ? ' selected-scorer' : ''}" onclick="selectCSGK('${p}')">${p}</button>`
+    `<button class="modal-player-btn cs-player${p === tempGK ? ' cs-def-selected' : ''}" onclick="selectCSGK('${p}')">${p}</button>`
   ).join('');
   renderCSDefGrid();
 }
@@ -1760,7 +1765,7 @@ function selectCSGK(name) {
 function renderCSDefGrid() {
   const grid = document.getElementById('csDefGrid');
   grid.innerHTML = state.selectedPlayers.filter(p => p !== tempGK).map(p =>
-    `<button class="modal-player-btn ${tempDefenders.includes(p)?'cs-def-selected':''}"
+    `<button class="modal-player-btn cs-player ${tempDefenders.includes(p)?'cs-def-selected':''}"
       onclick="toggleCSDef('${p}')">${p}</button>`
   ).join('');
 }
