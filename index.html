@@ -1309,8 +1309,7 @@
     <div class="modal-title" id="editModalTitle">Edit event</div>
     <div class="modal-sub" id="editModalSub"></div>
     <div id="editModalContent"></div>
-    <button class="btn-danger" style="margin-top:10px;" onclick="deleteEditEvent()">Delete event</button>
-    <button class="btn-secondary" onclick="closeModal('editModal')">Cancel</button>
+    <button class="btn-secondary" style="margin-top:8px;" onclick="closeModal('editModal')">Cancel</button>
   </div>
 </div>
 
@@ -1319,7 +1318,7 @@
 
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyRiGa5jg1roJh3drjIvHv96axQiX_bTDnGiGAeeGFsxb94_G1xA1z6GFkk5n0eZ97B5g/exec";
-const APP_VERSION = "2026-07-01-41"; // bumped automatically on every update
+const APP_VERSION = "2026-07-01-42"; // bumped automatically on every update
 const AGE = "U11";
 
 const DEFAULT_SQUADS = {
@@ -1702,9 +1701,9 @@ function renderGoalModal() {
   document.getElementById('goalAssistGrid').innerHTML = assistOptions.map(p => {
     const isScorer = p === tempScorer;
     const isSelected = p === tempAssister;
-    const isNoAssist = p === 'No assist';
     const greyed = isScorer ? ' style="opacity:0.3;pointer-events:none;"' : '';
-    return `<button class="modal-player-btn${isSelected ? ' selected-scorer' : ''}${isNoAssist ? ' no-assist' : ''}"${greyed} onclick="selectAssist('${p}')">${p}</button>`;
+    // No assist uses selected-scorer when selected, otherwise plain button
+    return `<button class="modal-player-btn${isSelected ? ' selected-scorer' : ''}"${greyed} onclick="selectAssist('${p}')">${p}</button>`;
   }).join('');
 }
 
@@ -1721,7 +1720,8 @@ function selectAssist(name) {
 
 function saveGoal() {
   if (!tempScorer) { showToast('Select a scorer'); return; }
-  const assister = (!tempAssister || tempAssister === 'No assist') ? null : tempAssister;
+  if (!tempAssister) { showToast('Select an assister or No assist'); return; }
+  const assister = tempAssister === 'No assist' ? null : tempAssister;
   state.events.push({
     id: Date.now() + Math.random(),
     type: 'goal',
@@ -2290,7 +2290,7 @@ function openEditModal(id) {
   editingId = id;
   activeQ = e.quarter;
   editTempScorer = e.scorer || null;
-  editTempAssister = e.assister || null;
+  editTempAssister = e.assister !== undefined ? (e.assister === null ? 'No assist' : e.assister) : null;
   editTempCSGK = e.gk || null;
   editTempCSDefs = e.defenders ? [...e.defenders] : [];
 
@@ -2299,7 +2299,7 @@ function openEditModal(id) {
   const content = document.getElementById('editModalContent');
 
   if (e.type === 'goal') {
-    title.textContent = '✏️ Edit Goal';
+    title.textContent = 'Edit Goal';
     sub.textContent = 'Q' + e.quarter;
     content.innerHTML = `
       <div class="modal-step">Who scored?</div>
@@ -2310,11 +2310,11 @@ function openEditModal(id) {
       <button class="btn-primary" style="margin-top:12px;" onclick="editSaveGoalNew()">Save goal</button>`;
     renderEditGoalGrids();
   } else if (e.type === 'oppo') {
-    title.textContent = '✏️ Opposition Goal';
+    title.textContent = 'Opposition Goal';
     sub.textContent = 'Q' + e.quarter;
     content.innerHTML = `<p style="font-size:14px;color:var(--mid-grey);padding:8px 0;">No editable fields for opposition goals. Delete and re-add if needed.</p>`;
   } else if (e.type === 'cs') {
-    title.textContent = '✏️ Edit Clean Sheet';
+    title.textContent = 'Edit Clean Sheet';
     sub.textContent = 'Q' + e.quarter;
     content.innerHTML = `
       <div class="modal-step">Goalkeeper this quarter?</div>
@@ -2360,8 +2360,9 @@ function editSaveGoalNew() {
   const idx = state.events.findIndex(ev => ev.id == editingId);
   if (idx === -1) return;
   if (!editTempScorer) { showToast('Select a scorer'); return; }
+  if (editTempAssister === null) { showToast('Select an assister or No assist'); return; }
   state.events[idx].scorer = editTempScorer;
-  state.events[idx].assister = editTempAssister;
+  state.events[idx].assister = editTempAssister === 'No assist' ? null : editTempAssister;
   closeModal('editModal');
   renderAllQuarters();
 }
