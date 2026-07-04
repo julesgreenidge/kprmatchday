@@ -1319,7 +1319,7 @@
 
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyRiGa5jg1roJh3drjIvHv96axQiX_bTDnGiGAeeGFsxb94_G1xA1z6GFkk5n0eZ97B5g/exec";
-const APP_VERSION = "2026-07-01-40"; // bumped automatically on every update
+const APP_VERSION = "2026-07-01-41"; // bumped automatically on every update
 const AGE = "U11";
 
 const DEFAULT_SQUADS = {
@@ -1698,10 +1698,14 @@ function renderGoalModal() {
     `<button class="modal-player-btn${p === tempScorer ? ' selected-scorer' : ''}" onclick="selectScorer('${p}')">${p}</button>`
   ).join('');
 
-  const assistOptions = [...state.selectedPlayers.filter(p => p !== tempScorer), 'No assist'];
-  document.getElementById('goalAssistGrid').innerHTML = assistOptions.map(p =>
-    `<button class="modal-player-btn${p === tempAssister ? ' selected-scorer' : ''}${p === 'No assist' ? ' no-assist' : ''}" onclick="selectAssist('${p}')">${p}</button>`
-  ).join('');
+  const assistOptions = [...state.selectedPlayers, 'No assist'];
+  document.getElementById('goalAssistGrid').innerHTML = assistOptions.map(p => {
+    const isScorer = p === tempScorer;
+    const isSelected = p === tempAssister;
+    const isNoAssist = p === 'No assist';
+    const greyed = isScorer ? ' style="opacity:0.3;pointer-events:none;"' : '';
+    return `<button class="modal-player-btn${isSelected ? ' selected-scorer' : ''}${isNoAssist ? ' no-assist' : ''}"${greyed} onclick="selectAssist('${p}')">${p}</button>`;
+  }).join('');
 }
 
 function selectScorer(name) {
@@ -1751,7 +1755,7 @@ function openCSModal() {
 
 function renderCSModal() {
   document.getElementById('csGKGrid').innerHTML = state.selectedPlayers.map(p =>
-    `<button class="modal-player-btn cs-player${p === tempGK ? ' cs-def-selected' : ''}" onclick="selectCSGK('${p}')">${p}</button>`
+    `<button class="modal-player-btn${p === tempGK ? ' cs-def-selected' : ''}" onclick="selectCSGK('${p}')">${p}</button>`
   ).join('');
   renderCSDefGrid();
 }
@@ -1764,10 +1768,12 @@ function selectCSGK(name) {
 
 function renderCSDefGrid() {
   const grid = document.getElementById('csDefGrid');
-  grid.innerHTML = state.selectedPlayers.filter(p => p !== tempGK).map(p =>
-    `<button class="modal-player-btn cs-player ${tempDefenders.includes(p)?'cs-def-selected':''}"
-      onclick="toggleCSDef('${p}')">${p}</button>`
-  ).join('');
+  grid.innerHTML = state.selectedPlayers.map(p => {
+    const isGK = p === tempGK;
+    const isSelected = tempDefenders.includes(p);
+    const greyed = isGK ? ' style="opacity:0.3;pointer-events:none;"' : '';
+    return `<button class="modal-player-btn${isSelected ? ' cs-def-selected' : ''}"${greyed} onclick="toggleCSDef('${p}')">${p}</button>`;
+  }).join('');
 }
 
 function toggleCSDef(name) {
@@ -2283,6 +2289,10 @@ function openEditModal(id) {
   if (!e) return;
   editingId = id;
   activeQ = e.quarter;
+  editTempScorer = e.scorer || null;
+  editTempAssister = e.assister || null;
+  editTempCSGK = e.gk || null;
+  editTempCSDefs = e.defenders ? [...e.defenders] : [];
 
   const title = document.getElementById('editModalTitle');
   const sub = document.getElementById('editModalSub');
@@ -2290,41 +2300,104 @@ function openEditModal(id) {
 
   if (e.type === 'goal') {
     title.textContent = '✏️ Edit Goal';
-    sub.textContent = 'Q' + e.quarter + ' · Select new scorer';
-    // Step 1: scorer
-    const players = [...state.selectedPlayers, 'Own Goal'];
+    sub.textContent = 'Q' + e.quarter;
     content.innerHTML = `
-      <div class="modal-step" id="editStep1Label">Who scored?</div>
+      <div class="modal-step">Who scored?</div>
       <div class="modal-player-grid" id="editScorerGrid"></div>
-      <div id="editStep2" style="display:none;">
-        <div class="modal-step">Who assisted?</div>
-        <div class="modal-player-grid" id="editAssistGrid"></div>
-      </div>`;
-    document.getElementById('editScorerGrid').innerHTML = players.map(p =>
-      `<button class="modal-player-btn ${p === e.scorer ? 'selected-scorer' : ''}${p === 'Own Goal' ? '" style="background:var(--off-white);color:var(--mid-grey);border-color:var(--light-grey);' : '"'} onclick="editSelectScorer('${p}')">${p}</button>`
-    ).join('');
+      <div style="border-top:2px solid var(--navy);margin:12px 0;opacity:0.15;"></div>
+      <div class="modal-step">Who assisted?</div>
+      <div class="modal-player-grid" id="editAssistGrid"></div>
+      <button class="btn-primary" style="margin-top:12px;" onclick="editSaveGoalNew()">Save goal</button>`;
+    renderEditGoalGrids();
   } else if (e.type === 'oppo') {
     title.textContent = '✏️ Opposition Goal';
     sub.textContent = 'Q' + e.quarter;
     content.innerHTML = `<p style="font-size:14px;color:var(--mid-grey);padding:8px 0;">No editable fields for opposition goals. Delete and re-add if needed.</p>`;
   } else if (e.type === 'cs') {
     title.textContent = '✏️ Edit Clean Sheet';
-    sub.textContent = 'Q' + e.quarter + ' · Select goalkeeper';
+    sub.textContent = 'Q' + e.quarter;
     content.innerHTML = `
-      <div class="modal-step">Goalkeeper</div>
+      <div class="modal-step">Goalkeeper this quarter?</div>
       <div class="modal-player-grid" id="editCSGKGrid"></div>
-      <div id="editCSStep2" style="display:none;">
-        <div class="modal-step">GK: <span id="editCSGKLabel" style="color:var(--gold);font-weight:700;"></span> · Toggle defenders</div>
-        <div class="modal-player-grid" id="editCSDefGrid"></div>
-        <button class="btn-primary" style="margin-top:12px;" onclick="editSaveCS()">Save</button>
-      </div>`;
-    document.getElementById('editCSGKGrid').innerHTML = state.selectedPlayers.map(p =>
-      `<button class="modal-player-btn ${p === e.gk ? 'selected-scorer' : ''}" onclick="editSelectCSGK('${p}')">${p}</button>`
-    ).join('');
-    // Pre-select the existing GK so editing defenders doesn't require re-picking GK
-    editSelectCSGK(e.gk);
+      <div style="border-top:2px solid var(--navy);margin:12px 0;opacity:0.15;"></div>
+      <div class="modal-step">Defenders this quarter? <span style="font-size:12px;color:var(--mid-grey);font-weight:400;">(select all that apply)</span></div>
+      <div class="modal-player-grid" id="editCSDefGrid"></div>
+      <button class="btn-primary" style="margin-top:12px;" onclick="editSaveCSNew()">Save clean sheet</button>`;
+    renderEditCSGrids();
   }
   openModal('editModal');
+}
+
+let editTempAssister = null;
+let editTempCSDefs = [];
+
+function renderEditGoalGrids() {
+  const players = [...state.selectedPlayers, 'Own Goal'];
+  document.getElementById('editScorerGrid').innerHTML = players.map(p =>
+    `<button class="modal-player-btn${p === editTempScorer ? ' selected-scorer' : ''}" onclick="editPickScorer('${p}')">${p}</button>`
+  ).join('');
+  const assistOptions = [...state.selectedPlayers, 'No assist'];
+  document.getElementById('editAssistGrid').innerHTML = assistOptions.map(p => {
+    const isScorer = p === editTempScorer;
+    const isSelected = p === editTempAssister || (p === 'No assist' && !editTempAssister);
+    const greyed = isScorer ? ' style="opacity:0.3;pointer-events:none;"' : '';
+    return `<button class="modal-player-btn${isSelected ? ' selected-scorer' : ''}${p === 'No assist' ? ' no-assist' : ''}"${greyed} onclick="editPickAssist('${p}')">${p}</button>`;
+  }).join('');
+}
+
+function editPickScorer(name) {
+  editTempScorer = name;
+  editTempAssister = null;
+  renderEditGoalGrids();
+}
+
+function editPickAssist(name) {
+  editTempAssister = name === 'No assist' ? null : name;
+  renderEditGoalGrids();
+}
+
+function editSaveGoalNew() {
+  const idx = state.events.findIndex(ev => ev.id == editingId);
+  if (idx === -1) return;
+  if (!editTempScorer) { showToast('Select a scorer'); return; }
+  state.events[idx].scorer = editTempScorer;
+  state.events[idx].assister = editTempAssister;
+  closeModal('editModal');
+  renderAllQuarters();
+}
+
+function renderEditCSGrids() {
+  document.getElementById('editCSGKGrid').innerHTML = state.selectedPlayers.map(p =>
+    `<button class="modal-player-btn${p === editTempCSGK ? ' cs-def-selected' : ''}" onclick="editPickCSGK('${p}')">${p}</button>`
+  ).join('');
+  document.getElementById('editCSDefGrid').innerHTML = state.selectedPlayers.map(p => {
+    const isGK = p === editTempCSGK;
+    const isSelected = editTempCSDefs.includes(p);
+    const greyed = isGK ? ' style="opacity:0.3;pointer-events:none;"' : '';
+    return `<button class="modal-player-btn${isSelected ? ' cs-def-selected' : ''}"${greyed} onclick="editToggleDefNew('${p}')">${p}</button>`;
+  }).join('');
+}
+
+function editPickCSGK(name) {
+  editTempCSGK = name;
+  editTempCSDefs = editTempCSDefs.filter(p => p !== name);
+  renderEditCSGrids();
+}
+
+function editToggleDefNew(name) {
+  if (editTempCSDefs.includes(name)) editTempCSDefs = editTempCSDefs.filter(p => p !== name);
+  else editTempCSDefs.push(name);
+  renderEditCSGrids();
+}
+
+function editSaveCSNew() {
+  const idx = state.events.findIndex(ev => ev.id == editingId);
+  if (idx === -1) return;
+  if (!editTempCSGK) { showToast('Select a goalkeeper'); return; }
+  state.events[idx].gk = editTempCSGK;
+  state.events[idx].defenders = [...editTempCSDefs];
+  closeModal('editModal');
+  renderAllQuarters();
 }
 
 let editTempCSGK = null;
