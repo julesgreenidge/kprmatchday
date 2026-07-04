@@ -202,7 +202,7 @@
   .team-tile.blues { background: #2196F3; }
   .team-tile.reds { background: #cc1818; }
   .team-tile.royals { background: #1a3a8f; }
-  .team-tile.stripes { background: repeating-linear-gradient(90deg, #1a3a8f 0px, #1a3a8f 20%, #cc1818 20%, #cc1818 40%, #1a3a8f 40%, #1a3a8f 60%, #cc1818 60%, #cc1818 80%, #1a3a8f 80%, #1a3a8f 100%); }
+  .team-tile.stripes { background: repeating-linear-gradient(90deg, #cc1818 0px, #cc1818 20%, #1a3a8f 20%, #1a3a8f 40%, #cc1818 40%, #cc1818 60%, #1a3a8f 60%, #1a3a8f 80%, #cc1818 80%, #cc1818 100%); }
   .team-tile .team-name { font-size: 18px; margin-bottom: 2px; }
   .team-tile .team-sub { font-size: 11px; opacity: 0.75; font-weight: 500; }
 
@@ -227,11 +227,7 @@
     color: var(--text);
     appearance: none;
     -webkit-appearance: none;
-    box-sizing: border-box;
-    height: 46px;
   }
-  input[type="date"]:not([value=""]):not(:focus) { color: var(--text); }
-  input[type="date"]:invalid, input[type="date"][value=""] { color: var(--mid-grey); }
   .field input:focus, .field select:focus {
     outline: none;
     border-color: var(--navy);
@@ -398,14 +394,14 @@
     background: var(--navy);
     color: white;
     border-radius: 12px;
-    padding: 12px 16px;
+    padding: 14px 16px;
     display: grid;
     grid-template-columns: 1fr auto 1fr;
     align-items: center;
   }
-  .score-bar .team-label { font-size: 11px; font-weight: 700; opacity: 0.85; line-height: 1.25; word-break: break-word; }
+  .score-bar .team-label { font-size: 13px; font-weight: 700; opacity: 0.85; line-height: 1.25; word-break: break-word; }
   #scoreRight .team-label { text-align: right; }
-  .score-bar .score { font-size: 28px; font-weight: 800; letter-spacing: -0.02em; line-height: 1; margin-top: 2px; }
+  .score-bar .score { font-size: 28px; font-weight: 800; letter-spacing: -0.02em; }
   .score-bar .vs { font-size: 13px; opacity: 0.5; font-weight: 600; text-align: center; padding: 0 12px; }
   .score-bar .q-scores { font-size: 11px; opacity: 0.6; margin-top: 2px; }
 
@@ -795,7 +791,7 @@
   .team-pill.Blues   { background: #2196F3; }
   .team-pill.Reds    { background: #cc1818; }
   .team-pill.Royals  { background: #1a3a8f; }
-  .team-pill.Stripes { background: linear-gradient(90deg, #1a3a8f 50%, #cc1818 50%); }
+  .team-pill.Stripes { background: linear-gradient(90deg, #cc1818 50%, #1a3a8f 50%); }
 
   /* ── MANAGE SQUAD INLINE BTN ── */
   .squad-mgr-btn {
@@ -829,7 +825,7 @@
 </head>
 <body>
 
-<div class="update-banner" id="updateBanner" onclick="forceReload()">Update available - tap to refresh</div>
+<div class="update-banner" id="updateBanner" onclick="forceReload()">Update available — tap to refresh</div>
 
 <!-- HEADER -->
 <div class="app-header">
@@ -864,21 +860,20 @@
 <!-- ② MATCH SETUP -->
 <div class="screen" id="screen-setup">
 
-  <!-- Team indicator bar -->
-  <div style="display:flex;align-items:center;padding:4px 0 14px;">
-    <div id="setupTeamBadge" style="padding:11px 18px;border-radius:12px;font-size:14px;font-weight:700;color:white;background:var(--navy);white-space:nowrap;flex-shrink:0;position:relative;z-index:1;">Blues</div>
-    <div style="display:flex;align-items:center;background:white;border:1.5px solid var(--light-grey);border-left:none;border-radius:0 12px 12px 0;flex:1;min-width:0;height:42px;margin-left:-12px;padding-left:18px;">
-      <button id="changeTeamLink" onclick="openTeamChangeModal()" style="background:none;border:none;font-size:11px;color:var(--mid-grey);cursor:pointer;text-decoration:underline;padding:0 8px;white-space:nowrap;flex-shrink:0;">Select team</button>
-      <div style="flex:1;"></div>
-      <button onclick="openSquadManager(state.team)" style="background:none;border:none;font-size:11px;color:var(--mid-grey);cursor:pointer;padding:0 14px;text-decoration:underline;white-space:nowrap;flex-shrink:0;">Add / remove players</button>
+  <!-- Team indicator -->
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:4px 0 14px;">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div id="setupTeamBadge" style="padding:6px 14px;border-radius:20px;font-size:14px;font-weight:700;color:white;background:var(--navy);">Blues</div>
+      <button onclick="openTeamChangeModal()" style="background:none;border:none;font-size:13px;color:var(--mid-grey);cursor:pointer;text-decoration:underline;padding:0;">Change team</button>
     </div>
+    <button onclick="openSquadManager(state.team)" style="background:none;border:none;font-size:13px;color:var(--mid-grey);cursor:pointer;text-decoration:underline;padding:0;white-space:nowrap;">Add or remove players</button>
   </div>
 
   <div class="card">
     <div class="card-title">Match details</div>
     <div class="field">
       <label>Date</label>
-      <input type="date" id="matchDate" onchange="state.matchDate=this.value" style="width:100%;color-scheme:light;">
+      <input type="date" id="matchDate">
     </div>
     <div class="field" style="position:relative;">
       <label>Opponent</label>
@@ -1005,13 +1000,13 @@
 
   <!-- Clean sheet GK -->
   <div class="card" id="summaryCSGKCard" style="margin-bottom:12px;display:none;">
-    <div style="font-size:15px;font-weight:700;color:#92400e;margin-bottom:10px;">Clean Sheets: Goalkeeper</div>
+    <div style="font-size:15px;font-weight:700;color:#92400e;margin-bottom:10px;">Clean Sheets — Goalkeeper</div>
     <div style="background:#fef3c7;border-radius:8px;padding:10px;" id="summaryCSGKList"></div>
   </div>
 
   <!-- Clean sheet DEF -->
   <div class="card" id="summaryCSDefCard" style="margin-bottom:12px;display:none;">
-    <div style="font-size:15px;font-weight:700;color:#92400e;margin-bottom:10px;">Clean Sheets: Defenders</div>
+    <div style="font-size:15px;font-weight:700;color:#92400e;margin-bottom:10px;">Clean Sheets — Defenders</div>
     <div style="background:#fef3c7;border-radius:8px;padding:10px;" id="summaryCSDefList"></div>
   </div>
 
@@ -1026,7 +1021,7 @@
 
   <button class="btn-primary" id="submitBtn" onclick="confirmSubmit()">Submit results</button>
   <button class="btn-secondary" id="whatsappBtn" onclick="shareWhatsApp()" style="background:#25D366;color:white;border-color:#25D366;margin-top:8px;">WhatsApp Summary <svg width="16" height="16" viewBox="0 0 24 24" fill="white" style="vertical-align:middle;margin-left:4px;"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.123.555 4.116 1.523 5.845L.057 23.428a.75.75 0 0 0 .915.915l5.638-1.481A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.75a9.703 9.703 0 0 1-4.953-1.355l-.355-.211-3.683.967.983-3.595-.231-.369A9.712 9.712 0 0 1 2.25 12C2.25 6.615 6.615 2.25 12 2.25S21.75 6.615 21.75 12 17.385 21.75 12 21.75z"/></svg></button>
-  <button class="btn-danger" onclick="confirmNewMatchFromSummary()" style="margin-top:8px;">New match</button>
+  <button class="btn-danger" onclick="newMatch()" style="margin-top:8px;">New match</button>
 </div>
 
 <!-- BOTTOM NAV -->
@@ -1049,22 +1044,13 @@
 <div class="screen" id="screen-history">
   <div style="padding-bottom:4px;">
     <div style="font-size:18px;font-weight:800;color:var(--navy);margin-bottom:8px;padding-top:4px;">Results</div>
-    <div style="display:flex;gap:8px;margin-bottom:12px;">
-      <select id="historyFilterTeam" onchange="renderHistoryList()" style="flex:1;padding:8px 10px;border:1.5px solid var(--light-grey);border-radius:8px;font-size:13px;background:white;">
-        <option value="">All teams</option>
-        <option value="Blues">Blues</option>
-        <option value="Reds">Reds</option>
-        <option value="Royals">Royals</option>
-        <option value="Stripes">Stripes</option>
-      </select>
-      <select id="historyFilterAge" onchange="renderHistoryList()" style="flex:1;padding:8px 10px;border:1.5px solid var(--light-grey);border-radius:8px;font-size:13px;background:white;">
-        <option value="">All seasons</option>
-        <option value="U11">U11</option>
-        <option value="U10">U10</option>
-        <option value="U9">U9</option>
-      </select>
-      <button onclick="sheetDataLoaded=false;sheetDataLoading=false;localStorage.removeItem('kprSheetData');loadSheetData(true);" title="Refresh" style="background:none;border:1.5px solid var(--light-grey);border-radius:8px;padding:8px 10px;cursor:pointer;color:var(--mid-grey);display:flex;align-items:center;flex-shrink:0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button>
-    </div>
+    <select id="historyFilterTeam" onchange="renderHistoryList()" style="width:100%;padding:8px 10px;border:1.5px solid var(--light-grey);border-radius:8px;font-size:13px;background:white;margin-bottom:12px;">
+      <option value="">All teams</option>
+      <option value="Blues">Blues</option>
+      <option value="Reds">Reds</option>
+      <option value="Royals">Royals</option>
+      <option value="Stripes">Stripes</option>
+    </select>
     <div id="historyList"></div>
   </div>
 </div>
@@ -1077,43 +1063,39 @@
 <div class="screen" id="screen-stats">
   <div style="padding-bottom:4px;">
     <!-- Filter bar -->
-    <div class="card" id="statsFilters" style="margin-bottom:10px;padding:10px 12px;">
-      <div id="mainFilterRow" style="display:flex;gap:8px;align-items:center;margin-bottom:6px;flex-wrap:nowrap;">
-        <select id="statsFilterTeam" onchange="renderStats()" style="flex:1;min-width:0;padding:7px 8px;border:1.5px solid var(--light-grey);border-radius:8px;font-size:13px;background:white;">
+    <div class="card" style="margin-bottom:10px;padding:10px 12px;">
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;">
+        <select id="statsFilterTeam" onchange="renderStats()" style="flex:1;padding:7px 8px;border:1.5px solid var(--light-grey);border-radius:8px;font-size:13px;background:white;">
           <option value="">All teams</option>
           <option value="Blues">Blues</option>
           <option value="Reds">Reds</option>
           <option value="Royals">Royals</option>
           <option value="Stripes">Stripes</option>
         </select>
-        <select id="statsFilterVenue" onchange="renderStats()" style="flex:1;min-width:0;padding:7px 8px;border:1.5px solid var(--light-grey);border-radius:8px;font-size:13px;background:white;">
+        <select id="statsFilterVenue" onchange="renderStats()" style="flex:1;padding:7px 8px;border:1.5px solid var(--light-grey);border-radius:8px;font-size:13px;background:white;">
           <option value="">Venue</option>
           <option value="Home">Home</option>
           <option value="Away">Away</option>
         </select>
+        <select id="statsFilterAge" onchange="renderStats()" style="flex:1;padding:7px 8px;border:1.5px solid var(--light-grey);border-radius:8px;font-size:13px;background:white;">
+          <option value="">All seasons</option>
+          <option value="U9">U9</option>
+          <option value="U10" selected>U10</option>
+          <option value="U11">U11</option>
+        </select>
         <button onclick="sheetDataLoaded=false;sheetDataLoading=false;localStorage.removeItem('kprSheetData');loadSheetData(true);" title="Refresh" style="background:none;border:1.5px solid var(--light-grey);border-radius:8px;padding:7px 10px;cursor:pointer;color:var(--mid-grey);display:flex;align-items:center;flex-shrink:0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button>
       </div>
-      <div id="opponentFilterRow" style="display:flex;gap:8px;">
-        <select id="statsFilterOpponent" onchange="renderStats()" style="flex:1;min-width:0;padding:7px 8px;border:1.5px solid var(--light-grey);border-radius:8px;font-size:13px;background:white;">
-          <option value="">All opponents</option>
-        </select>
-        <select id="statsFilterAge" onchange="renderStats()" style="flex:1;min-width:0;padding:7px 8px;border:1.5px solid var(--light-grey);border-radius:8px;font-size:13px;background:white;">
-          <option value="">All seasons</option>
-          <option value="U11">U11</option>
-          <option value="U10" selected>U10</option>
-          <option value="U9">U9</option>
-        </select>
-      </div>
-      <!-- Quarters-specific filters removed - uses same filters as other tabs -->
+      <select id="statsFilterOpponent" onchange="renderStats()" style="width:100%;padding:7px 8px;border:1.5px solid var(--light-grey);border-radius:8px;font-size:13px;background:white;" id="statsFilterOpponent">
+        <option value="">All opponents</option>
+      </select>
     </div>
 
     <!-- Stat tabs -->
     <div style="display:flex;gap:6px;margin-bottom:10px;overflow-x:auto;padding-bottom:2px;-webkit-overflow-scrolling:touch;">
       <button class="stat-tab active" onclick="switchStatTab('club')">Club</button>
       <button class="stat-tab" onclick="switchStatTab('players')">Players</button>
-      <button class="stat-tab" onclick="switchStatTab('teams')">KPR Teams</button>
+      <button class="stat-tab" onclick="switchStatTab('teams')">Teams</button>
       <button class="stat-tab" onclick="switchStatTab('opponents')">Opponents</button>
-      <button class="stat-tab" onclick="switchStatTab('quarters')">Quarters</button>
     </div>
 
     <div id="statsContent"></div>
@@ -1124,17 +1106,18 @@
 
 <!-- Goal modal -->
 <div class="modal-overlay hidden" id="goalModal">
-  <div class="modal" style="max-height:88vh;overflow-y:auto;">
+  <div class="modal">
     <div class="modal-handle"></div>
     <div class="modal-title">KPR Goal ⚽</div>
     <div class="modal-sub">Quarter <span id="goalModalQ"></span></div>
-    <div class="modal-step">Who scored?</div>
-    <div class="modal-player-grid" id="goalScorerGrid"></div>
-    <div style="border-top:1px solid var(--light-grey);margin:12px 0;"></div>
-    <div class="modal-step" id="goalAssistLabel">Who assisted?</div>
-    <div class="modal-player-grid" id="goalAssistGrid"></div>
-    <button class="btn-primary" style="margin-top:12px;" onclick="saveGoal()">Save goal</button>
-    <button class="btn-secondary" style="margin-top:8px;" onclick="closeModal('goalModal')">Cancel</button>
+    <div id="goalStep1">
+      <div class="modal-step">Who scored?</div>
+      <div class="modal-player-grid" id="goalScorerGrid"></div>
+    </div>
+    <div id="goalStep2" style="display:none;">
+      <div class="modal-step">Goal by <span id="goalScorerLabel" style="color:var(--green);"></span> — who assisted?</div>
+      <div class="modal-player-grid" id="goalAssistGrid"></div>
+    </div>
   </div>
 </div>
 
@@ -1142,17 +1125,20 @@
 
 <!-- Clean sheet modal -->
 <div class="modal-overlay hidden" id="csModal">
-  <div class="modal" style="max-height:88vh;overflow-y:auto;">
+  <div class="modal">
     <div class="modal-handle"></div>
     <div class="modal-title">Clean Sheet Quarter 🧤</div>
     <div class="modal-sub">Q<span id="csModalQ"></span></div>
-    <div class="modal-step">Goalkeeper this quarter?</div>
-    <div class="modal-player-grid" id="csGKGrid"></div>
-    <div style="border-top:1px solid var(--light-grey);margin:12px 0;"></div>
-    <div class="modal-step">Defenders this quarter? <span style="font-size:12px;color:var(--mid-grey);font-weight:400;">(select all that apply)</span></div>
-    <div class="modal-player-grid" id="csDefGrid"></div>
-    <button class="btn-primary" style="margin-top:12px;" onclick="confirmCS()">Confirm clean sheet</button>
-    <button class="btn-secondary" style="margin-top:8px;" onclick="closeModal('csModal')">Cancel</button>
+    <div id="csStep1">
+      <div class="modal-step">Goalkeeper this quarter?</div>
+      <div class="modal-player-grid" id="csGKGrid"></div>
+    </div>
+    <div id="csStep2" style="display:none;">
+      <div class="modal-step">GK: <span id="csGKLabel" style="color:var(--gold);font-weight:700;"></span> · Select defenders</div>
+      <div class="modal-player-grid" id="csDefGrid"></div>
+      <button class="btn-primary" style="margin-top:12px;" onclick="confirmCS()">Confirm clean sheet</button>
+      <button class="btn-secondary" onclick="csBack()">← Back</button>
+    </div>
   </div>
 </div>
 
@@ -1193,58 +1179,31 @@
       </div>
       <div id="hdResult" style="margin-left:8px;"></div>
     </div>
-    <!-- Edit mode: date and opponent fields -->
-    <div id="hdEditMatchDetails" style="display:none;margin-bottom:12px;">
-      <div style="font-size:12px;font-weight:700;color:var(--mid-grey);margin-bottom:4px;">Date</div>
-      <input type="date" id="hdEditDate" style="width:100%;padding:8px 10px;border:1.5px solid var(--light-grey);border-radius:8px;font-size:13px;background:white;margin-bottom:8px;">
-      <div style="font-size:12px;font-weight:700;color:var(--mid-grey);margin-bottom:4px;">Opponent</div>
-      <input type="text" id="hdEditOpponent" autocomplete="off" autocapitalize="words" style="width:100%;padding:8px 10px;border:1.5px solid var(--light-grey);border-radius:8px;font-size:13px;background:white;">
-    </div>
     <div style="border-top:1px solid var(--light-grey);margin:12px 0;"></div>
     <div id="hdQuarters"></div>
-    <div id="hdAwardsDivider" style="border-top:1px solid var(--light-grey);margin:12px 0;"></div>
+    <div style="border-top:1px solid var(--light-grey);margin:12px 0;"></div>
     <div id="hdAwardsView">
-      <div style="padding:8px 10px;background:var(--off-white);border-radius:8px;margin-bottom:5px;font-size:13px;"><span style="color:var(--navy);font-weight:600;">Star Player</span>: <span id="hdStar">None</span></div>
-      <div style="padding:8px 10px;background:var(--off-white);border-radius:8px;font-size:13px;"><span style="color:var(--navy);font-weight:600;">Over-achiever</span>: <span id="hdPasser">None</span></div>
+      <div style="font-size:13px;"><strong>Star Player:</strong> <span id="hdStar"></span></div>
+      <div style="font-size:13px;margin-top:4px;"><strong>Over-achiever:</strong> <span id="hdPasser"></span></div>
     </div>
-    <div id="hdAwardsEdit" style="display:none;width:100%;">
-      <div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:8px;">Star Player</div>
-      <div id="hdStarGrid" style="width:100%;"></div>
-      <div style="font-size:12px;font-weight:700;color:var(--navy);margin:12px 0 8px;">Over-achiever</div>
-      <div id="hdPasserGrid" style="width:100%;"></div>
+    <div id="hdAwardsEdit" style="display:none;">
+      <div style="font-size:12px;font-weight:700;color:var(--mid-grey);margin-bottom:6px;">Star Player</div>
+      <div class="modal-player-grid" id="hdStarGrid"></div>
+      <div style="font-size:12px;font-weight:700;color:var(--mid-grey);margin:10px 0 6px;">Over-achiever</div>
+      <div class="modal-player-grid" id="hdPasserGrid"></div>
     </div>
-    <div id="hdEditNote" style="font-size:11px;color:var(--mid-grey);margin-top:14px;display:none;">Add or remove events below, then save. Saving replaces all stats for this match.</div>
+    <div id="hdEditNote" style="font-size:11px;color:var(--mid-grey);margin-top:14px;display:none;">Add or remove events below, then save. Saving replaces all stats for this match in Google Sheets.</div>
     <div id="hdEditAddBtns" style="display:none;gap:8px;margin-top:10px;">
       <button class="qevent-btn goal" style="flex:1;" onclick="hdAddEvent('goal')">Add Goal</button>
       <button class="qevent-btn oppo" style="flex:1;" onclick="hdAddEvent('oppo')">Add Opp Goal</button>
       <button class="qevent-btn cs" style="flex:1;" onclick="hdAddEvent('cs')">Add Clean Sheet</button>
     </div>
-
-    <!-- View mode buttons -->
-    <div id="hdViewBtns" style="margin-top:16px;">
-      <div style="display:flex;gap:8px;">
-        <button id="hdEditBtn" class="btn-secondary" style="flex:1;" onclick="toggleHistoryEdit()">Edit</button>
-        <button id="hdDeleteBtn" class="btn-danger" style="flex:1;" onclick="deleteHistoryMatch()">Delete match</button>
-      </div>
-      <div id="hdLockedMsg" style="display:none;font-size:13px;color:var(--mid-grey);text-align:center;padding:10px 0;">Results for prior seasons cannot be edited or deleted</div>
+    <div style="display:flex;gap:8px;margin-top:16px;">
+      <button id="hdEditBtn" class="btn-secondary" style="flex:1;" onclick="toggleHistoryEdit()">Edit</button>
+      <button class="btn-danger" style="flex:1;" onclick="deleteHistoryMatch()">Delete</button>
     </div>
-    <button id="hdCloseBtn" class="btn-secondary" style="margin-top:8px;width:100%;" onclick="closeHistoryDetail()">Close</button>
-
-    <!-- Edit mode buttons -->
-    <div id="hdEditBtns" style="display:none;margin-top:16px;">
-      <button id="hdSaveBtn" class="btn-primary" style="width:100%;" onclick="saveHistoryEdit()">Save changes</button>
-      <button class="btn-secondary" style="width:100%;margin-top:8px;" onclick="toggleHistoryEdit()">Cancel edit</button>
-    </div>
-  </div>
-</div>
-
-<!-- History edit: add event sub-modal -->
-<div class="modal-overlay hidden" id="hdAddEventModal">
-  <div class="modal" style="max-height:88vh;overflow-y:auto;">
-    <div class="modal-handle"></div>
-    <div class="modal-title" id="hdAddEventTitle">Add event</div>
-    <div id="hdAddEventContent"></div>
-    <button class="btn-secondary" style="margin-top:12px;width:100%;" onclick="closeModal('hdAddEventModal')">Close</button>
+    <button id="hdSaveBtn" class="btn-primary" style="width:100%;margin-top:8px;display:none;" onclick="saveHistoryEdit()">Save changes</button>
+    <button class="btn-secondary" style="margin-top:8px;width:100%;" onclick="closeHistoryDetail()">Close</button>
   </div>
 </div>
 
@@ -1252,14 +1211,14 @@
 <div class="modal-overlay hidden" id="teamChangeModal">
   <div class="modal">
     <div class="modal-handle"></div>
-    <div class="modal-title" id="teamChangeModalTitle">Select team</div>
+    <div class="modal-title">Change team</div>
     <div class="team-grid" style="margin-top:12px;">
       <button class="team-tile blues" onclick="selectTeam('Blues');closeModal('teamChangeModal')"><div class="team-name">Blues</div></button>
       <button class="team-tile reds" onclick="selectTeam('Reds');closeModal('teamChangeModal')"><div class="team-name">Reds</div></button>
       <button class="team-tile royals" onclick="selectTeam('Royals');closeModal('teamChangeModal')"><div class="team-name">Royals</div></button>
       <button class="team-tile stripes" onclick="selectTeam('Stripes');closeModal('teamChangeModal')"><div class="team-name">Stripes</div></button>
     </div>
-    <button id="teamChangeModalCancel" class="btn-secondary" style="margin-top:12px;" onclick="closeModal('teamChangeModal')">Cancel</button>
+    <button class="btn-secondary" style="margin-top:12px;" onclick="closeModal('teamChangeModal')">Cancel</button>
   </div>
 </div>
 
@@ -1267,11 +1226,10 @@
 <div class="modal-overlay hidden" id="submitConfirmModal">
   <div class="modal">
     <div class="modal-handle"></div>
-    <div class="modal-title" id="submitConfirmTitle">Submit results?</div>
+    <div class="modal-title">Submit results?</div>
     <div class="modal-sub" id="submitConfirmSub"></div>
-    <div id="submitConfirmErrors" style="display:none;margin:10px 0;"></div>
-    <button class="btn-primary" id="submitConfirmBtn" onclick="closeModal('submitConfirmModal');submitMatch();">Confirm</button>
-    <button class="btn-secondary" id="submitCancelBtn" onclick="closeModal('submitConfirmModal')">Cancel</button>
+    <button class="btn-primary" onclick="closeModal('submitConfirmModal');submitMatch();">Confirm</button>
+    <button class="btn-secondary" onclick="closeModal('submitConfirmModal')">Cancel</button>
   </div>
 </div>
 
@@ -1314,7 +1272,7 @@
 
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyRiGa5jg1roJh3drjIvHv96axQiX_bTDnGiGAeeGFsxb94_G1xA1z6GFkk5n0eZ97B5g/exec";
-const APP_VERSION = "2026-07-01-39"; // bumped automatically on every update
+const APP_VERSION = "2026-06-30-21"; // bumped automatically on every update
 const AGE = "U11";
 
 const DEFAULT_SQUADS = {
@@ -1331,7 +1289,7 @@ const TEAM_COLOURS = {
   Blues: '#2196F3', Reds: '#cc1818', Royals: '#1a3a8f', Stripes: '#1565C0'
 };
 function getTeamBackground(team) {
-  if (team === 'Stripes') return 'linear-gradient(90deg, #1a3a8f 50%, #cc1818 50%)';
+  if (team === 'Stripes') return 'linear-gradient(90deg, #cc1818 50%, #1a3a8f 50%)';
   return TEAM_COLOURS[team] || 'var(--navy)';
 }
 const TEAM_TAG_COLOURS_MAP = {
@@ -1439,12 +1397,7 @@ function hideOpponentDropdown() {
   document.getElementById('opponentDropdown').style.display = 'none';
 }
 
-function openTeamChangeModal() {
-  const hasTeam = !!state.team;
-  document.getElementById('teamChangeModalTitle').textContent = hasTeam ? 'Change team' : 'Select team';
-  document.getElementById('teamChangeModalCancel').style.display = hasTeam ? 'block' : 'none';
-  openModal('teamChangeModal');
-}
+function openTeamChangeModal() { openModal('teamChangeModal'); }
 
 // ── NAVIGATION ──
 function switchTab(tab) {
@@ -1518,22 +1471,19 @@ function selectTeam(team) {
   state._matchEnded = false;
   state._matchStarted = false;
   state.selectedPlayers = [];
+  state._matchStarted = false;
+  state._matchEnded = false;
   state.events = [];
   state.starPlayer = null;
   state.bestPasser = null;
-
-  localStorage.setItem('kprLastTeam', team);
 
   document.getElementById('scoreBar').style.background = 'var(--navy)';
   document.getElementById('scoreLeftLabel').textContent = 'KPR ' + team;
   const badge = document.getElementById('setupTeamBadge');
   if (badge) { badge.textContent = team; badge.style.background = getTeamBackground(team); }
 
-  // Update "Change team" link label now team is set
-  const changeLink = document.getElementById('changeTeamLink');
-  if (changeLink) changeLink.textContent = 'Change team';
-
-  document.getElementById('matchDate').value = '';
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('matchDate').value = today;
 
   showScreen('screen-setup');
   document.getElementById('headerTitle').textContent = 'Match Day';
@@ -1576,7 +1526,6 @@ function startMatch() {
     state.bestPasser = null;
   }
   state._matchStarted = true;
-  // Show "New match" button on setup for next time manager returns
 
   // Score bar: home = KPR left, away = KPR right
   updateScoreBarLayout();
@@ -1614,7 +1563,7 @@ function renderEventListForQ(q) {
         ${detail ? `<div style="font-size:13px;color:var(--mid-grey);">${detail}</div>` : ''}
       </div>
       <div style="display:flex;gap:10px;flex-shrink:0;margin-top:1px;align-items:center;">
-        ${e.type !== 'oppo' ? `<button onclick="openEditModal('${e.id}')" title="Edit" style="background:none;border:none;cursor:pointer;padding:2px;color:var(--mid-grey);line-height:1;display:flex;align-items:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>` : ''}
+        <button onclick="openEditModal('${e.id}')" title="Edit" style="background:none;border:none;cursor:pointer;padding:2px;color:var(--mid-grey);line-height:1;display:flex;align-items:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
         <button onclick="deleteEventDirect('${e.id}')" title="Delete" style="background:none;border:none;cursor:pointer;padding:2px;color:var(--red);line-height:1;display:flex;align-items:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>
       </div>
     </div>`;
@@ -1677,42 +1626,36 @@ function addOppo(q) {
 function addCS(q) { activeQ = q; openCSModal(); }
 
 // ── GOAL MODAL ──
-let tempAssister = null;
-
 function openGoalModal() {
   tempScorer = null;
-  tempAssister = null;
   document.getElementById('goalModalQ').textContent = activeQ;
-  renderGoalModal();
+  document.getElementById('goalStep1').style.display = '';
+  document.getElementById('goalStep2').style.display = 'none';
+
+  const grid = document.getElementById('goalScorerGrid');
+  const players = [...state.selectedPlayers, 'OG'];
+  grid.innerHTML = players.map(p =>
+    `<button class="modal-player-btn" onclick="selectScorer('${p}')">${p}</button>`
+  ).join('');
+
   openModal('goalModal');
-}
-
-function renderGoalModal() {
-  const players = [...state.selectedPlayers, 'Own Goal'];
-  document.getElementById('goalScorerGrid').innerHTML = players.map(p =>
-    `<button class="modal-player-btn${p === tempScorer ? ' selected-scorer' : ''}" onclick="selectScorer('${p}')">${p}</button>`
-  ).join('');
-
-  const assistOptions = ['No assist', ...state.selectedPlayers.filter(p => p !== tempScorer)];
-  document.getElementById('goalAssistGrid').innerHTML = assistOptions.map(p =>
-    `<button class="modal-player-btn${p === tempAssister ? ' selected-scorer' : ''}${p === 'No assist' ? ' no-assist' : ''}" onclick="selectAssist('${p}')">${p}</button>`
-  ).join('');
 }
 
 function selectScorer(name) {
   tempScorer = name;
-  tempAssister = null;
-  renderGoalModal();
+  document.getElementById('goalScorerLabel').textContent = name;
+  document.getElementById('goalStep1').style.display = 'none';
+  document.getElementById('goalStep2').style.display = '';
+
+  const grid = document.getElementById('goalAssistGrid');
+  const options = ['No assist', ...state.selectedPlayers.filter(p => p !== name)];
+  grid.innerHTML = options.map((p,i) =>
+    `<button class="modal-player-btn ${i===0?'no-assist':''}" onclick="selectAssist('${p}')">${p}</button>`
+  ).join('');
 }
 
 function selectAssist(name) {
-  tempAssister = name;
-  renderGoalModal();
-}
-
-function saveGoal() {
-  if (!tempScorer) { showToast('Select a scorer'); return; }
-  const assister = (!tempAssister || tempAssister === 'No assist') ? null : tempAssister;
+  const assister = name === 'No assist' ? null : name;
   state.events.push({
     id: Date.now() + Math.random(),
     type: 'goal',
@@ -1740,21 +1683,23 @@ function openCSModal() {
   tempGK = null;
   tempDefenders = [];
   document.getElementById('csModalQ').textContent = activeQ;
-  renderCSModal();
-  openModal('csModal');
-}
+  document.getElementById('csStep1').style.display = '';
+  document.getElementById('csStep2').style.display = 'none';
 
-function renderCSModal() {
-  document.getElementById('csGKGrid').innerHTML = state.selectedPlayers.map(p =>
-    `<button class="modal-player-btn${p === tempGK ? ' selected-scorer' : ''}" onclick="selectCSGK('${p}')">${p}</button>`
+  const grid = document.getElementById('csGKGrid');
+  grid.innerHTML = state.selectedPlayers.map(p =>
+    `<button class="modal-player-btn" onclick="selectCSGK('${p}')">${p}</button>`
   ).join('');
-  renderCSDefGrid();
+
+  openModal('csModal');
 }
 
 function selectCSGK(name) {
   tempGK = name;
-  tempDefenders = tempDefenders.filter(p => p !== name);
-  renderCSModal();
+  document.getElementById('csGKLabel').textContent = name;
+  document.getElementById('csStep1').style.display = 'none';
+  document.getElementById('csStep2').style.display = '';
+  renderCSDefGrid();
 }
 
 function renderCSDefGrid() {
@@ -1845,47 +1790,48 @@ function goToSetup() {
   document.getElementById('headerTitle').textContent = 'Match Day';
   setHeaderBack(false);
   // Restore current match details in the form
-  document.getElementById('matchDate').value = state.matchDate || new Date().toISOString().split('T')[0];
+  if (state.matchDate) document.getElementById('matchDate').value = state.matchDate;
   if (state.opponent) document.getElementById('matchOpponent').value = state.opponent;
   setVenue(state.venue || 'Home');
 }
 
 function endMatch() {
+  // Hard block: a quarter cannot have both an opposition goal and a clean sheet —
+  // a clean sheet means zero goals conceded that quarter, so these are contradictory.
   const conflicting = [1,2,3,4].filter(q => {
     const hasOppo = state.events.some(e => e.quarter === q && e.type === 'oppo');
     const hasCS = state.events.some(e => e.quarter === q && e.type === 'cs');
     return hasOppo && hasCS;
   });
 
+  if (conflicting.length > 0) {
+    const qList = conflicting.map(q => 'Q' + q).join(', ');
+    document.getElementById('endMatchWarningTitle').textContent = 'Conflicting data';
+    document.getElementById('endMatchWarningSub').textContent =
+      `${qList} has both an opposition goal and a clean sheet recorded. A clean sheet means no goals were conceded, so these can't both be true. Please fix this before ending the match.`;
+    document.getElementById('endMatchWarningContinueBtn').style.display = 'none';
+    openModal('endMatchWarningModal');
+    return;
+  }
+
+  // Soft warning: quarters with neither an opposition goal nor a clean sheet recorded
   const missingCS = [1,2,3,4].filter(q => {
     const hasOppo = state.events.some(e => e.quarter === q && e.type === 'oppo');
     const hasCS = state.events.some(e => e.quarter === q && e.type === 'cs');
     return !hasOppo && !hasCS;
   });
 
-  if (conflicting.length === 0 && missingCS.length === 0) {
-    proceedToEndMatch();
+  if (missingCS.length > 0) {
+    const qList = missingCS.map(q => 'Q' + q).join(', ');
+    document.getElementById('endMatchWarningTitle').textContent = 'Check quarters';
+    document.getElementById('endMatchWarningSub').textContent =
+      `No opposition goal or clean sheet recorded in ${qList}. If it was a clean sheet quarter, go back and add it.`;
+    document.getElementById('endMatchWarningContinueBtn').style.display = 'block';
+    openModal('endMatchWarningModal');
     return;
   }
 
-  const triangle = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;flex-shrink:0;margin-right:6px;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
-
-  let messages = [];
-  if (conflicting.length > 0) {
-    const qList = conflicting.map(q => 'Q' + q).join(', ');
-    messages.push(`<div style="display:flex;align-items:flex-start;margin-bottom:${missingCS.length?'10px':'0'};color:var(--navy);">${triangle}<span>${qList} has both an opposition goal and a clean sheet - remove one before continuing.</span></div>`);
-  }
-  if (missingCS.length > 0) {
-    const qList = missingCS.map(q => 'Q' + q).join(', ');
-    messages.push(`<div style="display:flex;align-items:flex-start;color:var(--navy);">${triangle}<span>${qList} has no opposition goal or clean sheet - add one before ending the match.</span></div>`);
-  }
-
-  const title = conflicting.length > 0 ? 'Conflicting data' : 'Check quarters';
-  document.getElementById('endMatchWarningTitle').textContent = title;
-  document.getElementById('endMatchWarningSub').innerHTML = messages.join('');
-  document.getElementById('endMatchWarningContinueBtn').style.display = 'block';
-
-  openModal('endMatchWarningModal');
+  proceedToEndMatch();
 }
 
 function proceedToEndMatch() {
@@ -1923,7 +1869,7 @@ function proceedToEndMatch() {
   let ogGoals = 0;
   state.events.forEach(e => {
     if (e.type === 'goal') {
-      if (e.scorer === 'Own Goal') ogGoals++;
+      if (e.scorer === 'OG') ogGoals++;
       else if (stats[e.scorer]) stats[e.scorer].goals++;
       if (e.assister && stats[e.assister]) stats[e.assister].assists++;
     } else if (e.type === 'cs') {
@@ -1942,7 +1888,7 @@ function proceedToEndMatch() {
   const scorers = Object.entries(stats).filter(([,s]) => s.goals > 0).sort((a,b) => b[1].goals - a[1].goals);
   if (scorers.length > 0 || ogGoals > 0) {
     let html = scorers.map(([n,s]) => statRow(n, s.goals, 'var(--navy)')).join('');
-    if (ogGoals > 0) html += statRow('Own Goal', ogGoals, 'var(--navy)');
+    if (ogGoals > 0) html += statRow('OG', ogGoals, 'var(--navy)');
     document.getElementById('summaryGoalsList').innerHTML = html;
     document.getElementById('summaryGoalsCard').style.display = '';
   } else { document.getElementById('summaryGoalsCard').style.display = 'none'; }
@@ -2012,7 +1958,7 @@ function buildRows() {
 
   // Goals
   state.events.filter(e => e.type === 'goal').forEach(e => {
-    const playerName = e.scorer === 'Own Goal' ? state.team + ' - Oppo' : state.team + ' - ' + e.scorer;
+    const playerName = e.scorer === 'OG' ? state.team + ' - Oppo' : state.team + ' - ' + e.scorer;
     rows.push({ ...base, Player: playerName, Stat: '1. Goal', Quarter: 'Q' + e.quarter, Count: 1 });
     if (e.assister) {
       rows.push({ ...base, Player: state.team + ' - ' + e.assister, Stat: '2. Assist', Quarter: 'Q' + e.quarter, Count: 1 });
@@ -2050,73 +1996,13 @@ function buildRows() {
 }
 
 // ── SUBMIT ──
-function goFixSetup() { closeModal('submitConfirmModal'); goToSetup(); }
-function goFixMatchDay() { closeModal('submitConfirmModal'); showScreen('screen-match'); document.getElementById('headerTitle').textContent = 'KPR ' + state.team + ' · Match Day'; setHeaderBack(true, goToSetup); }
-function goFixSummary() { closeModal('submitConfirmModal'); /* already on summary */ }
-
 function confirmSubmit() {
+  if (!state.opponent) { showToast('Enter an opponent before submitting'); return; }
   const gf = state.events.filter(e=>e.type==='goal').length;
   const ga = state.events.filter(e=>e.type==='oppo').length;
   const opp = state.opponent || 'Opposition';
   const scoreStr = state.venue === 'Home' ? `KPR ${state.team} ${gf}–${ga} ${opp}` : `${opp} ${ga}–${gf} KPR ${state.team}`;
   document.getElementById('submitConfirmSub').textContent = scoreStr + ' · ' + formatDate(state.matchDate);
-
-  const triangle = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;flex-shrink:0;margin-right:6px;margin-top:1px;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
-
-  // Each error: { message, fixFn }
-  const errors = [];
-
-  if (!state.opponent) {
-    errors.push({ msg: 'No opponent entered.', fix: 'goFixSetup()' });
-  }
-
-  const conflicting = [1,2,3,4].filter(q =>
-    state.events.some(e=>e.quarter===q&&e.type==='oppo') &&
-    state.events.some(e=>e.quarter===q&&e.type==='cs')
-  );
-  if (conflicting.length > 0) {
-    const qList = conflicting.map(q=>'Q'+q).join(', ');
-    errors.push({ msg: `${qList} has both an opposition goal and a clean sheet.`, fix: 'goFixMatchDay()' });
-  }
-
-  const missingCS = [1,2,3,4].filter(q =>
-    !state.events.some(e=>e.quarter===q&&e.type==='oppo') &&
-    !state.events.some(e=>e.quarter===q&&e.type==='cs')
-  );
-  if (missingCS.length > 0) {
-    const qList = missingCS.map(q=>'Q'+q).join(', ');
-    errors.push({ msg: `${qList} has no opposition goal or clean sheet.`, fix: 'goFixMatchDay()' });
-  }
-
-  if (!state.starPlayer) errors.push({ msg: 'No Star Player selected.', fix: 'goFixSummary()' });
-  if (!state.bestPasser) errors.push({ msg: 'No Over-achiever selected.', fix: 'goFixSummary()' });
-
-  const errorsEl = document.getElementById('submitConfirmErrors');
-  const confirmBtn = document.getElementById('submitConfirmBtn');
-
-  if (errors.length > 0) {
-    document.getElementById('submitConfirmTitle').textContent = 'Submit with errors?';
-    errorsEl.style.display = 'block';
-    errorsEl.innerHTML = errors.map(e =>
-      `<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;color:var(--navy);padding:10px 0;border-bottom:1px solid var(--light-grey);">
-        <div style="display:flex;align-items:flex-start;gap:8px;flex:1;font-size:13px;">${triangle}<span>${e.msg}</span></div>
-        <button onclick="${e.fix}" style="background:var(--navy);border:none;color:white;font-size:12px;font-weight:700;cursor:pointer;padding:6px 12px;border-radius:7px;white-space:nowrap;flex-shrink:0;">Fix</button>
-      </div>`
-    ).join('');
-    confirmBtn.textContent = 'Submit with errors';
-    confirmBtn.style.background = 'var(--red)';
-    confirmBtn.style.borderColor = 'var(--red)';
-    document.getElementById('submitCancelBtn').textContent = 'Cancel';
-  } else {
-    document.getElementById('submitConfirmTitle').textContent = 'Submit results?';
-    errorsEl.style.display = 'none';
-    errorsEl.innerHTML = '';
-    confirmBtn.textContent = 'Confirm';
-    confirmBtn.style.background = '';
-    confirmBtn.style.borderColor = '';
-    document.getElementById('submitCancelBtn').textContent = 'Cancel';
-  }
-
   openModal('submitConfirmModal');
 }
 
@@ -2128,17 +2014,11 @@ async function submitMatch() {
 
   try {
     const rows = buildRows();
-    console.log('DEBUG: rows built:', rows.length, rows);
-    const payload = JSON.stringify({ action: 'appendRows', rows });
-    console.log('DEBUG: payload length (chars):', payload.length);
-    console.log('DEBUG: payload:', payload);
     const resp = await fetch(SCRIPT_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: payload
+      body: JSON.stringify({ action: 'appendRows', rows })
     });
     const data = await resp.json();
-    console.log('DEBUG: response from Apps Script:', data);
     if (data.success) {
       showToast('Results submitted successfully');
       btn.textContent = 'Submitted';
@@ -2155,25 +2035,13 @@ async function submitMatch() {
         events: JSON.parse(JSON.stringify(state.events)),
         starPlayer: state.starPlayer, bestPasser: state.bestPasser,
       });
-
-      // Patch in-memory SHEET_DATA so Results/Stats show this match immediately,
-      // without waiting for the cache to expire or forcing a full re-fetch.
-      if (sheetDataLoaded) {
-        const newMatch = parseSheetRows(rows)[0];
-        if (newMatch) {
-          SHEET_DATA = SHEET_DATA.filter(x => x.id !== newMatch.id); // remove any stale duplicate
-          SHEET_DATA.unshift(newMatch);
-          SHEET_DATA.sort((a,b) => parseDateStr(b.date) - parseDateStr(a.date));
-          localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data: SHEET_DATA }));
-        }
-      }
     } else {
       throw new Error(data.error);
     }
   } catch(err) {
     showToast('Error: ' + err.message);
     btn.disabled = false;
-    btn.textContent = 'Submit results';
+    btn.textContent = 'Submit to Google Sheets ↗';
   }
 }
 
@@ -2194,7 +2062,7 @@ function buildWhatsAppText() {
   let ogGoals = 0;
   state.events.forEach(e => {
     if (e.type === 'goal') {
-      if (e.scorer === 'Own Goal') ogGoals++;
+      if (e.scorer === 'OG') ogGoals++;
       else if (stats[e.scorer]) stats[e.scorer].goals++;
       if (e.assister && stats[e.assister]) stats[e.assister].assists++;
     } else if (e.type === 'cs') {
@@ -2209,7 +2077,7 @@ function buildWhatsAppText() {
   const scorers = sortedBy('goals');
   if (scorers.length > 0 || ogGoals > 0) {
     scorers.forEach(([n,s]) => { msg += `• ${n} x ${s.goals}\n`; });
-    if (ogGoals > 0) msg += `• Own Goal x ${ogGoals}\n`;
+    if (ogGoals > 0) msg += `• OG x ${ogGoals}\n`;
   } else { msg += '• NA\n'; }
   msg += '\n';
 
@@ -2287,7 +2155,7 @@ function openEditModal(id) {
     title.textContent = '✏️ Edit Goal';
     sub.textContent = 'Q' + e.quarter + ' · Select new scorer';
     // Step 1: scorer
-    const players = [...state.selectedPlayers, 'Own Goal'];
+    const players = [...state.selectedPlayers, 'OG'];
     content.innerHTML = `
       <div class="modal-step" id="editStep1Label">Who scored?</div>
       <div class="modal-player-grid" id="editScorerGrid"></div>
@@ -2296,7 +2164,7 @@ function openEditModal(id) {
         <div class="modal-player-grid" id="editAssistGrid"></div>
       </div>`;
     document.getElementById('editScorerGrid').innerHTML = players.map(p =>
-      `<button class="modal-player-btn ${p === e.scorer ? 'selected-scorer' : ''}${p === 'Own Goal' ? '" style="background:var(--off-white);color:var(--mid-grey);border-color:var(--light-grey);' : '"'} onclick="editSelectScorer('${p}')">${p}</button>`
+      `<button class="modal-player-btn ${p === e.scorer ? 'selected-scorer' : ''}" onclick="editSelectScorer('${p}')">${p}</button>`
     ).join('');
   } else if (e.type === 'oppo') {
     title.textContent = '✏️ Opposition Goal';
@@ -2392,34 +2260,11 @@ function doReset() {
   renderAllQuarters();
 }
 
-function confirmNewMatchFromSummary() {
-  if (!confirm('Start a new match? This will clear all current match data.')) return;
-  newMatch();
-}
-
 function newMatch() {
-  document.querySelectorAll('.modal-overlay').forEach(m => m.classList.add('hidden'));
-
-  const team = state.team; // preserve team
-  const league = state.league;
-  state = { team, league, matchDate: '', opponent: '', venue: 'Home', selectedPlayers: [], currentQ: 1, events: [], starPlayer: null, bestPasser: null, _matchStarted: true, _matchEnded: false };
-
-  const submitBtn = document.getElementById('submitBtn');
-  if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Submit results'; }
-
-  showScreen('screen-setup');
-  window.scrollTo(0, 0);
-  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('nav-matchday').classList.add('active');
+  state = { team: null, league: null, matchDate: '', opponent: '', venue: 'Home', selectedPlayers: [], currentQ: 1, events: [], starPlayer: null, bestPasser: null, _matchStarted: false, _matchEnded: false };
+  showScreen('screen-team');
   document.getElementById('headerTitle').textContent = 'Match Day';
   setHeaderBack(false);
-
-  // Reset form fields
-  const _today = new Date().toISOString().split('T')[0];
-  state.matchDate = _today;
-  document.getElementById('matchDate').value = _today;
-  document.getElementById('matchOpponent').value = '';
-  setVenue('Home');
 }
 
 // ── MODAL HELPERS ──
@@ -2456,7 +2301,6 @@ async function loadSheetData(force = false) {
   if (sheetDataLoaded && !force) {
     populateOpponentFilter();
     renderStats();
-    renderHistoryList();
     return;
   }
 
@@ -2471,7 +2315,6 @@ async function loadSheetData(force = false) {
           sheetDataLoaded = true;
           populateOpponentFilter();
           renderStats();
-          renderHistoryList();
           return;
         }
       }
@@ -2479,7 +2322,7 @@ async function loadSheetData(force = false) {
   }
 
   sheetDataLoading = true;
-  document.getElementById('statsContent').innerHTML = '<div style="text-align:center;padding:60px 0;color:var(--mid-grey);font-size:14px;">Loading data...</div>';
+  document.getElementById('statsContent').innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--mid-grey);">Loading data...</div>';
   try {
     const resp = await fetch(SCRIPT_URL);
     const json = await resp.json();
@@ -2489,7 +2332,6 @@ async function loadSheetData(force = false) {
     localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data: SHEET_DATA }));
     populateOpponentFilter();
     renderStats();
-    renderHistoryList();
   } catch(err) {
     document.getElementById('statsContent').innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--red);">Could not load data: ' + err.message + '</div>';
   } finally {
@@ -2518,7 +2360,7 @@ function parseSheetRows(rows) {
     const key = r['Date'] + '||' + r['Team'] + '||' + r['Opponent'];
     if (!matchMap[key]) {
       matchMap[key] = {
-        date: cleanDate(r['Date']), rawDate: r['Date'], team: r['Team'], league: r['League'],
+        date: cleanDate(r['Date']), team: r['Team'], league: r['League'],
         opponent: r['Opponent'], result: r['Result'], venue: r['Venue'],
         age: r['Age'], goals:{}, assists:{}, csGK:{}, csDef:{},
         concede:0, starPlayer:null, bestPasser:null,
@@ -2568,7 +2410,7 @@ let currentStatTab = 'club';
 function switchStatTab(tab) {
   currentStatTab = tab;
   document.querySelectorAll('.stat-tab').forEach(b => {
-    const map = {club:'Club',players:'Players',teams:'KPR Teams',opponents:'Opponents',quarters:'Quarters'};
+    const map = {club:'Club',players:'Players',teams:'Teams',opponents:'Opponents',results:'Results'};
     b.classList.toggle('active', b.textContent === map[tab]);
   });
   renderStats();
@@ -2597,23 +2439,18 @@ function getFilteredData() {
 }
 
 function renderStats() {
+  const data = getFilteredData();
   const el = document.getElementById('statsContent');
   if (!el) return;
-  if (!sheetDataLoaded) {
-    el.innerHTML = '<div style="text-align:center;padding:60px 0;color:var(--mid-grey);font-size:14px;">Loading data...</div>';
-    return;
-  }
-  const data = getFilteredData();
   if (currentStatTab === 'club') el.innerHTML = renderClubTab(data);
   else if (currentStatTab === 'players') el.innerHTML = renderPlayersTab(data);
   else if (currentStatTab === 'teams') el.innerHTML = renderTeamsTab(data);
   else if (currentStatTab === 'opponents') el.innerHTML = renderOpponentsTab(data);
-  else if (currentStatTab === 'quarters') el.innerHTML = renderQuartersTab(data);
   else el.innerHTML = renderResultsTab(data);
 }
 
 function renderClubTab(data) {
-  if (!data.length) return '<div style="color:var(--mid-grey);text-align:center;padding:60px 0;font-size:14px;">No data — check filters</div>';
+  if (!data.length) return '<div style="color:var(--mid-grey);text-align:center;padding:40px 0;">No data — check filters</div>';
   const played = data.length;
   const wins = data.filter(m=>m.result==='W').length;
   const draws = data.filter(m=>m.result==='D').length;
@@ -2707,12 +2544,11 @@ function renderClubTab(data) {
 }
 
 function renderPlayersTab(data) {
-  if (!data.length) return '<div style="color:var(--mid-grey);text-align:center;padding:60px 0;font-size:14px;">No data — check filters</div>';
+  if (!data.length) return '<div style="color:var(--mid-grey);text-align:center;padding:40px 0;">No data — check filters</div>';
 
-  const stripTeam = p => p ? p.replace(/^[^-]+ - /, '') : p;
   const goalMap={}, assistMap={}, csGKMap={}, csDefMap={}, starMap={}, passerMap={}, teamMap={};
   data.forEach(m => {
-    const add = (map,p,n) => { const name=stripTeam(p); map[name]=(map[name]||0)+n; if(!teamMap[name]) teamMap[name]=m.team; };
+    const add = (map,p,n) => { map[p]=(map[p]||0)+n; if(!teamMap[p]) teamMap[p]=m.team; };
     Object.entries(m.goals).forEach(([p,n])=>add(goalMap,p,n));
     Object.entries(m.assists).forEach(([p,n])=>add(assistMap,p,n));
     Object.entries(m.csGK).forEach(([p,n])=>add(csGKMap,p,n));
@@ -2736,12 +2572,9 @@ function renderPlayersTab(data) {
   const tagColour = p => TEAM_TAG_COLOURS[teamMap[p]]||'#888';
   const teamTag = p => `<span class="team-pill ${teamMap[p]||''}" style="margin-right:6px;">${teamMap[p]||''}</span>`;
   const lb = (map) => {
-    const sorted = Object.entries(map).sort((a,b)=>b[1]-a[1]);
+    const sorted = Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,20);
     if(!sorted.length) return '<div style="color:var(--mid-grey);font-size:13px;">No data</div>';
-    const rows = sorted.map(([p,v],i)=>`<div class="stat-row"><span class="rank">${i+1}</span>${teamTag(p)}<span class="name">${p}</span><span class="val" style="color:var(--navy)">${v}</span></div>`).join('');
-    if(sorted.length <= 5) return rows;
-    // Show 10 full rows + half of 11th to hint scrollability (~32px per row)
-    return `<div style="max-height:336px;overflow-y:auto;-webkit-overflow-scrolling:touch;">${rows}</div>`;
+    return sorted.map(([p,v],i)=>`<div class="stat-row"><span class="rank">${i+1}</span>${teamTag(p)}<span class="name">${p}</span><span class="val" style="color:var(--navy)">${v}</span></div>`).join('');
   };
 
   return `
@@ -2794,7 +2627,7 @@ function renderResultsTab(data) {
 }
 
 function renderTeamsTab(data) {
-  if (!data.length) return '<div style="color:var(--mid-grey);text-align:center;padding:60px 0;font-size:14px;">No data — check filters</div>';
+  if (!data.length) return '<div style="color:var(--mid-grey);text-align:center;padding:40px 0;">No data</div>';
   const teams = ['Blues','Reds','Royals','Stripes'];
   const colours = {Blues:'#2196F3',Reds:'#cc1818',Royals:'#1a3a8f',Stripes:'#1565C0'};
 
@@ -2844,7 +2677,7 @@ function renderTeamsTab(data) {
       ${vals.sort((a,b)=>b.v-a.v).map(({t,v}) => {
         const pct = max ? Math.round(v/max*100) : 0;
         const barStyle = t === 'Stripes'
-          ? `background:repeating-linear-gradient(90deg,#1a3a8f 0px,#1a3a8f 40px,#cc1818 40px,#cc1818 80px);opacity:0.9;`
+          ? `background:repeating-linear-gradient(90deg,#cc1818 0px,#cc1818 12px,#1a3a8f 12px,#1a3a8f 24px);opacity:0.9;`
           : `background:${colours[t]||'var(--navy)'};opacity:0.85;`;
         const valDisplay = fmt==='pct'?v+'%':fmt==='dec'?v.toFixed(1):v;
         return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
@@ -2859,7 +2692,6 @@ function renderTeamsTab(data) {
   };
 
   return [
-    metric('Games played', 'played', 'int'),
     metric('Wins', 'w', 'int'),
     metric('Win Rate %', 'winRate', 'pct'),
     metric('Points Per Game', 'ppg', 'dec'),
@@ -2877,81 +2709,8 @@ function renderTeamsTab(data) {
   ].join('');
 }
 
-function renderQuartersTab(data) {
-  if (!data.length) return '<div style="color:var(--mid-grey);text-align:center;padding:60px 0;font-size:14px;">No data — check filters</div>';
-
-  // Check if filtered data is entirely U9/U10 (no quarter data collected)
-  const ages = new Set(data.map(m => m.age));
-  if ([...ages].every(a => a === 'U9' || a === 'U10')) {
-    return '<div style="color:var(--mid-grey);text-align:center;padding:40px 20px;font-size:14px;">Results by quarter not collected for this season.</div>';
-  }
-
-  const qs = {1:{gf:0,ga:0,cs:0,gfMatches:0,gaMatches:0},2:{gf:0,ga:0,cs:0,gfMatches:0,gaMatches:0},3:{gf:0,ga:0,cs:0,gfMatches:0,gaMatches:0},4:{gf:0,ga:0,cs:0,gfMatches:0,gaMatches:0}};
-  const matchCount = data.length;
-
-  data.forEach(m => {
-    const qData = {1:{gf:0,ga:0,hasCS:false},2:{gf:0,ga:0,hasCS:false},3:{gf:0,ga:0,hasCS:false},4:{gf:0,ga:0,hasCS:false}};
-    (m.sheetRows||[]).forEach(r => {
-      const q = parseInt((r.quarter||'').replace('Q',''));
-      if (!q || q < 1 || q > 4) return;
-      if (r.stat === '1. Goal') qData[q].gf += r.count;
-      else if (r.stat === '7. Concede') qData[q].ga += Math.abs(r.count);
-      else if (r.stat === '4. Clean Sheet GK') qData[q].hasCS = true;
-    });
-    [1,2,3,4].forEach(q => {
-      qs[q].gf += qData[q].gf;
-      qs[q].ga += qData[q].ga;
-      if (qData[q].hasCS) qs[q].cs++;
-      if (qData[q].gf > 0) qs[q].gfMatches++;
-      if (qData[q].ga > 0) qs[q].gaMatches++;
-    });
-  });
-
-  const labels = ['Q1','Q2','Q3','Q4'];
-  const navy = '#00295c';
-  const red = '#cc1818';
-  const gold = '#b8860b';
-
-  // Horizontal bar metric — matches Teams tab styling exactly
-  const metric = (title, rows) => {
-    const maxVal = Math.max(...rows.map(r => r.v), 0.01);
-    return `<div class="card" style="margin-bottom:10px;">
-      <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:10px;">${title}</div>
-      ${rows.map(({label, v, colour, display}) => {
-        const pct = Math.round(v / maxVal * 100);
-        return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-          <span style="font-size:12px;font-weight:700;color:var(--dark-grey);width:28px;">${label}</span>
-          <div style="flex:1;background:var(--light-grey);border-radius:4px;height:20px;position:relative;">
-            <div style="width:${pct}%;height:100%;border-radius:4px;background:${colour};opacity:0.85;"></div>
-            <span style="position:absolute;left:8px;top:2px;font-size:11px;font-weight:800;color:white;line-height:16px;">${display}</span>
-          </div>
-        </div>`;
-      }).join('')}
-    </div>`;
-  };
-
-  // Goals for: frequency %
-  const gfFreq = labels.map((l,i) => ({label:l, v: Math.round(qs[i+1].gfMatches/matchCount*100), colour:navy, display: Math.round(qs[i+1].gfMatches/matchCount*100)+'%'}));
-  // Goals for: avg per quarter
-  const gfAvg = labels.map((l,i) => ({label:l, v: qs[i+1].gf/matchCount, colour:navy, display: (qs[i+1].gf/matchCount).toFixed(1)}));
-  // Goals against: frequency %
-  const gaFreq = labels.map((l,i) => ({label:l, v: Math.round(qs[i+1].gaMatches/matchCount*100), colour:red, display: Math.round(qs[i+1].gaMatches/matchCount*100)+'%'}));
-  // Goals against: avg per quarter
-  const gaAvg = labels.map((l,i) => ({label:l, v: qs[i+1].ga/matchCount, colour:red, display: (qs[i+1].ga/matchCount).toFixed(1)}));
-  // Clean sheets: frequency %
-  const csFreq = labels.map((l,i) => ({label:l, v: Math.round(qs[i+1].cs/matchCount*100), colour:gold, display: Math.round(qs[i+1].cs/matchCount*100)+'%'}));
-
-  return [
-    metric('Goals for: % of quarters with at least 1 goal', gfFreq),
-    metric('Goals for: avg per quarter', gfAvg),
-    metric('Goals against: % of quarters with at least 1 goal against', gaFreq),
-    metric('Goals against: avg per quarter', gaAvg),
-    metric('Clean sheets: % of quarters kept', csFreq),
-  ].join('');
-}
-
 function renderOpponentsTab(data) {
-  if (!data.length) return '<div style="color:var(--mid-grey);text-align:center;padding:60px 0;font-size:14px;">No data — check filters</div>';
+  if (!data.length) return '<div style="color:var(--mid-grey);text-align:center;padding:40px 0;">No data</div>';
   const oppMap = {};
   data.forEach(m => {
     if (!oppMap[m.opponent]) oppMap[m.opponent] = {played:0, teams:new Set(), w:0, d:0, l:0, gf:0, ga:0};
@@ -2965,55 +2724,33 @@ function renderOpponentsTab(data) {
     .map(([name, o]) => ({
       name, played: o.played, teams: o.teams.size,
       w: o.w, d: o.d, l: o.l,
+      wr: o.played ? Math.round(o.w/o.played*100) : 0,
       ppg: o.played ? ((o.w*3+o.d)/o.played).toFixed(1) : '0.0',
-      ppgNum: o.played ? (o.w*3+o.d)/o.played : 0,
       gf: o.gf, ga: o.ga, gd: o.gf - o.ga
     }))
-    .sort((a,b) => b.played - a.played || b.ppgNum - a.ppgNum);
+    .sort((a,b) => b.played - a.played || b.gf - a.gf);
 
-  const td = (val, opts={}) =>
-    `<td style="padding:8px ${opts.last?'8px':'4px'} 8px ${opts.first?'10px':'4px'};text-align:${opts.left?'left':'right'};vertical-align:top;height:44px;${opts.col?'color:'+opts.col+';font-weight:600;':''}">${val}</td>`;
-
-  const trs = rows.map((o, idx) => {
-    const gdStr = (o.gd > 0 ? '+' : '') + o.gd;
+  return rows.map(o => {
     const gdCol = o.gd > 0 ? 'var(--green)' : o.gd < 0 ? 'var(--red)' : 'var(--mid-grey)';
-    const rowBg = idx % 2 === 0 ? 'white' : 'var(--off-white)';
-    return `<tr style="background:${rowBg};">
-      ${td(o.name, {left:true, first:true})}
-      ${td(o.played)}
-      ${td(o.w)}
-      ${td(o.d)}
-      ${td(o.l)}
-      ${td(o.gf)}
-      ${td(o.ga)}
-      ${td(gdStr, {col:gdCol})}
-      ${td(o.ppg, {last:true})}
-    </tr>`;
+    const inline = (label, value, colour) => `<span style="font-size:13px;color:var(--mid-grey);">${label}: </span><span style="font-size:13px;font-weight:700;color:${colour||'var(--text)'};">${value}</span>`;
+    return `<div style="background:white;border-radius:12px;margin-bottom:10px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.07);">
+      <div style="background:var(--navy);color:white;padding:11px 14px;font-size:14px;font-weight:700;">${o.name}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:14px;align-items:center;padding:10px 14px;border-top:1px solid var(--light-grey);">
+        ${inline('Games played', o.played)}
+        ${inline('Teams played', o.teams)}
+        <span style="font-size:13px;color:var(--mid-grey);">Record: </span><span style="font-size:13px;font-weight:700;"><span style="color:var(--green);">W${o.w}</span> <span style="color:var(--mid-grey);">D${o.d}</span> <span style="color:var(--red);">L${o.l}</span></span>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:14px;align-items:center;padding:10px 14px;border-top:1px solid var(--light-grey);">
+        ${inline('Win rate', o.wr+'%')}
+        ${inline('Points per game', o.ppg)}
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:14px;align-items:center;padding:10px 14px;border-top:1px solid var(--light-grey);">
+        ${inline('For', o.gf, 'var(--green)')}
+        ${inline('Against', o.ga, 'var(--red)')}
+        ${inline('Diff', (o.gd > 0 ? '+' : '') + o.gd, gdCol)}
+      </div>
+    </div>`;
   }).join('');
-
-  return `<div style="border-radius:8px;overflow:hidden;border:0.5px solid var(--light-grey);">
-    <table style="width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed;">
-      <colgroup>
-        <col style="width:32%">
-        <col style="width:7%"><col style="width:7%"><col style="width:7%"><col style="width:7%">
-        <col style="width:8%"><col style="width:8%"><col style="width:9%"><col style="width:9%">
-      </colgroup>
-      <thead>
-        <tr style="background:#00295c;color:white;height:44px;">
-          <th style="text-align:left;padding:8px 4px 8px 10px;font-weight:600;">Opponent</th>
-          <th style="text-align:right;padding:8px 4px;font-weight:600;">P</th>
-          <th style="text-align:right;padding:8px 4px;font-weight:600;">W</th>
-          <th style="text-align:right;padding:8px 4px;font-weight:600;">D</th>
-          <th style="text-align:right;padding:8px 4px;font-weight:600;">L</th>
-          <th style="text-align:right;padding:8px 4px;font-weight:600;">GF</th>
-          <th style="text-align:right;padding:8px 4px;font-weight:600;">GA</th>
-          <th style="text-align:right;padding:8px 4px;font-weight:600;">+/-</th>
-          <th style="text-align:right;padding:8px 8px 8px 4px;font-weight:600;">PPG</th>
-        </tr>
-      </thead>
-      <tbody style="background:white;">${trs}</tbody>
-    </table>
-  </div>`;
 }
 
 // ── MATCH HISTORY ──
@@ -3046,9 +2783,7 @@ function renderHistoryList() {
 
   let matches = SHEET_DATA;
   const teamFilter = document.getElementById('historyFilterTeam')?.value || '';
-  const ageFilter = document.getElementById('historyFilterAge')?.value || '';
   if (teamFilter) matches = matches.filter(m => m.team === teamFilter);
-  if (ageFilter) matches = matches.filter(m => m.age === ageFilter);
 
   const el = document.getElementById('historyList');
   if (!matches.length) {
@@ -3097,58 +2832,17 @@ let hdEditMode = false;
 let hdDraftRows = []; // working copy of m.sheetRows while editing
 let hdMatchRef = null; // the match object currently open
 
-function renderHdPlayerStats(m) {
-  const stripTeam = name => name ? name.replace(/^[^-]+ - /, '') : name;
-  const rows = m.sheetRows || [];
-
-  const group = (stat) => rows.filter(r => r.stat === stat).map(r => stripTeam(r.player));
-  const goals    = group('1. Goal');
-  const assists  = group('2. Assist');
-  const csGK     = group('4. Clean Sheet GK');
-  const csDef    = group('3. Clean Sheet DEF');
-  const star     = group('5. Star Player');
-  const passer   = group('6. Best Passer');
-  const concede  = rows.filter(r => r.stat === '7. Concede').reduce((s,r) => s + Math.abs(r.count), 0);
-
-  const statRow = (label, colour, players) => {
-    if (!players.length) return '';
-    return `<div style="padding:8px 10px;background:var(--off-white);border-radius:8px;margin-bottom:5px;font-size:13px;">
-      <span style="color:${colour};font-weight:600;">${label}</span>: ${players.join(', ')}
-    </div>`;
-  };
-  const numRow = (label, colour, count) => {
-    if (!count) return '';
-    return `<div style="padding:8px 10px;background:var(--off-white);border-radius:8px;margin-bottom:5px;font-size:13px;">
-      <span style="color:${colour};font-weight:600;">${label}</span>: ${count}
-    </div>`;
-  };
-
-  const html = [
-    statRow('Goals', 'var(--green)', goals),
-    statRow('Assists', 'var(--mid-grey)', assists),
-    statRow('Clean Sheet GK', 'var(--gold)', csGK),
-    statRow('Clean Sheet DEF', 'var(--gold)', csDef),
-    statRow('Star Player', 'var(--navy)', star),
-    statRow('Over-achiever', 'var(--navy)', passer),
-    numRow('Opposition Goals', 'var(--red)', concede),
-  ].filter(Boolean).join('');
-
-  return html || `<div style="font-size:12px;color:var(--mid-grey);">No stats recorded</div>`;
-}
-
 function renderHdQuartersFromSheet(m, editMode) {
   const isHome = m.venue === 'Home';
-  const stripTeam = name => name ? name.replace(/^[^-]+ - /, '') : name;
   const sourceRows = editMode ? hdDraftRows : (m.sheetRows||[]);
   const byQ = {1:[],2:[],3:[],4:[]};
   sourceRows.forEach((r, idx) => {
     const qNum = parseInt((r.quarter||'').replace('Q',''));
     if (!qNum || qNum < 1 || qNum > 4) return;
-    const p = stripTeam(r.player);
-    if (r.stat === '1. Goal') for (let i=0;i<r.count;i++) byQ[qNum].push({type:'goal', player:p, rowIdx:idx});
-    else if (r.stat === '2. Assist') for (let i=0;i<r.count;i++) byQ[qNum].push({type:'assist', player:p, rowIdx:idx});
-    else if (r.stat === '4. Clean Sheet GK') for (let i=0;i<r.count;i++) byQ[qNum].push({type:'csGK', player:p, rowIdx:idx});
-    else if (r.stat === '3. Clean Sheet DEF') for (let i=0;i<r.count;i++) byQ[qNum].push({type:'csDef', player:p, rowIdx:idx});
+    if (r.stat === '1. Goal') for (let i=0;i<r.count;i++) byQ[qNum].push({type:'goal', player:r.player, rowIdx:idx});
+    else if (r.stat === '2. Assist') for (let i=0;i<r.count;i++) byQ[qNum].push({type:'assist', player:r.player, rowIdx:idx});
+    else if (r.stat === '4. Clean Sheet GK') for (let i=0;i<r.count;i++) byQ[qNum].push({type:'csGK', player:r.player, rowIdx:idx});
+    else if (r.stat === '3. Clean Sheet DEF') for (let i=0;i<r.count;i++) byQ[qNum].push({type:'csDef', player:r.player, rowIdx:idx});
     else if (r.stat === '7. Concede') for (let i=0;i<Math.abs(r.count);i++) byQ[qNum].push({type:'oppo', rowIdx:idx});
   });
 
@@ -3163,66 +2857,19 @@ function renderHdQuartersFromSheet(m, editMode) {
     if (events.length === 0) {
       html += `<div style="font-size:12px;color:var(--mid-grey);">No events</div>`;
     } else {
-      const row = (label, colour, text) => `<div style="padding:8px 10px;background:var(--off-white);border-radius:8px;margin-bottom:5px;font-size:13px;"><span style="color:${colour};font-weight:600;">${label}</span>${text ? ': ' + text : ''}</div>`;
-
-      if (editMode) {
-        // Group goals with their assists into one card
-        const goals = events.filter(e=>e.type==='goal');
-        const assists = events.filter(e=>e.type==='assist');
-        goals.forEach((g, i) => {
-          const assist = assists[i];
-          html += `<div style="padding:8px 10px;background:var(--off-white);border-radius:8px;margin-bottom:5px;display:flex;align-items:center;gap:8px;">
-            <div style="flex:1;font-size:13px;">
-              <span style="color:var(--green);font-weight:600;">Goal</span>: ${g.player}
-              ${assist ? `<span style="color:var(--mid-grey);"> · <span style="font-weight:600;">Assist</span>: ${assist.player}</span>` : ''}
-            </div>
-            <button onclick="hdRemoveRow(${g.rowIdx})" style="background:none;border:none;color:var(--red);font-size:20px;cursor:pointer;padding:0 2px;line-height:1;flex-shrink:0;">×</button>
-          </div>`;
-        });
-
-        // Opposition goals
-        events.filter(e=>e.type==='oppo').forEach(o => {
-          html += `<div style="padding:8px 10px;background:var(--off-white);border-radius:8px;margin-bottom:5px;display:flex;align-items:center;gap:8px;">
-            <span style="flex:1;font-size:13px;color:var(--red);font-weight:600;">Opposition Goal</span>
-            <button onclick="hdRemoveRow(${o.rowIdx})" style="background:none;border:none;color:var(--red);font-size:20px;cursor:pointer;padding:0 2px;line-height:1;flex-shrink:0;">×</button>
-          </div>`;
-        });
-
-        // Group CS GK with all DEF into one card
-        const csGKs = events.filter(e=>e.type==='csGK');
-        const csDefs = events.filter(e=>e.type==='csDef');
-        if (csGKs.length > 0) {
-          const gk = csGKs[0];
-          html += `<div style="padding:8px 10px;background:var(--off-white);border-radius:8px;margin-bottom:5px;display:flex;align-items:center;gap:8px;">
-            <div style="flex:1;font-size:13px;">
-              <span style="color:var(--gold);font-weight:600;">Clean Sheet GK</span>: ${gk.player}
-              ${csDefs.length ? `<span style="color:var(--mid-grey);"> · <span style="color:var(--gold);font-weight:600;">DEF</span>: ${csDefs.map(d=>d.player).join(', ')}</span>` : ''}
-            </div>
-            <button onclick="hdRemoveRow(${gk.rowIdx})" style="background:none;border:none;color:var(--red);font-size:20px;cursor:pointer;padding:0 2px;line-height:1;flex-shrink:0;">×</button>
-          </div>`;
-        }
-      } else {
-        // Goal + Assist paired on same card
-        const goals = events.filter(e=>e.type==='goal');
-        const assists = events.filter(e=>e.type==='assist');
-        goals.forEach((g, i) => {
-          const assist = assists[i];
-          html += `<div style="padding:8px 10px;background:var(--off-white);border-radius:8px;margin-bottom:5px;font-size:13px;">
-            <span style="color:var(--green);font-weight:600;">Goal</span>: ${g.player}
-            ${assist ? `<span style="color:var(--mid-grey);"> · <span style="font-weight:600;">Assist</span>: ${assist.player}</span>` : ''}
-          </div>`;
-        });
-        events.filter(e=>e.type==='oppo').forEach(() => html += row('Opposition Goal', 'var(--red)', ''));
-        // CS GK + all DEF on same card
-        const csGKs = events.filter(e=>e.type==='csGK');
-        const csDefs = events.filter(e=>e.type==='csDef');
-        if (csGKs.length > 0) {
-          html += `<div style="padding:8px 10px;background:var(--off-white);border-radius:8px;margin-bottom:5px;font-size:13px;">
-            <span style="color:var(--gold);font-weight:600;">Clean Sheet GK</span>: ${csGKs[0].player}
-            ${csDefs.length ? `<span style="color:var(--mid-grey);"> · <span style="color:var(--gold);font-weight:600;">DEF</span>: ${csDefs.map(d=>d.player).join(', ')}</span>` : ''}
-          </div>`;
-        }
+      const row = (label, colour, text, rowIdx) => `<div style="display:flex;align-items:center;gap:8px;padding:3px 0;">
+        <span style="flex:1;font-size:13px;"><span style="color:${colour};">${label}</span> — ${text}</span>
+        ${editMode ? `<button onclick="hdRemoveRow(${rowIdx})" style="background:none;border:none;color:var(--red);font-size:17px;cursor:pointer;padding:0 4px;flex-shrink:0;">×</button>` : ''}
+      </div>`;
+      events.filter(e=>e.type==='goal').forEach(g => html += row('Goal', 'var(--green)', g.player, g.rowIdx));
+      const assists = events.filter(e=>e.type==='assist');
+      if (assists.length) {
+        if (editMode) assists.forEach(a => html += row('Assist', 'var(--mid-grey)', a.player, a.rowIdx));
+        else html += `<div style="font-size:12px;color:var(--mid-grey);padding:2px 0;">Assists: ${assists.map(a=>a.player).join(', ')}</div>`;
       }
+      events.filter(e=>e.type==='oppo').forEach(o => html += row('Opposition Goal', 'var(--red)', '', o.rowIdx).replace(' — ', ''));
+      events.filter(e=>e.type==='csGK').forEach(g => html += row('Clean Sheet GK', 'var(--gold)', g.player, g.rowIdx));
+      events.filter(e=>e.type==='csDef').forEach(d => html += row('Clean Sheet DEF', 'var(--gold)', d.player, d.rowIdx));
     }
     html += '</div>';
   });
@@ -3230,35 +2877,7 @@ function renderHdQuartersFromSheet(m, editMode) {
 }
 
 function hdRemoveRow(idx) {
-  const row = hdDraftRows[idx];
-  const q = row.quarter;
-
-  if (row.stat === '1. Goal') {
-    // Find and remove paired assist in the same quarter (if any)
-    // Count how many goals already in this quarter before this one
-    let goalCount = 0;
-    for (let i = 0; i < idx; i++) {
-      if (hdDraftRows[i].stat === '1. Goal' && hdDraftRows[i].quarter === q) goalCount++;
-    }
-    // Remove paired assist (nth assist in same quarter where n = goalCount)
-    let assistFound = 0;
-    const toRemove = [idx];
-    for (let i = 0; i < hdDraftRows.length; i++) {
-      if (i !== idx && hdDraftRows[i].stat === '2. Assist' && hdDraftRows[i].quarter === q) {
-        if (assistFound === goalCount) { toRemove.push(i); break; }
-        assistFound++;
-      }
-    }
-    hdDraftRows = hdDraftRows.filter((_, i) => !toRemove.includes(i));
-  } else if (row.stat === '4. Clean Sheet GK') {
-    // Remove GK and all CS DEF in the same quarter
-    hdDraftRows = hdDraftRows.filter((r, i) =>
-      i !== idx && !(r.stat === '3. Clean Sheet DEF' && r.quarter === q)
-    );
-  } else {
-    hdDraftRows.splice(idx, 1);
-  }
-
+  hdDraftRows.splice(idx, 1);
   refreshHdEditView();
 }
 
@@ -3266,103 +2885,34 @@ function refreshHdEditView() {
   document.getElementById('hdQuarters').innerHTML = renderHdQuartersFromSheet(hdMatchRef, true);
 }
 
-let hdAddEventType = null;
-let hdAddEventQ = null;
-let hdAddEventScorer = null;
-let hdAddEventGK = null;
-let hdAddEventDefs = [];
-
 function hdAddEvent(type) {
-  hdAddEventType = type;
-  hdAddEventQ = null;
-  hdAddEventScorer = null;
-  hdAddEventGK = null;
-  hdAddEventDefs = [];
-
-  const titles = { goal: 'Add Goal', oppo: 'Add Opposition Goal', cs: 'Add Clean Sheet' };
-  document.getElementById('hdAddEventTitle').textContent = titles[type];
-  document.getElementById('hdAddEventContent').innerHTML = hdAddEventStep1HTML();
-  openModal('hdAddEventModal');
-}
-
-function hdAddEventStep1HTML() {
-  return `<div style="font-size:13px;font-weight:700;color:var(--mid-grey);margin-bottom:8px;">Which quarter?</div>
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
-      ${[1,2,3,4].map(q => `<button class="btn-secondary" style="font-size:16px;font-weight:800;padding:14px;" onclick="hdSelectQ(${q})">${q}</button>`).join('')}
-    </div>`;
-}
-
-function hdSelectQ(q) {
-  hdAddEventQ = q;
-  if (hdAddEventType === 'oppo') {
-    // No player needed — just add immediately
-    hdDraftRows.push({ player: hdMatchRef.team + ' - Oppo', stat: '7. Concede', count: -1, quarter: 'Q' + q });
-    closeModal('hdAddEventModal');
-    refreshHdEditView();
-    return;
-  }
-  // Next: player selection
+  // Simple prompt-based add since draft rows are flat stat rows, not rich events
   const players = getSquad(hdMatchRef.team);
-  if (hdAddEventType === 'goal') {
-    document.getElementById('hdAddEventContent').innerHTML = `
-      <div style="font-size:13px;font-weight:700;color:var(--mid-grey);margin-bottom:8px;">Q${q} · Who scored?</div>
-      <div class="modal-player-grid">
-        ${[...players, 'OG'].map(p => `<button class="modal-player-btn" onclick="hdSelectScorer('${p}')">${p}</button>`).join('')}
-      </div>`;
-  } else if (hdAddEventType === 'cs') {
-    document.getElementById('hdAddEventContent').innerHTML = `
-      <div style="font-size:13px;font-weight:700;color:var(--mid-grey);margin-bottom:8px;">Q${q} · Goalkeeper?</div>
-      <div class="modal-player-grid">
-        ${players.map(p => `<button class="modal-player-btn" onclick="hdSelectGK('${p}')">${p}</button>`).join('')}
-      </div>`;
+  const playerList = players.join(', ');
+  const q = prompt('Which quarter? (1-4)', '1');
+  if (!q || !['1','2','3','4'].includes(q.trim())) { if (q!==null) showToast('Enter 1, 2, 3 or 4'); return; }
+
+  if (type === 'oppo') {
+    hdDraftRows.push({ player: hdMatchRef.team + ' - Oppo', stat: '7. Concede', count: -1, quarter: 'Q'+q.trim() });
+  } else if (type === 'goal') {
+    const scorer = prompt('Scorer name (or "OG" for own goal):\n' + playerList);
+    if (!scorer) return;
+    hdDraftRows.push({ player: scorer.trim()==='OG' ? hdMatchRef.team+' - Oppo' : scorer.trim(), stat: '1. Goal', count: 1, quarter: 'Q'+q.trim() });
+    const assister = prompt('Assister name (leave blank for none):\n' + playerList);
+    if (assister && assister.trim()) {
+      hdDraftRows.push({ player: assister.trim(), stat: '2. Assist', count: 1, quarter: 'Q'+q.trim() });
+    }
+  } else if (type === 'cs') {
+    const gk = prompt('Goalkeeper:\n' + playerList);
+    if (!gk) return;
+    hdDraftRows.push({ player: gk.trim(), stat: '4. Clean Sheet GK', count: 1, quarter: 'Q'+q.trim() });
+    const defs = prompt('Defenders (comma-separated, leave blank for none):\n' + playerList);
+    if (defs && defs.trim()) {
+      defs.split(',').map(s=>s.trim()).filter(Boolean).forEach(d => {
+        hdDraftRows.push({ player: d, stat: '3. Clean Sheet DEF', count: 1, quarter: 'Q'+q.trim() });
+      });
+    }
   }
-}
-
-function hdSelectScorer(name) {
-  hdAddEventScorer = name;
-  const players = getSquad(hdMatchRef.team).filter(p => p !== name);
-  document.getElementById('hdAddEventContent').innerHTML = `
-    <div style="font-size:13px;font-weight:700;color:var(--mid-grey);margin-bottom:8px;">Q${hdAddEventQ} · Scorer: ${name} · Who assisted?</div>
-    <div class="modal-player-grid">
-      <button class="modal-player-btn no-assist" onclick="hdFinishGoal(null)">No assist</button>
-      ${players.map(p => `<button class="modal-player-btn" onclick="hdFinishGoal('${p}')">${p}</button>`).join('')}
-    </div>`;
-}
-
-function hdFinishGoal(assister) {
-  const team = hdMatchRef.team;
-  const q = 'Q' + hdAddEventQ;
-  const playerName = hdAddEventScorer === 'OG' ? team + ' - Oppo' : team + ' - ' + hdAddEventScorer;
-  hdDraftRows.push({ player: playerName, stat: '1. Goal', count: 1, quarter: q });
-  if (assister) hdDraftRows.push({ player: team + ' - ' + assister, stat: '2. Assist', count: 1, quarter: q });
-  closeModal('hdAddEventModal');
-  refreshHdEditView();
-}
-
-function hdSelectGK(name) {
-  hdAddEventGK = name;
-  hdAddEventDefs = [];
-  const others = getSquad(hdMatchRef.team).filter(p => p !== name);
-  document.getElementById('hdAddEventContent').innerHTML = `
-    <div style="font-size:13px;font-weight:700;color:var(--mid-grey);margin-bottom:8px;">Q${hdAddEventQ} · GK: ${name} · Select defenders</div>
-    <div class="modal-player-grid" id="hdDefGrid">
-      ${others.map(p => `<button class="modal-player-btn" onclick="hdToggleDef(this,'${p}')">${p}</button>`).join('')}
-    </div>
-    <button class="btn-primary" style="margin-top:12px;width:100%;" onclick="hdFinishCS()">Confirm clean sheet</button>`;
-}
-
-function hdToggleDef(btn, name) {
-  btn.classList.toggle('cs-def-selected');
-  if (btn.classList.contains('cs-def-selected')) hdAddEventDefs.push(name);
-  else hdAddEventDefs = hdAddEventDefs.filter(d => d !== name);
-}
-
-function hdFinishCS() {
-  const team = hdMatchRef.team;
-  const q = 'Q' + hdAddEventQ;
-  hdDraftRows.push({ player: team + ' - ' + hdAddEventGK, stat: '4. Clean Sheet GK', count: 1, quarter: q });
-  hdAddEventDefs.forEach(d => hdDraftRows.push({ player: team + ' - ' + d, stat: '3. Clean Sheet DEF', count: 1, quarter: q }));
-  closeModal('hdAddEventModal');
   refreshHdEditView();
 }
 
@@ -3380,123 +2930,72 @@ function renderHistoryDetailModal(m) {
   const isHome = m.venue === 'Home';
   const opp = m.opponent || 'Opposition';
   const scoreLine = isHome
-    ? `KPR ${m.team} ${m.goalsFor} - ${m.goalsAgainst} ${opp}`
-    : `${opp} ${m.goalsAgainst} - ${m.goalsFor} KPR ${m.team}`;
+    ? `KPR ${m.team} ${m.goalsFor} – ${m.goalsAgainst} ${opp}`
+    : `${opp} ${m.goalsAgainst} – ${m.goalsFor} KPR ${m.team}`;
   const result = m.result || (m.goalsFor > m.goalsAgainst ? 'W' : m.goalsFor === m.goalsAgainst ? 'D' : 'L');
   const chipCls = result==='W'?'chip-w':result==='D'?'chip-d':'chip-l';
 
   document.getElementById('hdScoreLine').textContent = scoreLine;
   document.getElementById('hdDate').textContent = m.date + (m.league ? ' · ' + m.league : '');
   document.getElementById('hdResult').innerHTML = `<span class="result-chip ${chipCls}">${result}</span>`;
-  document.getElementById('hdQuarters').innerHTML = 
-    (m.age === 'U9' || m.age === 'U10')
-      ? renderHdPlayerStats(m)
-      : renderHdQuartersFromSheet(m, false);
-  const stripTeam = name => name ? name.replace(/^[^-]+ - /, '') : name;
-  document.getElementById('hdStar').textContent = stripTeam(m.starPlayer) || 'None';
-  document.getElementById('hdPasser').textContent = stripTeam(m.bestPasser) || 'None';
-  // Hide awards section for U9/U10 — already shown in the player stats block above
-  document.getElementById('hdAwardsView').style.display = (m.age === 'U9' || m.age === 'U10') ? 'none' : '';
-  const hdDivider = document.getElementById('hdAwardsDivider');
-  if (hdDivider) hdDivider.style.display = (m.age === 'U9' || m.age === 'U10') ? 'none' : '';
+  document.getElementById('hdQuarters').innerHTML = renderHdQuartersFromSheet(m, false);
+  document.getElementById('hdStar').textContent = m.starPlayer || '—';
+  document.getElementById('hdPasser').textContent = m.bestPasser || '—';
+
+  document.getElementById('hdAwardsView').style.display = '';
   document.getElementById('hdAwardsEdit').style.display = 'none';
   document.getElementById('hdEditNote').style.display = 'none';
   document.getElementById('hdEditAddBtns').style.display = 'none';
-  document.getElementById('hdViewBtns').style.display = 'block';
-  document.getElementById('hdCloseBtn').style.display = 'block';
-  document.getElementById('hdEditBtns').style.display = 'none';
-  document.getElementById('hdEditMatchDetails').style.display = 'none';
-  const editBtn = document.getElementById('hdEditBtn');
-  const deleteBtn = document.getElementById('hdDeleteBtn');
-  const lockedMsg = document.getElementById('hdLockedMsg');
-  const isLocked = m.age === 'U9' || m.age === 'U10';
-  const isOtherTeam = state.team && m.team !== state.team;
-
-  editBtn.style.display = (isLocked || isOtherTeam) ? 'none' : '';
-  editBtn.disabled = false;
-  editBtn.textContent = 'Edit';
-  editBtn.style.opacity = '';
-  deleteBtn.style.display = (isLocked || isOtherTeam) ? 'none' : '';
-  lockedMsg.style.display = (isLocked || isOtherTeam) ? 'block' : 'none';
-  lockedMsg.textContent = isLocked
-    ? 'Results for prior seasons cannot be edited or deleted'
-    : `To edit or delete ${m.team} results, select ${m.team} from the home screen`;
-}
-
-function renderHdAwardsEdit() {
-  const players = getSquad(hdMatchRef.team);
-  const stripTeam = name => name ? name.replace(/^[^-]+ - /, '') : name;
-  const draftStar = (hdDraftRows.find(r=>r.stat==='5. Star Player')||{}).player || null;
-  const draftPasser = (hdDraftRows.find(r=>r.stat==='6. Best Passer')||{}).player || null;
-
-  const awardRow = (label, player, type) => player
-    ? `<div style="padding:8px 10px;background:var(--off-white);border-radius:8px;margin-bottom:5px;display:flex;align-items:center;gap:8px;">
-        <span style="flex:1;font-size:13px;"><span style="color:var(--navy);font-weight:600;">${label}</span>: ${stripTeam(player)}</span>
-        <button onclick="hdClearAward('${type}')" style="background:none;border:none;color:var(--red);font-size:20px;cursor:pointer;padding:0 2px;line-height:1;flex-shrink:0;">×</button>
-      </div>`
-    : `<div style="margin-bottom:8px;">
-        <div class="modal-player-grid">
-          <button class="modal-player-btn no-assist" onclick="hdSetAward('${type}',null)" style="grid-column:span 3;font-size:12px;">None</button>
-          ${players.map(p =>
-            `<button class="modal-player-btn" onclick="hdSetAward('${type}','${p}')">${p}</button>`
-          ).join('')}
-        </div>
-      </div>`;
-
-  document.getElementById('hdStarGrid').innerHTML = awardRow('Star Player', draftStar, 'star');
-  document.getElementById('hdPasserGrid').innerHTML = awardRow('Over-achiever', draftPasser, 'passer');
-}
-
-function hdClearAward(type) {
-  const stat = type === 'star' ? '5. Star Player' : '6. Best Passer';
-  hdDraftRows = hdDraftRows.filter(r => r.stat !== stat);
-  renderHdAwardsEdit();
+  document.getElementById('hdSaveBtn').style.display = 'none';
+  document.getElementById('hdEditBtn').textContent = 'Edit';
 }
 
 function toggleHistoryEdit() {
-  const m = hdMatchRef;
   hdEditMode = !hdEditMode;
-
-  // Lock: can only edit matches for the currently selected team
-  if (hdEditMode && state.team && m.team !== state.team) {
-    hdEditMode = false;
-    showToast(`You can only edit ${state.team} matches`);
-    return;
-  }
+  const m = hdMatchRef;
 
   if (hdEditMode) {
     hdDraftRows = JSON.parse(JSON.stringify(m.sheetRows || []));
     document.getElementById('hdQuarters').innerHTML = renderHdQuartersFromSheet(m, true);
+
     document.getElementById('hdAwardsView').style.display = 'none';
-    document.getElementById('hdAwardsEdit').style.display = 'block';
-    renderHdAwardsEdit();
+    document.getElementById('hdAwardsEdit').style.display = '';
+    const players = getSquad(m.team);
+    const draftStar = (hdDraftRows.find(r=>r.stat==='5. Star Player')||{}).player || null;
+    const draftPasser = (hdDraftRows.find(r=>r.stat==='6. Best Passer')||{}).player || null;
+    document.getElementById('hdStarGrid').innerHTML = players.map(p =>
+      `<button class="modal-player-btn ${draftStar===p?'selected-scorer':''}" onclick="hdSetAward('star','${p}')">${p}</button>`
+    ).join('');
+    document.getElementById('hdPasserGrid').innerHTML = players.map(p =>
+      `<button class="modal-player-btn ${draftPasser===p?'no-assist':''}" onclick="hdSetAward('passer','${p}')">${p}</button>`
+    ).join('');
+
     document.getElementById('hdEditNote').style.display = '';
     document.getElementById('hdEditAddBtns').style.display = 'flex';
-    document.getElementById('hdViewBtns').style.display = 'none';
-    document.getElementById('hdCloseBtn').style.display = 'none';
-    document.getElementById('hdEditBtns').style.display = 'block';
-    // Show date/opponent edit fields
-    document.getElementById('hdEditMatchDetails').style.display = 'block';
-    const rawIso = m.rawDate instanceof Date ? m.rawDate.toISOString().split('T')[0]
-      : (typeof m.rawDate === 'string' && m.rawDate.includes('T') ? m.rawDate.split('T')[0]
-      : (m.date ? (() => { const [d,mo,y]=m.date.split(' '); const months={Jan:'01',Feb:'02',Mar:'03',Apr:'04',May:'05',Jun:'06',Jul:'07',Aug:'08',Sep:'09',Oct:'10',Nov:'11',Dec:'12'}; return `${y}-${months[mo]}-${d.padStart(2,'0')}`; })() : ''));
-    document.getElementById('hdEditDate').value = rawIso;
-    document.getElementById('hdEditOpponent').value = m.opponent || '';
+    document.getElementById('hdSaveBtn').style.display = 'block';
+    document.getElementById('hdEditBtn').textContent = 'Cancel';
   } else {
-    document.getElementById('hdEditMatchDetails').style.display = 'none';
     renderHistoryDetailModal(m);
   }
 }
 
 function hdSetAward(type, player) {
   const stat = type === 'star' ? '5. Star Player' : '6. Best Passer';
+  const currentlySet = hdDraftRows.find(r => r.stat === stat && r.player === player);
   hdDraftRows = hdDraftRows.filter(r => r.stat !== stat);
-  if (player) {
-    const team = hdMatchRef.team;
-    const storedPlayer = player.startsWith(team + ' - ') ? player : team + ' - ' + player;
-    hdDraftRows.push({ player: storedPlayer, stat, count: 1, quarter: '-' });
+  if (!currentlySet) {
+    hdDraftRows.push({ player, stat, count: 1, quarter: '-' });
   }
-  renderHdAwardsEdit();
+  // Re-render just the award grids
+  const players = getSquad(hdMatchRef.team);
+  const draftStar = (hdDraftRows.find(r=>r.stat==='5. Star Player')||{}).player || null;
+  const draftPasser = (hdDraftRows.find(r=>r.stat==='6. Best Passer')||{}).player || null;
+  document.getElementById('hdStarGrid').innerHTML = players.map(p =>
+    `<button class="modal-player-btn ${draftStar===p?'selected-scorer':''}" onclick="hdSetAward('star','${p}')">${p}</button>`
+  ).join('');
+  document.getElementById('hdPasserGrid').innerHTML = players.map(p =>
+    `<button class="modal-player-btn ${draftPasser===p?'no-assist':''}" onclick="hdSetAward('passer','${p}')">${p}</button>`
+  ).join('');
 }
 
 async function saveHistoryEdit() {
@@ -3504,47 +3003,29 @@ async function saveHistoryEdit() {
   const btn = document.getElementById('hdSaveBtn');
   btn.disabled = true; btn.textContent = 'Saving...';
 
-  // Pick up any date/opponent edits
-  const editedDateRaw = document.getElementById('hdEditDate').value; // YYYY-MM-DD
-  const editedOpponent = document.getElementById('hdEditOpponent').value.trim() || m.opponent;
-  // Convert YYYY-MM-DD to display format "29 Jun 2026"
-  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  let displayDate = m.date;
-  if (editedDateRaw) {
-    const [y,mo,d] = editedDateRaw.split('-');
-    displayDate = `${parseInt(d)} ${months[parseInt(mo)-1]} ${y}`;
-  }
-  const matchDateForSheet = editedDateRaw || m.rawDate;
-
   // Recompute result/score from draft rows
   const goalsFor = hdDraftRows.filter(r=>r.stat==='1. Goal').reduce((s,r)=>s+r.count,0);
   const goalsAgainst = Math.abs(hdDraftRows.filter(r=>r.stat==='7. Concede').reduce((s,r)=>s+r.count,0));
   const result = goalsFor > goalsAgainst ? 'W' : goalsFor === goalsAgainst ? 'D' : 'L';
 
   const rows = hdDraftRows.map(r => ({
-    Date: displayDate, Age: m.age, Team: m.team, League: m.league,
-    Opponent: editedOpponent, Result: result, Venue: m.venue,
+    Date: m.date, Age: m.age, Team: m.team, League: m.league,
+    Opponent: m.opponent, Result: result, Venue: m.venue,
     Player: r.player, Stat: r.stat, Quarter: r.quarter, Count: r.count
   }));
 
   try {
     const resp = await fetch(SCRIPT_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action: 'updateMatch', date: m.rawDate, team: m.team, opponent: m.opponent, rows })
+      body: JSON.stringify({ action: 'updateMatch', date: m.date, team: m.team, opponent: m.opponent, rows })
     });
     const data = await resp.json();
     if (!data.success) throw new Error(data.error);
     showToast('Match updated');
-
-    // Patch in-memory data
-    const patched = parseSheetRows(rows)[0];
-    const idx = SHEET_DATA.findIndex(x => x.id === m.id);
-    if (idx !== -1 && patched) SHEET_DATA[idx] = patched;
-    localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data: SHEET_DATA }));
-
-    document.getElementById('hdEditMatchDetails').style.display = 'none';
+    localStorage.removeItem(CACHE_KEY);
+    sheetDataLoaded = false;
     closeHistoryDetail();
+    await loadSheetData(true);
     renderHistoryList();
   } catch (err) {
     showToast('Error: ' + err.message);
@@ -3561,31 +3042,20 @@ function closeHistoryDetail() {
 async function deleteHistoryMatch() {
   const m = hdMatchRef;
   if (!m) return;
-  if (m.age === 'U9' || m.age === 'U10') {
-    showToast('Results for prior seasons cannot be deleted');
-    return;
-  }
-  if (state.team && m.team !== state.team) {
-    showToast(`You can only delete ${state.team} matches`);
-    return;
-  }
-  if (!confirm(`Delete this match (${m.date} · ${m.team} vs ${m.opponent})? This cannot be undone.`)) return;
+  if (!confirm(`Delete this match (${m.date} · ${m.team} vs ${m.opponent})? This permanently removes it from Google Sheets and cannot be undone.`)) return;
 
   try {
     const resp = await fetch(SCRIPT_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action: 'deleteMatch', date: m.rawDate, team: m.team, opponent: m.opponent })
+      body: JSON.stringify({ action: 'deleteMatch', date: m.date, team: m.team, opponent: m.opponent })
     });
     const data = await resp.json();
     if (!data.success) throw new Error(data.error);
     showToast('Match deleted');
-
-    // Remove from in-memory + cached data directly instead of re-fetching the whole sheet
-    SHEET_DATA = SHEET_DATA.filter(x => x.id !== m.id);
-    localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data: SHEET_DATA }));
-
+    localStorage.removeItem(CACHE_KEY);
+    sheetDataLoaded = false;
     closeHistoryDetail();
+    await loadSheetData(true);
     renderHistoryList();
   } catch (err) {
     showToast('Error: ' + err.message);
@@ -3619,27 +3089,12 @@ async function checkForUpdate() {
 
 // ── Init ──
 checkForUpdate();
+// Re-check periodically in case the app is left open for a while (e.g. during a match)
 setInterval(checkForUpdate, 2 * 60 * 1000);
+// Re-check whenever the app regains focus/visibility (covers home-screen icon reopen)
 document.addEventListener('visibilitychange', () => { if (!document.hidden) checkForUpdate(); });
 populateOpponentDatalist();
 updateScoreBar();
-
-// Restore last team or show Select team modal on first open
-const lastTeam = localStorage.getItem('kprLastTeam');
-if (lastTeam && ['Blues','Reds','Royals','Stripes'].includes(lastTeam)) {
-  state.team = lastTeam;
-  state.league = TEAM_LEAGUES[lastTeam];
-  const badge = document.getElementById('setupTeamBadge');
-  if (badge) { badge.textContent = lastTeam; badge.style.background = getTeamBackground(lastTeam); }
-  document.getElementById('scoreLeftLabel').textContent = 'KPR ' + lastTeam;
-  document.getElementById('changeTeamLink').textContent = 'Change team';
-  showScreen('screen-setup');
-  document.getElementById('matchDate').value = new Date().toISOString().split('T')[0];
-  state.matchDate = new Date().toISOString().split('T')[0];
-} else {
-  showScreen('screen-setup');
-  openTeamChangeModal();
-}
 </script>
 </body>
 </html>
