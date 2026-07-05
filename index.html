@@ -870,43 +870,6 @@
   </div>
 </div>
 
-<!-- ② MATCH SETUP -->
-<div class="screen" id="screen-setup">
-
-  <!-- Team indicator bar -->
-  <div style="display:flex;align-items:center;padding:4px 0 14px;">
-    <div id="setupTeamBadge" style="padding:11px 18px;border-radius:12px;font-size:14px;font-weight:700;color:white;background:var(--navy);white-space:nowrap;flex-shrink:0;position:relative;z-index:1;">Blues</div>
-    <div style="display:flex;align-items:center;background:white;border:1.5px solid var(--light-grey);border-left:none;border-radius:0 12px 12px 0;flex:1;min-width:0;height:42px;margin-left:-12px;padding-left:18px;">
-      <button id="changeTeamLink" onclick="openTeamChangeModal()" style="background:none;border:none;font-size:11px;color:var(--mid-grey);cursor:pointer;text-decoration:underline;padding:0 8px;white-space:nowrap;flex-shrink:0;">Select team</button>
-      <div style="flex:1;"></div>
-      <button onclick="openSquadManager(state.team)" style="background:none;border:none;font-size:11px;color:var(--mid-grey);cursor:pointer;padding:0 14px;text-decoration:underline;white-space:nowrap;flex-shrink:0;">Add / remove players</button>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-title">Match details</div>
-    <div class="field">
-      <label>Date</label>
-      <input type="date" id="matchDate" onchange="state.matchDate=this.value" style="width:100%;color-scheme:light;">
-    </div>
-    <div class="field" style="position:relative;">
-      <label>Opponent</label>
-      <input type="text" id="matchOpponent" placeholder="Start typing opponent name…" autocomplete="off" autocapitalize="words"
-        oninput="handleOpponentInput()" onfocus="handleOpponentInput()" onblur="setTimeout(hideOpponentDropdown, 150)">
-      <div id="opponentDropdown" style="display:none;"></div>
-    </div>
-    <div class="field">
-      <label>Venue</label>
-      <div class="toggle-row">
-        <button class="toggle-btn active" id="venueHome" onclick="setVenue('Home')">Home</button>
-        <button class="toggle-btn" id="venueAway" onclick="setVenue('Away')">Away</button>
-      </div>
-    </div>
-  </div>
-
-  <button class="btn-primary" onclick="startMatch()" id="startMatchBtn">Start match</button>
-</div>
-
 <!-- ③ MATCH DAY -->
 <div class="screen" id="screen-match">
 
@@ -919,19 +882,19 @@
     <div id="matchDetailsBody" style="display:block;background:white;border:1.5px solid var(--light-grey);border-top:none;border-radius:0 0 10px 10px;padding:12px;">
       <div class="field" style="margin-bottom:10px;">
         <label>Date</label>
-        <input type="date" id="matchDate" onchange="state.matchDate=this.value;updateMatchDetailsSummary();" style="width:100%;color-scheme:light;">
+        <input type="date" id="matchDate" onchange="state.matchDate=this.value;updateMatchDetailsSummary();updateScoreBarLayout();" style="width:100%;color-scheme:light;">
       </div>
       <div class="field" style="position:relative;margin-bottom:10px;">
         <label>Opponent</label>
         <input type="text" id="matchOpponent" placeholder="Start typing opponent name…" autocomplete="off" autocapitalize="words"
-          oninput="handleOpponentInput();updateMatchDetailsSummary();" onfocus="handleOpponentInput()" onblur="setTimeout(hideOpponentDropdown,150)">
+          oninput="handleOpponentInput();updateMatchDetailsSummary();updateScoreBarLayout();" onfocus="handleOpponentInput()" onblur="setTimeout(hideOpponentDropdown,150)">
         <div id="opponentDropdown" style="display:none;"></div>
       </div>
       <div class="field">
         <label>Venue</label>
         <div class="toggle-row">
-          <button class="toggle-btn active" id="venueHome" onclick="setVenue('Home');updateMatchDetailsSummary();">Home</button>
-          <button class="toggle-btn" id="venueAway" onclick="setVenue('Away');updateMatchDetailsSummary();">Away</button>
+          <button class="toggle-btn active" id="venueHome" onclick="setVenue('Home');updateMatchDetailsSummary();updateScoreBarLayout();">Home</button>
+          <button class="toggle-btn" id="venueAway" onclick="setVenue('Away');updateMatchDetailsSummary();updateScoreBarLayout();">Away</button>
         </div>
       </div>
     </div>
@@ -1372,7 +1335,7 @@
 
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyRiGa5jg1roJh3drjIvHv96axQiX_bTDnGiGAeeGFsxb94_G1xA1z6GFkk5n0eZ97B5g/exec";
-const APP_VERSION = "2026-07-01-46"; // bumped automatically on every update
+const APP_VERSION = "2026-07-01-47"; // bumped automatically on every update
 const AGE = "U11";
 
 const DEFAULT_SQUADS = {
@@ -1711,12 +1674,13 @@ function renderEventListForQ(q) {
   }).join('');
 }
 function updateScoreBarLayout() {
-  // Home: KPR left, opp right. Away: opp left, KPR right.
   const isHome = state.venue === 'Home';
-  const kprName = 'KPR ' + state.team;
-  const oppName = state.opponent || 'Opposition';
-  document.getElementById('scoreLeftLabel').textContent = isHome ? kprName : oppName;
-  document.getElementById('scoreRightLabel').textContent = isHome ? oppName : kprName;
+  const kprName = 'KPR ' + (state.team || '');
+  const oppName = state.opponent || 'Opponent';
+  const venue = isHome ? 'Home' : 'Away';
+  // Show: [KPR team] (Home/Away) vs [Opponent]
+  document.getElementById('scoreLeftLabel').textContent = kprName + ' · ' + venue;
+  document.getElementById('scoreRightLabel').textContent = oppName;
   document.getElementById('scoreBar').style.background = 'var(--navy)';
 }
 
