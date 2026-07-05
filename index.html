@@ -72,7 +72,7 @@
     max-height: 220px;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-    z-index: 50;
+    z-index: 200;
     box-shadow: 0 4px 10px rgba(0,0,0,0.08);
   }
   .opp-option {
@@ -875,11 +875,11 @@
 
   <!-- Match details (collapsible) -->
   <div id="matchDetailsCollapse" style="margin-bottom:10px;">
-    <div onclick="toggleMatchDetails()" style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:white;border-radius:10px;cursor:pointer;border:1.5px solid var(--light-grey);">
+    <div onclick="toggleMatchDetails()" style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:white;border-radius:10px;cursor:pointer;border:1.5px solid var(--light-grey);box-shadow:0 1px 3px rgba(0,0,0,0.06);">
       <span id="matchDetailsSummary" style="font-size:13px;color:var(--navy);font-weight:600;">Set match details</span>
-      <svg id="matchDetailsChevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="flex-shrink:0;transition:transform 0.2s;transform:rotate(180deg);"><polyline points="6 9 12 15 18 9"/></svg>
+      <svg id="matchDetailsChevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00295c" stroke-width="2.5" style="flex-shrink:0;transition:transform 0.2s;transform:rotate(180deg);"><polyline points="6 9 12 15 18 9"/></svg>
     </div>
-    <div id="matchDetailsBody" style="display:block;background:white;border:1.5px solid var(--light-grey);border-top:none;border-radius:0 0 10px 10px;padding:12px;">
+    <div id="matchDetailsBody" style="display:block;background:white;border:1.5px solid var(--light-grey);border-top:none;border-radius:0 0 10px 10px;padding:12px;position:relative;z-index:1;">
       <div class="field" style="margin-bottom:10px;">
         <label>Date</label>
         <input type="date" id="matchDate" onchange="state.matchDate=this.value;updateMatchDetailsSummary();updateScoreBarLayout();" style="width:100%;color-scheme:light;">
@@ -1335,7 +1335,7 @@
 
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyRiGa5jg1roJh3drjIvHv96axQiX_bTDnGiGAeeGFsxb94_G1xA1z6GFkk5n0eZ97B5g/exec";
-const APP_VERSION = "2026-07-01-47"; // bumped automatically on every update
+const APP_VERSION = "2026-07-01-48"; // bumped automatically on every update
 const AGE = "U11";
 
 const DEFAULT_SQUADS = {
