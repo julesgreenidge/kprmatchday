@@ -914,9 +914,9 @@
   <div id="matchDetailsCollapse" style="margin-bottom:10px;">
     <div onclick="toggleMatchDetails()" style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:white;border-radius:10px;cursor:pointer;border:1.5px solid var(--light-grey);">
       <span id="matchDetailsSummary" style="font-size:13px;color:var(--navy);font-weight:600;">Set match details</span>
-      <svg id="matchDetailsChevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="flex-shrink:0;transition:transform 0.2s;transform:rotate(0deg);"><polyline points="6 9 12 15 18 9"/></svg>
+      <svg id="matchDetailsChevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="flex-shrink:0;transition:transform 0.2s;transform:rotate(180deg);"><polyline points="6 9 12 15 18 9"/></svg>
     </div>
-    <div id="matchDetailsBody" style="display:none;background:white;border:1.5px solid var(--light-grey);border-top:none;border-radius:0 0 10px 10px;padding:12px;">
+    <div id="matchDetailsBody" style="display:block;background:white;border:1.5px solid var(--light-grey);border-top:none;border-radius:0 0 10px 10px;padding:12px;">
       <div class="field" style="margin-bottom:10px;">
         <label>Date</label>
         <input type="date" id="matchDate" onchange="state.matchDate=this.value;updateMatchDetailsSummary();" style="width:100%;color-scheme:light;">
@@ -1090,7 +1090,6 @@
 <div class="screen" id="screen-team-tab">
   <div id="teamTabBg" style="min-height:200px;border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 20px;margin-bottom:16px;position:relative;overflow:hidden;">
     <div id="teamTabName" style="font-size:42px;font-weight:900;color:white;letter-spacing:-1px;text-shadow:0 2px 8px rgba(0,0,0,0.3);">Blues</div>
-    <div id="teamTabLeague" style="font-size:14px;color:rgba(255,255,255,0.8);margin-top:4px;font-weight:500;">Azure League</div>
   </div>
   <div class="card">
     <button onclick="openTeamChangeModal()" style="width:100%;padding:14px;background:none;border:none;font-size:15px;font-weight:700;color:var(--navy);cursor:pointer;text-align:left;display:flex;align-items:center;gap:10px;">
@@ -1373,7 +1372,7 @@
 
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyRiGa5jg1roJh3drjIvHv96axQiX_bTDnGiGAeeGFsxb94_G1xA1z6GFkk5n0eZ97B5g/exec";
-const APP_VERSION = "2026-07-01-45"; // bumped automatically on every update
+const APP_VERSION = "2026-07-01-46"; // bumped automatically on every update
 const AGE = "U11";
 
 const DEFAULT_SQUADS = {
@@ -1501,16 +1500,15 @@ function renderTeamTab() {
   const leagueEl = document.getElementById('teamTabLeague');
   if (!bg) return;
   bg.style.background = getTeamBackground(state.team);
-  nameEl.textContent = 'KPR ' + state.team;
-  leagueEl.textContent = state.league || '';
+  nameEl.textContent = state.team;
 }
 
 function toggleMatchDetails() {
   const body = document.getElementById('matchDetailsBody');
   const chevron = document.getElementById('matchDetailsChevron');
-  const open = body.style.display === 'none';
-  body.style.display = open ? 'block' : 'none';
-  chevron.style.transform = open ? 'rotate(180deg)' : 'rotate(0deg)';
+  const open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : 'block';
+  chevron.style.transform = open ? 'rotate(0deg)' : 'rotate(180deg)';
 }
 
 function updateMatchDetailsSummary() {
@@ -1576,7 +1574,12 @@ function showMatchDayScreens() {
   if (state._matchEnded) {
     showScreen('screen-end');
     document.getElementById('headerTitle').textContent = 'KPR ' + state.team + ' · Summary';
-    setHeaderBack(false);
+    setHeaderBack(true, () => {
+      state._matchEnded = false;
+      showScreen('screen-match');
+      document.getElementById('headerTitle').textContent = 'KPR ' + state.team + ' · Match Day';
+      setHeaderBack(false);
+    });
   } else {
     showScreen('screen-match');
     document.getElementById('headerTitle').textContent = 'KPR ' + state.team + ' · Match Day';
@@ -1627,9 +1630,12 @@ function selectTeam(team) {
 
   closeModal('teamChangeModal');
   renderTeamTab();
-
-  // Go to Match Day
-  switchTab('matchday');
+  // Stay on Team tab — don't navigate away
+  if (document.getElementById('screen-team-tab').classList.contains('active')) {
+    // Already on team tab, just re-render
+  } else {
+    switchTab('team');
+  }
 }
 
 function goToTeamSelect() {
