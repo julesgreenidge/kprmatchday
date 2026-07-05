@@ -472,9 +472,9 @@
     color: white;
   }
   .modal-player-btn.no-assist {
-    border-color: var(--light-grey);
-    background: white;
-    color: var(--text);
+    border-color: var(--navy);
+    background: var(--navy);
+    color: white;
   }
   .modal-player-btn.cs-gk {
     border-color: var(--gold);
@@ -482,21 +482,16 @@
     color: white;
   }
   .modal-player-btn.cs-def-selected {
-    border-color: var(--gold);
-    background: var(--gold);
+    border-color: var(--navy);
+    background: var(--navy);
     color: white;
   }
-  .modal-player-btn.cs-player {
-    border-color: var(--gold);
-    color: var(--navy);
-    background: white;
-  }
   .modal-step {
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 700;
-    letter-spacing: 0.03em;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
-    color: var(--navy);
+    color: var(--mid-grey);
     margin-bottom: 10px;
   }
 
@@ -830,10 +825,6 @@
     padding-left: 6px;
     flex-shrink: 0;
   }
-  @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-  .refresh-btn { background:white;border:1.5px solid var(--light-grey);border-radius:8px;cursor:pointer;color:var(--navy);display:flex;align-items:center;flex-shrink:0;transition:background 0.15s; }
-  .refresh-btn:active { background:var(--off-white); }
-  .refresh-btn.spinning svg { animation: spin 0.8s linear infinite; }
 </style>
 </head>
 <body>
@@ -909,34 +900,6 @@
 
 <!-- ③ MATCH DAY -->
 <div class="screen" id="screen-match">
-
-  <!-- Match details (collapsible) -->
-  <div id="matchDetailsCollapse" style="margin-bottom:10px;">
-    <div onclick="toggleMatchDetails()" style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:white;border-radius:10px;cursor:pointer;border:1.5px solid var(--light-grey);">
-      <span id="matchDetailsSummary" style="font-size:13px;color:var(--navy);font-weight:600;">Set match details</span>
-      <svg id="matchDetailsChevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="flex-shrink:0;transition:transform 0.2s;transform:rotate(0deg);"><polyline points="6 9 12 15 18 9"/></svg>
-    </div>
-    <div id="matchDetailsBody" style="display:none;background:white;border:1.5px solid var(--light-grey);border-top:none;border-radius:0 0 10px 10px;padding:12px;">
-      <div class="field" style="margin-bottom:10px;">
-        <label>Date</label>
-        <input type="date" id="matchDate" onchange="state.matchDate=this.value;updateMatchDetailsSummary();" style="width:100%;color-scheme:light;">
-      </div>
-      <div class="field" style="position:relative;margin-bottom:10px;">
-        <label>Opponent</label>
-        <input type="text" id="matchOpponent" placeholder="Start typing opponent name…" autocomplete="off" autocapitalize="words"
-          oninput="handleOpponentInput();updateMatchDetailsSummary();" onfocus="handleOpponentInput()" onblur="setTimeout(hideOpponentDropdown,150)">
-        <div id="opponentDropdown" style="display:none;"></div>
-      </div>
-      <div class="field">
-        <label>Venue</label>
-        <div class="toggle-row">
-          <button class="toggle-btn active" id="venueHome" onclick="setVenue('Home');updateMatchDetailsSummary();">Home</button>
-          <button class="toggle-btn" id="venueAway" onclick="setVenue('Away');updateMatchDetailsSummary();">Away</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <div class="score-bar-wrap">
     <div class="score-bar" id="scoreBar">
       <div id="scoreLeft">
@@ -1068,10 +1031,6 @@
 
 <!-- BOTTOM NAV -->
 <div class="bottom-nav">
-  <button class="nav-btn" id="nav-team" onclick="switchTab('team')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-    Team
-  </button>
   <button class="nav-btn active" id="nav-matchday" onclick="switchTab('matchday')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
     Match Day
@@ -1084,25 +1043,6 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
     Stats
   </button>
-</div>
-
-<!-- TEAM TAB -->
-<div class="screen" id="screen-team-tab">
-  <div id="teamTabBg" style="min-height:200px;border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 20px;margin-bottom:16px;position:relative;overflow:hidden;">
-    <div id="teamTabName" style="font-size:42px;font-weight:900;color:white;letter-spacing:-1px;text-shadow:0 2px 8px rgba(0,0,0,0.3);">Blues</div>
-    <div id="teamTabLeague" style="font-size:14px;color:rgba(255,255,255,0.8);margin-top:4px;font-weight:500;">Azure League</div>
-  </div>
-  <div class="card">
-    <button onclick="openTeamChangeModal()" style="width:100%;padding:14px;background:none;border:none;font-size:15px;font-weight:700;color:var(--navy);cursor:pointer;text-align:left;display:flex;align-items:center;gap:10px;">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-      Change team
-    </button>
-    <div style="border-top:1px solid var(--light-grey);margin:0;"></div>
-    <button onclick="openSquadManager(state.team)" style="width:100%;padding:14px;background:none;border:none;font-size:15px;font-weight:700;color:var(--navy);cursor:pointer;text-align:left;display:flex;align-items:center;gap:10px;">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-      Add / remove players
-    </button>
-  </div>
 </div>
 
 <!-- HISTORY TAB -->
@@ -1123,7 +1063,7 @@
         <option value="U10">U10</option>
         <option value="U9">U9</option>
       </select>
-      <button id="resultsRefreshBtn" onclick="triggerRefresh('resultsRefreshBtn')" title="Refresh" class="refresh-btn" style="padding:8px 10px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button>
+      <button onclick="sheetDataLoaded=false;sheetDataLoading=false;localStorage.removeItem('kprSheetData');loadSheetData(true);" title="Refresh" style="background:none;border:1.5px solid var(--light-grey);border-radius:8px;padding:8px 10px;cursor:pointer;color:var(--mid-grey);display:flex;align-items:center;flex-shrink:0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button>
     </div>
     <div id="historyList"></div>
   </div>
@@ -1151,7 +1091,7 @@
           <option value="Home">Home</option>
           <option value="Away">Away</option>
         </select>
-        <button id="statsRefreshBtn" onclick="triggerRefresh('statsRefreshBtn')" title="Refresh" class="refresh-btn" style="padding:7px 10px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button>
+        <button onclick="sheetDataLoaded=false;sheetDataLoading=false;localStorage.removeItem('kprSheetData');loadSheetData(true);" title="Refresh" style="background:none;border:1.5px solid var(--light-grey);border-radius:8px;padding:7px 10px;cursor:pointer;color:var(--mid-grey);display:flex;align-items:center;flex-shrink:0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button>
       </div>
       <div id="opponentFilterRow" style="display:flex;gap:8px;">
         <select id="statsFilterOpponent" onchange="renderStats()" style="flex:1;min-width:0;padding:7px 8px;border:1.5px solid var(--light-grey);border-radius:8px;font-size:13px;background:white;">
@@ -1190,7 +1130,7 @@
     <div class="modal-sub">Quarter <span id="goalModalQ"></span></div>
     <div class="modal-step">Who scored?</div>
     <div class="modal-player-grid" id="goalScorerGrid"></div>
-    <div style="border-top:2px solid var(--navy);margin:12px 0;opacity:0.15;"></div>
+    <div style="border-top:1px solid var(--light-grey);margin:12px 0;"></div>
     <div class="modal-step" id="goalAssistLabel">Who assisted?</div>
     <div class="modal-player-grid" id="goalAssistGrid"></div>
     <button class="btn-primary" style="margin-top:12px;" onclick="saveGoal()">Save goal</button>
@@ -1208,7 +1148,7 @@
     <div class="modal-sub">Q<span id="csModalQ"></span></div>
     <div class="modal-step">Goalkeeper this quarter?</div>
     <div class="modal-player-grid" id="csGKGrid"></div>
-    <div style="border-top:2px solid var(--navy);margin:12px 0;opacity:0.15;"></div>
+    <div style="border-top:1px solid var(--light-grey);margin:12px 0;"></div>
     <div class="modal-step">Defenders this quarter? <span style="font-size:12px;color:var(--mid-grey);font-weight:400;">(select all that apply)</span></div>
     <div class="modal-player-grid" id="csDefGrid"></div>
     <button class="btn-primary" style="margin-top:12px;" onclick="confirmCS()">Confirm clean sheet</button>
@@ -1364,7 +1304,8 @@
     <div class="modal-title" id="editModalTitle">Edit event</div>
     <div class="modal-sub" id="editModalSub"></div>
     <div id="editModalContent"></div>
-    <button class="btn-secondary" style="margin-top:8px;" onclick="closeModal('editModal')">Cancel</button>
+    <button class="btn-danger" style="margin-top:10px;" onclick="deleteEditEvent()">Delete event</button>
+    <button class="btn-secondary" onclick="closeModal('editModal')">Cancel</button>
   </div>
 </div>
 
@@ -1373,7 +1314,7 @@
 
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyRiGa5jg1roJh3drjIvHv96axQiX_bTDnGiGAeeGFsxb94_G1xA1z6GFkk5n0eZ97B5g/exec";
-const APP_VERSION = "2026-07-01-45"; // bumped automatically on every update
+const APP_VERSION = "2026-07-01-39"; // bumped automatically on every update
 const AGE = "U11";
 
 const DEFAULT_SQUADS = {
@@ -1494,40 +1435,6 @@ function selectOpponent(name) {
   hideOpponentDropdown();
 }
 
-function renderTeamTab() {
-  if (!state.team) return;
-  const bg = document.getElementById('teamTabBg');
-  const nameEl = document.getElementById('teamTabName');
-  const leagueEl = document.getElementById('teamTabLeague');
-  if (!bg) return;
-  bg.style.background = getTeamBackground(state.team);
-  nameEl.textContent = 'KPR ' + state.team;
-  leagueEl.textContent = state.league || '';
-}
-
-function toggleMatchDetails() {
-  const body = document.getElementById('matchDetailsBody');
-  const chevron = document.getElementById('matchDetailsChevron');
-  const open = body.style.display === 'none';
-  body.style.display = open ? 'block' : 'none';
-  chevron.style.transform = open ? 'rotate(180deg)' : 'rotate(0deg)';
-}
-
-function updateMatchDetailsSummary() {
-  const date = document.getElementById('matchDate')?.value;
-  const opp = document.getElementById('matchOpponent')?.value?.trim();
-  const venue = state.venue || 'Home';
-  let summary = '';
-  if (date) {
-    const d = new Date(date + 'T12:00:00');
-    summary += d.toLocaleDateString('en-GB', {day:'numeric',month:'short'});
-  }
-  if (opp) summary += (summary ? ' · ' : '') + opp;
-  if (summary) summary += ' · ' + venue;
-  const el = document.getElementById('matchDetailsSummary');
-  if (el) el.textContent = summary || 'Set match details';
-}
-
 function hideOpponentDropdown() {
   document.getElementById('opponentDropdown').style.display = 'none';
 }
@@ -1542,15 +1449,9 @@ function openTeamChangeModal() {
 // ── NAVIGATION ──
 function switchTab(tab) {
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('nav-' + tab)?.classList.add('active');
+  document.getElementById('nav-' + tab).classList.add('active');
 
-  if (tab === 'team') {
-    hideAllScreens();
-    document.getElementById('screen-team-tab').classList.add('active');
-    document.getElementById('headerTitle').textContent = 'Team';
-    setHeaderBack(false);
-    renderTeamTab();
-  } else if (tab === 'matchday') {
+  if (tab === 'matchday') {
     showMatchDayScreens();
   } else if (tab === 'history') {
     hideAllScreens();
@@ -1569,19 +1470,26 @@ function switchTab(tab) {
 
 function showMatchDayScreens() {
   if (!state.team) {
-    // No team — send to Team tab to select one
-    switchTab('team');
-    return;
-  }
-  if (state._matchEnded) {
+    showScreen('screen-team');
+    document.getElementById('headerTitle').textContent = 'Match Day';
+    setHeaderBack(false);
+  } else if (!state._matchStarted) {
+    showScreen('screen-setup');
+    document.getElementById('headerTitle').textContent = 'Match Day';
+    setHeaderBack(false);
+  } else if (state._matchEnded) {
     showScreen('screen-end');
     document.getElementById('headerTitle').textContent = 'KPR ' + state.team + ' · Summary';
-    setHeaderBack(false);
+    setHeaderBack(true, () => {
+      state._matchEnded = false;
+      showScreen('screen-match');
+      document.getElementById('headerTitle').textContent = 'KPR ' + state.team + ' · Match Day';
+      setHeaderBack(true, goToSetup);
+    });
   } else {
     showScreen('screen-match');
     document.getElementById('headerTitle').textContent = 'KPR ' + state.team + ' · Match Day';
-    setHeaderBack(false);
-    updateMatchDetailsSummary();
+    setHeaderBack(true, goToSetup);
   }
 }
 
@@ -1618,22 +1526,25 @@ function selectTeam(team) {
 
   document.getElementById('scoreBar').style.background = 'var(--navy)';
   document.getElementById('scoreLeftLabel').textContent = 'KPR ' + team;
+  const badge = document.getElementById('setupTeamBadge');
+  if (badge) { badge.textContent = team; badge.style.background = getTeamBackground(team); }
 
-  // Set today's date
-  const today = new Date().toISOString().split('T')[0];
-  const dateEl = document.getElementById('matchDate');
-  if (dateEl) dateEl.value = today;
-  state.matchDate = today;
+  // Update "Change team" link label now team is set
+  const changeLink = document.getElementById('changeTeamLink');
+  if (changeLink) changeLink.textContent = 'Change team';
 
-  closeModal('teamChangeModal');
-  renderTeamTab();
+  document.getElementById('matchDate').value = '';
 
-  // Go to Match Day
-  switchTab('matchday');
+  showScreen('screen-setup');
+  document.getElementById('headerTitle').textContent = 'Match Day';
+  setHeaderBack(false);
 }
 
 function goToTeamSelect() {
-  switchTab('team');
+  state.team = null;
+  showScreen('screen-team');
+  document.getElementById('headerTitle').textContent = 'Match Day';
+  setHeaderBack(false);
 }
 
 // ── SETUP ──
@@ -1644,30 +1555,35 @@ function setVenue(v) {
 }
 
 
-function ensureMatchStarted() {
-  // Auto-initialise match state when first event is added
+function startMatch() {
+  const opponent = document.getElementById('matchOpponent').value.trim();
+  const date = document.getElementById('matchDate').value;
+  if (!date) { showToast('Select a date'); return; }
+
+  // Always use full squad
+  state.selectedPlayers = [...getSquad(state.team)];
+
+  state.matchDate = date;
+  state.opponent = opponent;
+  state._matchEnded = false;
+  saveCustomOpponent(opponent);
+
+  // Only reset events if this is a brand new match (not returning from setup)
   if (!state._matchStarted) {
-    state.selectedPlayers = [...getSquad(state.team)];
-    state.matchDate = document.getElementById('matchDate')?.value || '';
-    state.opponent = document.getElementById('matchOpponent')?.value?.trim() || '';
-    state._matchEnded = false;
     state.events = [];
     state.currentQ = 1;
     state.starPlayer = null;
     state.bestPasser = null;
-    state._matchStarted = true;
-    updateScoreBarLayout();
-  } else {
-    // Update opponent/date/venue from inline fields each time
-    state.matchDate = document.getElementById('matchDate')?.value || state.matchDate;
-    state.opponent = document.getElementById('matchOpponent')?.value?.trim() || state.opponent;
-    saveCustomOpponent(state.opponent);
   }
-}
+  state._matchStarted = true;
+  // Show "New match" button on setup for next time manager returns
 
-function startMatch() {
-  // Legacy — kept for any remaining references
-  ensureMatchStarted();
+  // Score bar: home = KPR left, away = KPR right
+  updateScoreBarLayout();
+  renderAllQuarters();
+  showScreen('screen-match');
+  document.getElementById('headerTitle').textContent = 'KPR ' + state.team + ' · Match Day';
+  setHeaderBack(true, goToSetup);
 }
 
 // ── QUARTERS (all visible) ──
@@ -1755,7 +1671,6 @@ function deleteEventDirect(id) {
 let activeQ = 1;
 function addGoal(q) { activeQ = q; openGoalModal(); }
 function addOppo(q) {
-  ensureMatchStarted();
   state.events.push({ id: Date.now() + Math.random(), type: 'oppo', quarter: q });
   renderAllQuarters();
 }
@@ -1765,7 +1680,6 @@ function addCS(q) { activeQ = q; openCSModal(); }
 let tempAssister = null;
 
 function openGoalModal() {
-  ensureMatchStarted();
   tempScorer = null;
   tempAssister = null;
   document.getElementById('goalModalQ').textContent = activeQ;
@@ -1779,14 +1693,10 @@ function renderGoalModal() {
     `<button class="modal-player-btn${p === tempScorer ? ' selected-scorer' : ''}" onclick="selectScorer('${p}')">${p}</button>`
   ).join('');
 
-  const assistOptions = [...state.selectedPlayers, 'No assist'];
-  document.getElementById('goalAssistGrid').innerHTML = assistOptions.map(p => {
-    const isScorer = p === tempScorer;
-    const isSelected = p === tempAssister;
-    const greyed = isScorer ? ' style="opacity:0.3;pointer-events:none;"' : '';
-    // No assist uses selected-scorer when selected, otherwise plain button
-    return `<button class="modal-player-btn${isSelected ? ' selected-scorer' : ''}"${greyed} onclick="selectAssist('${p}')">${p}</button>`;
-  }).join('');
+  const assistOptions = ['No assist', ...state.selectedPlayers.filter(p => p !== tempScorer)];
+  document.getElementById('goalAssistGrid').innerHTML = assistOptions.map(p =>
+    `<button class="modal-player-btn${p === tempAssister ? ' selected-scorer' : ''}${p === 'No assist' ? ' no-assist' : ''}" onclick="selectAssist('${p}')">${p}</button>`
+  ).join('');
 }
 
 function selectScorer(name) {
@@ -1802,8 +1712,7 @@ function selectAssist(name) {
 
 function saveGoal() {
   if (!tempScorer) { showToast('Select a scorer'); return; }
-  if (!tempAssister) { showToast('Select an assister or No assist'); return; }
-  const assister = tempAssister === 'No assist' ? null : tempAssister;
+  const assister = (!tempAssister || tempAssister === 'No assist') ? null : tempAssister;
   state.events.push({
     id: Date.now() + Math.random(),
     type: 'goal',
@@ -1828,7 +1737,6 @@ function confirmOppoGoal() {
 
 // ── CS MODAL ──
 function openCSModal() {
-  ensureMatchStarted();
   tempGK = null;
   tempDefenders = [];
   document.getElementById('csModalQ').textContent = activeQ;
@@ -1838,7 +1746,7 @@ function openCSModal() {
 
 function renderCSModal() {
   document.getElementById('csGKGrid').innerHTML = state.selectedPlayers.map(p =>
-    `<button class="modal-player-btn${p === tempGK ? ' cs-def-selected' : ''}" onclick="selectCSGK('${p}')">${p}</button>`
+    `<button class="modal-player-btn${p === tempGK ? ' selected-scorer' : ''}" onclick="selectCSGK('${p}')">${p}</button>`
   ).join('');
   renderCSDefGrid();
 }
@@ -1851,12 +1759,10 @@ function selectCSGK(name) {
 
 function renderCSDefGrid() {
   const grid = document.getElementById('csDefGrid');
-  grid.innerHTML = state.selectedPlayers.map(p => {
-    const isGK = p === tempGK;
-    const isSelected = tempDefenders.includes(p);
-    const greyed = isGK ? ' style="opacity:0.3;pointer-events:none;"' : '';
-    return `<button class="modal-player-btn${isSelected ? ' cs-def-selected' : ''}"${greyed} onclick="toggleCSDef('${p}')">${p}</button>`;
-  }).join('');
+  grid.innerHTML = state.selectedPlayers.filter(p => p !== tempGK).map(p =>
+    `<button class="modal-player-btn ${tempDefenders.includes(p)?'cs-def-selected':''}"
+      onclick="toggleCSDef('${p}')">${p}</button>`
+  ).join('');
 }
 
 function toggleCSDef(name) {
@@ -2144,7 +2050,7 @@ function buildRows() {
 }
 
 // ── SUBMIT ──
-function goFixSetup() { closeModal('submitConfirmModal'); switchTab('matchday'); }
+function goFixSetup() { closeModal('submitConfirmModal'); goToSetup(); }
 function goFixMatchDay() { closeModal('submitConfirmModal'); showScreen('screen-match'); document.getElementById('headerTitle').textContent = 'KPR ' + state.team + ' · Match Day'; setHeaderBack(true, goToSetup); }
 function goFixSummary() { closeModal('submitConfirmModal'); /* already on summary */ }
 
@@ -2194,7 +2100,7 @@ function confirmSubmit() {
     errorsEl.innerHTML = errors.map(e =>
       `<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;color:var(--navy);padding:10px 0;border-bottom:1px solid var(--light-grey);">
         <div style="display:flex;align-items:flex-start;gap:8px;flex:1;font-size:13px;">${triangle}<span>${e.msg}</span></div>
-        <button onclick="${e.fix}" style="background:var(--navy);border:none;color:white;font-size:12px;font-weight:700;cursor:pointer;padding:6px 12px;border-radius:7px;white-space:nowrap;flex-shrink:0;">Update</button>
+        <button onclick="${e.fix}" style="background:var(--navy);border:none;color:white;font-size:12px;font-weight:700;cursor:pointer;padding:6px 12px;border-radius:7px;white-space:nowrap;flex-shrink:0;">Fix</button>
       </div>`
     ).join('');
     confirmBtn.textContent = 'Submit with errors';
@@ -2372,116 +2278,48 @@ function openEditModal(id) {
   if (!e) return;
   editingId = id;
   activeQ = e.quarter;
-  editTempScorer = e.scorer || null;
-  editTempAssister = e.assister !== undefined ? (e.assister === null ? 'No assist' : e.assister) : null;
-  editTempCSGK = e.gk || null;
-  editTempCSDefs = e.defenders ? [...e.defenders] : [];
 
   const title = document.getElementById('editModalTitle');
   const sub = document.getElementById('editModalSub');
   const content = document.getElementById('editModalContent');
 
   if (e.type === 'goal') {
-    title.textContent = 'Edit Goal';
-    sub.textContent = 'Q' + e.quarter;
+    title.textContent = '✏️ Edit Goal';
+    sub.textContent = 'Q' + e.quarter + ' · Select new scorer';
+    // Step 1: scorer
+    const players = [...state.selectedPlayers, 'Own Goal'];
     content.innerHTML = `
-      <div class="modal-step">Who scored?</div>
+      <div class="modal-step" id="editStep1Label">Who scored?</div>
       <div class="modal-player-grid" id="editScorerGrid"></div>
-      <div style="border-top:2px solid var(--navy);margin:12px 0;opacity:0.15;"></div>
-      <div class="modal-step">Who assisted?</div>
-      <div class="modal-player-grid" id="editAssistGrid"></div>
-      <button class="btn-primary" style="margin-top:12px;" onclick="editSaveGoalNew()">Save goal</button>`;
-    renderEditGoalGrids();
+      <div id="editStep2" style="display:none;">
+        <div class="modal-step">Who assisted?</div>
+        <div class="modal-player-grid" id="editAssistGrid"></div>
+      </div>`;
+    document.getElementById('editScorerGrid').innerHTML = players.map(p =>
+      `<button class="modal-player-btn ${p === e.scorer ? 'selected-scorer' : ''}${p === 'Own Goal' ? '" style="background:var(--off-white);color:var(--mid-grey);border-color:var(--light-grey);' : '"'} onclick="editSelectScorer('${p}')">${p}</button>`
+    ).join('');
   } else if (e.type === 'oppo') {
-    title.textContent = 'Opposition Goal';
+    title.textContent = '✏️ Opposition Goal';
     sub.textContent = 'Q' + e.quarter;
     content.innerHTML = `<p style="font-size:14px;color:var(--mid-grey);padding:8px 0;">No editable fields for opposition goals. Delete and re-add if needed.</p>`;
   } else if (e.type === 'cs') {
-    title.textContent = 'Edit Clean Sheet';
-    sub.textContent = 'Q' + e.quarter;
+    title.textContent = '✏️ Edit Clean Sheet';
+    sub.textContent = 'Q' + e.quarter + ' · Select goalkeeper';
     content.innerHTML = `
-      <div class="modal-step">Goalkeeper this quarter?</div>
+      <div class="modal-step">Goalkeeper</div>
       <div class="modal-player-grid" id="editCSGKGrid"></div>
-      <div style="border-top:2px solid var(--navy);margin:12px 0;opacity:0.15;"></div>
-      <div class="modal-step">Defenders this quarter? <span style="font-size:12px;color:var(--mid-grey);font-weight:400;">(select all that apply)</span></div>
-      <div class="modal-player-grid" id="editCSDefGrid"></div>
-      <button class="btn-primary" style="margin-top:12px;" onclick="editSaveCSNew()">Save clean sheet</button>`;
-    renderEditCSGrids();
+      <div id="editCSStep2" style="display:none;">
+        <div class="modal-step">GK: <span id="editCSGKLabel" style="color:var(--gold);font-weight:700;"></span> · Toggle defenders</div>
+        <div class="modal-player-grid" id="editCSDefGrid"></div>
+        <button class="btn-primary" style="margin-top:12px;" onclick="editSaveCS()">Save</button>
+      </div>`;
+    document.getElementById('editCSGKGrid').innerHTML = state.selectedPlayers.map(p =>
+      `<button class="modal-player-btn ${p === e.gk ? 'selected-scorer' : ''}" onclick="editSelectCSGK('${p}')">${p}</button>`
+    ).join('');
+    // Pre-select the existing GK so editing defenders doesn't require re-picking GK
+    editSelectCSGK(e.gk);
   }
   openModal('editModal');
-}
-
-let editTempAssister = null;
-let editTempCSDefs = [];
-
-function renderEditGoalGrids() {
-  const players = [...state.selectedPlayers, 'Own Goal'];
-  document.getElementById('editScorerGrid').innerHTML = players.map(p =>
-    `<button class="modal-player-btn${p === editTempScorer ? ' selected-scorer' : ''}" onclick="editPickScorer('${p}')">${p}</button>`
-  ).join('');
-  const assistOptions = [...state.selectedPlayers, 'No assist'];
-  document.getElementById('editAssistGrid').innerHTML = assistOptions.map(p => {
-    const isScorer = p === editTempScorer;
-    const isSelected = p === editTempAssister || (p === 'No assist' && !editTempAssister);
-    const greyed = isScorer ? ' style="opacity:0.3;pointer-events:none;"' : '';
-    return `<button class="modal-player-btn${isSelected ? ' selected-scorer' : ''}${p === 'No assist' ? ' no-assist' : ''}"${greyed} onclick="editPickAssist('${p}')">${p}</button>`;
-  }).join('');
-}
-
-function editPickScorer(name) {
-  editTempScorer = name;
-  editTempAssister = null;
-  renderEditGoalGrids();
-}
-
-function editPickAssist(name) {
-  editTempAssister = name === 'No assist' ? null : name;
-  renderEditGoalGrids();
-}
-
-function editSaveGoalNew() {
-  const idx = state.events.findIndex(ev => ev.id == editingId);
-  if (idx === -1) return;
-  if (!editTempScorer) { showToast('Select a scorer'); return; }
-  if (editTempAssister === null) { showToast('Select an assister or No assist'); return; }
-  state.events[idx].scorer = editTempScorer;
-  state.events[idx].assister = editTempAssister === 'No assist' ? null : editTempAssister;
-  closeModal('editModal');
-  renderAllQuarters();
-}
-
-function renderEditCSGrids() {
-  document.getElementById('editCSGKGrid').innerHTML = state.selectedPlayers.map(p =>
-    `<button class="modal-player-btn${p === editTempCSGK ? ' cs-def-selected' : ''}" onclick="editPickCSGK('${p}')">${p}</button>`
-  ).join('');
-  document.getElementById('editCSDefGrid').innerHTML = state.selectedPlayers.map(p => {
-    const isGK = p === editTempCSGK;
-    const isSelected = editTempCSDefs.includes(p);
-    const greyed = isGK ? ' style="opacity:0.3;pointer-events:none;"' : '';
-    return `<button class="modal-player-btn${isSelected ? ' cs-def-selected' : ''}"${greyed} onclick="editToggleDefNew('${p}')">${p}</button>`;
-  }).join('');
-}
-
-function editPickCSGK(name) {
-  editTempCSGK = name;
-  editTempCSDefs = editTempCSDefs.filter(p => p !== name);
-  renderEditCSGrids();
-}
-
-function editToggleDefNew(name) {
-  if (editTempCSDefs.includes(name)) editTempCSDefs = editTempCSDefs.filter(p => p !== name);
-  else editTempCSDefs.push(name);
-  renderEditCSGrids();
-}
-
-function editSaveCSNew() {
-  const idx = state.events.findIndex(ev => ev.id == editingId);
-  if (idx === -1) return;
-  if (!editTempCSGK) { showToast('Select a goalkeeper'); return; }
-  state.events[idx].gk = editTempCSGK;
-  state.events[idx].defenders = [...editTempCSDefs];
-  closeModal('editModal');
-  renderAllQuarters();
 }
 
 let editTempCSGK = null;
@@ -2569,24 +2407,19 @@ function newMatch() {
   const submitBtn = document.getElementById('submitBtn');
   if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Submit results'; }
 
-  showScreen('screen-match');
+  showScreen('screen-setup');
   window.scrollTo(0, 0);
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('nav-matchday').classList.add('active');
-  document.getElementById('headerTitle').textContent = 'KPR ' + (team || '') + ' · Match Day';
+  document.getElementById('headerTitle').textContent = 'Match Day';
   setHeaderBack(false);
 
-  // Reset inline form fields
-  const today = new Date().toISOString().split('T')[0];
-  const dateEl = document.getElementById('matchDate');
-  if (dateEl) dateEl.value = today;
-  state.matchDate = today;
-  const oppEl = document.getElementById('matchOpponent');
-  if (oppEl) oppEl.value = '';
+  // Reset form fields
+  const _today = new Date().toISOString().split('T')[0];
+  state.matchDate = _today;
+  document.getElementById('matchDate').value = _today;
+  document.getElementById('matchOpponent').value = '';
   setVenue('Home');
-  updateMatchDetailsSummary();
-  renderAllQuarters();
-  updateScoreBar();
 }
 
 // ── MODAL HELPERS ──
@@ -2615,21 +2448,6 @@ let sheetDataLoading = false;
 
 const CACHE_KEY = 'kprSheetData';
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
-
-function triggerRefresh(btnId) {
-  const btn = document.getElementById(btnId);
-  if (btn) btn.classList.add('spinning');
-  sheetDataLoaded = false;
-  sheetDataLoading = false;
-  localStorage.removeItem(CACHE_KEY);
-  loadSheetData(true).finally(() => {
-    if (btn) btn.classList.remove('spinning');
-  });
-}
-
-function refreshData() {
-  triggerRefresh('statsRefreshBtn');
-}
 
 async function loadSheetData(force = false) {
   if (sheetDataLoading) return;
@@ -3806,20 +3624,20 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden) chec
 populateOpponentDatalist();
 updateScoreBar();
 
-// Restore last team or prompt to select one
+// Restore last team or show Select team modal on first open
 const lastTeam = localStorage.getItem('kprLastTeam');
 if (lastTeam && ['Blues','Reds','Royals','Stripes'].includes(lastTeam)) {
   state.team = lastTeam;
   state.league = TEAM_LEAGUES[lastTeam];
+  const badge = document.getElementById('setupTeamBadge');
+  if (badge) { badge.textContent = lastTeam; badge.style.background = getTeamBackground(lastTeam); }
   document.getElementById('scoreLeftLabel').textContent = 'KPR ' + lastTeam;
-  const today = new Date().toISOString().split('T')[0];
-  const dateEl = document.getElementById('matchDate');
-  if (dateEl) dateEl.value = today;
-  state.matchDate = today;
-  renderTeamTab();
-  switchTab('matchday');
+  document.getElementById('changeTeamLink').textContent = 'Change team';
+  showScreen('screen-setup');
+  document.getElementById('matchDate').value = new Date().toISOString().split('T')[0];
+  state.matchDate = new Date().toISOString().split('T')[0];
 } else {
-  switchTab('team');
+  showScreen('screen-setup');
   openTeamChangeModal();
 }
 </script>
