@@ -872,7 +872,7 @@
 
   <!-- Match details -->
   <!-- Match details - always visible, 3 rows -->
-  <div style="background:white;border:1.5px solid #c8cdd2;border-radius:10px;padding:10px 12px;margin-bottom:10px;">
+  <div style="background:white;border:1.5px solid #00295c;border-radius:10px;padding:10px 12px;margin-bottom:10px;">
     <div style="display:flex;gap:10px;align-items:center;margin-bottom:9px;">
       <span style="font-size:11px;font-weight:700;color:#9aa3ad;width:50px;flex-shrink:0;text-transform:uppercase;letter-spacing:0.04em;">Date</span>
       <input type="date" id="matchDate" onchange="state.matchDate=this.value;updateMatchDetailsSummary();updateScoreBarLayout();" style="flex:1;height:38px;border:1.5px solid #e0e4e8;border-radius:8px;font-size:14px;background:white;color:#1a2330;padding:0 10px;color-scheme:light;min-width:0;">
@@ -1333,7 +1333,7 @@
 
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyRiGa5jg1roJh3drjIvHv96axQiX_bTDnGiGAeeGFsxb94_G1xA1z6GFkk5n0eZ97B5g/exec";
-const APP_VERSION = "2026-07-01-56"; // bumped automatically on every update
+const APP_VERSION = "2026-07-06-02"; // bumped automatically on every update
 const AGE = "U11";
 
 const DEFAULT_SQUADS = {
@@ -2657,15 +2657,15 @@ async function loadSheetData(force = false) {
 function cleanDate(raw) {
   if (!raw) return '';
   // Handle ISO format: "2026-04-26T23:00:00.000Z" or "2026-04-26"
-  if (raw.includes('T') || raw.match(/^\d{4}-\d{2}-\d{2}/)) {
+  if (typeof raw === 'string' && (raw.includes('T') || raw.match(/^\d{4}-\d{2}-\d{2}/))) {
     const d = new Date(raw);
     if (!isNaN(d)) {
       const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-      // Use UTC to avoid timezone shifts
-      return d.getUTCDate() + ' ' + months[d.getUTCMonth()] + ' ' + d.getUTCFullYear();
+      // Use local time to avoid BST/timezone shifts
+      return d.getDate() + ' ' + months[d.getMonth()] + ' ' + d.getFullYear();
     }
   }
-  return raw; // already in "26 Apr 2026" format
+  return raw; // already in "4 Jul 2026" format
 }
 
 function parseSheetRows(rows) {
