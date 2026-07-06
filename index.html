@@ -232,6 +232,7 @@
   }
   input[type="date"]:not([value=""]):not(:focus) { color: var(--text); }
   input[type="date"]:invalid, input[type="date"][value=""] { color: var(--mid-grey); }
+  input[type="date"] { text-align: left; -webkit-text-fill-color: #1a2330; }
   .field input:focus, .field select:focus {
     outline: none;
     border-color: var(--navy);
@@ -874,10 +875,10 @@
   <div style="background:white;border:1.5px solid #c8cdd2;border-radius:10px;padding:10px 12px;margin-bottom:10px;">
     <div style="display:flex;gap:10px;align-items:center;margin-bottom:9px;">
       <span style="font-size:11px;font-weight:700;color:#9aa3ad;width:50px;flex-shrink:0;text-transform:uppercase;letter-spacing:0.04em;">Date</span>
-      <input type="date" id="matchDate" onchange="state.matchDate=this.value;updateMatchDetailsSummary();updateScoreBarLayout();" style="flex:1;height:38px;border:1.5px solid #e0e4e8;border-radius:8px;font-size:14px;background:white;color:#1a2330;padding:0 10px;color-scheme:light;min-width:0;text-align:left;">
+      <input type="date" id="matchDate" onchange="state.matchDate=this.value;updateMatchDetailsSummary();updateScoreBarLayout();" style="flex:1;height:38px;border:1.5px solid #e0e4e8;border-radius:8px;font-size:14px;background:white;color:#1a2330;padding:0 10px;color-scheme:light;min-width:0;display:block;">
     </div>
     <div style="display:flex;gap:10px;align-items:center;margin-bottom:9px;">
-      <span style="font-size:11px;font-weight:700;color:#9aa3ad;width:50px;flex-shrink:0;text-transform:uppercase;letter-spacing:0.04em;">Opponent</span>
+      <span style="font-size:11px;font-weight:700;color:#9aa3ad;width:50px;flex-shrink:0;text-transform:uppercase;letter-spacing:0.04em;">VS</span>
       <div style="flex:1;position:relative;">
         <input type="text" id="matchOpponent" placeholder="Start typing opponent name…" autocomplete="off" autocapitalize="words"
           oninput="handleOpponentInput();updateMatchDetailsSummary();updateScoreBarLayout();"
@@ -1332,7 +1333,7 @@
 
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyRiGa5jg1roJh3drjIvHv96axQiX_bTDnGiGAeeGFsxb94_G1xA1z6GFkk5n0eZ97B5g/exec";
-const APP_VERSION = "2026-07-01-54"; // bumped automatically on every update
+const APP_VERSION = "2026-07-01-55"; // bumped automatically on every update
 const AGE = "U11";
 
 const DEFAULT_SQUADS = {
