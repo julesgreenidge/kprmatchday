@@ -970,63 +970,71 @@
     <div class="event-list" id="eventList-4"></div>
   </div>
 
-  <div style="margin-top:16px;">
-    <button class="btn-primary" onclick="endMatch()">End match →</button>
+  <div style="margin-top:20px;border-top:2px solid var(--light-grey);padding-top:16px;">
+    <div style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--mid-grey);text-align:center;margin-bottom:12px;">Match Summary</div>
+
+    <!-- Final score banner -->
+    <div id="summaryBanner" style="background:#228B22;border-radius:12px;padding:16px;text-align:center;color:white;margin-bottom:12px;display:none;">
+      <div style="font-size:11px;font-weight:700;letter-spacing:0.1em;margin-bottom:6px;">FINAL SCORE</div>
+      <div style="font-size:18px;font-weight:800;" id="summaryScoreLine"></div>
+      <div style="font-size:12px;opacity:0.85;margin-top:4px;" id="summaryDateLine"></div>
+    </div>
+
+    <!-- Quarter grid -->
+    <div class="card" id="summaryQuarterCard" style="margin-bottom:12px;display:none;">
+      <div class="card-title">Score by Quarter</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;" id="summaryQuarterGrid"></div>
+    </div>
+
+    <!-- Goal scorers -->
+    <div class="card" id="summaryGoalsCard" style="margin-bottom:12px;display:none;">
+      <div style="font-size:15px;font-weight:700;color:var(--navy);margin-bottom:10px;">Goal Scorers</div>
+      <div style="background:#e8f0fb;border-radius:8px;padding:10px;" id="summaryGoalsList"></div>
+    </div>
+
+    <!-- Assists -->
+    <div class="card" id="summaryAssistsCard" style="margin-bottom:12px;display:none;">
+      <div style="font-size:15px;font-weight:700;color:var(--red);margin-bottom:10px;">Assists</div>
+      <div style="background:#fde8ec;border-radius:8px;padding:10px;" id="summaryAssistsList"></div>
+    </div>
+
+    <!-- Clean sheet GK -->
+    <div class="card" id="summaryCSGKCard" style="margin-bottom:12px;display:none;">
+      <div style="font-size:15px;font-weight:700;color:#92400e;margin-bottom:10px;">Clean Sheets: Goalkeeper</div>
+      <div style="background:#fef3c7;border-radius:8px;padding:10px;" id="summaryCSGKList"></div>
+    </div>
+
+    <!-- Clean sheet DEF -->
+    <div class="card" id="summaryCSDefCard" style="margin-bottom:12px;display:none;">
+      <div style="font-size:15px;font-weight:700;color:#92400e;margin-bottom:10px;">Clean Sheets: Defenders</div>
+      <div style="background:#fef3c7;border-radius:8px;padding:10px;" id="summaryCSDefList"></div>
+    </div>
+
+    <!-- Awards -->
+    <div class="card" id="summaryAwardsCard" style="margin-bottom:12px;display:none;">
+      <div style="font-size:15px;font-weight:700;color:#92400e;margin-bottom:10px;">Match Awards</div>
+      <div class="section-label">Star Player</div>
+      <div class="modal-player-grid" id="starPlayerGrid"></div>
+      <div class="section-label" style="margin-top:12px;">Over-achiever</div>
+      <div class="modal-player-grid" id="bestPasserGrid"></div>
+    </div>
+
+    <!-- Submit buttons - shown after end match -->
+    <div id="summaryButtons" style="display:none;">
+      <button class="btn-primary" id="submitBtn" onclick="confirmSubmit()">Submit results</button>
+      <button class="btn-secondary" id="whatsappBtn" onclick="shareWhatsApp()" style="background:#25D366;color:white;border-color:#25D366;margin-top:8px;">WhatsApp Summary <svg width="16" height="16" viewBox="0 0 24 24" fill="white" style="vertical-align:middle;margin-left:4px;"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.123.555 4.116 1.523 5.845L.057 23.428a.75.75 0 0 0 .915.915l5.638-1.481A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.75a9.703 9.703 0 0 1-4.953-1.355l-.355-.211-3.683.967.983-3.595-.231-.369A9.712 9.712 0 0 1 2.25 12C2.25 6.615 6.615 2.25 12 2.25S21.75 6.615 21.75 12 17.385 21.75 12 21.75z"/></svg></button>
+      <button class="btn-danger" onclick="confirmNewMatchFromSummary()" style="margin-top:8px;">New match</button>
+    </div>
+
+    <!-- End match button - hidden after match ends -->
+    <div id="endMatchBtnWrap">
+      <button class="btn-primary" onclick="endMatch()">End match →</button>
+    </div>
   </div>
 </div>
 
-<!-- ④ END OF MATCH -->
-<div class="screen" id="screen-end">
-
-  <!-- Final score banner -->
-  <div style="background:#228B22;border-radius:12px;padding:16px;text-align:center;color:white;margin-bottom:12px;">
-    <div style="font-size:11px;font-weight:700;letter-spacing:0.1em;margin-bottom:6px;">FINAL SCORE</div>
-    <div style="font-size:18px;font-weight:800;" id="summaryScoreLine"></div>
-    <div style="font-size:12px;opacity:0.85;margin-top:4px;" id="summaryDateLine"></div>
-  </div>
-
-  <!-- Quarter grid -->
-  <div class="card" style="margin-bottom:12px;">
-    <div class="card-title">Score by Quarter</div>
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;" id="summaryQuarterGrid"></div>
-  </div>
-
-  <!-- Goal scorers -->
-  <div class="card" id="summaryGoalsCard" style="margin-bottom:12px;display:none;">
-    <div style="font-size:15px;font-weight:700;color:var(--navy);margin-bottom:10px;">Goal Scorers</div>
-    <div style="background:#e8f0fb;border-radius:8px;padding:10px;" id="summaryGoalsList"></div>
-  </div>
-
-  <!-- Assists -->
-  <div class="card" id="summaryAssistsCard" style="margin-bottom:12px;display:none;">
-    <div style="font-size:15px;font-weight:700;color:var(--red);margin-bottom:10px;">Assists</div>
-    <div style="background:#fde8ec;border-radius:8px;padding:10px;" id="summaryAssistsList"></div>
-  </div>
-
-  <!-- Clean sheet GK -->
-  <div class="card" id="summaryCSGKCard" style="margin-bottom:12px;display:none;">
-    <div style="font-size:15px;font-weight:700;color:#92400e;margin-bottom:10px;">Clean Sheets: Goalkeeper</div>
-    <div style="background:#fef3c7;border-radius:8px;padding:10px;" id="summaryCSGKList"></div>
-  </div>
-
-  <!-- Clean sheet DEF -->
-  <div class="card" id="summaryCSDefCard" style="margin-bottom:12px;display:none;">
-    <div style="font-size:15px;font-weight:700;color:#92400e;margin-bottom:10px;">Clean Sheets: Defenders</div>
-    <div style="background:#fef3c7;border-radius:8px;padding:10px;" id="summaryCSDefList"></div>
-  </div>
-
-  <!-- Awards -->
-  <div class="card" style="margin-bottom:12px;">
-    <div style="font-size:15px;font-weight:700;color:#92400e;margin-bottom:10px;">Match Awards</div>
-    <div class="section-label">Star Player</div>
-    <div class="modal-player-grid" id="starPlayerGrid"></div>
-    <div class="section-label" style="margin-top:12px;">Over-achiever</div>
-    <div class="modal-player-grid" id="bestPasserGrid"></div>
-  </div>
-
-  <button class="btn-primary" id="submitBtn" onclick="confirmSubmit()">Submit results</button>
-  <button class="btn-secondary" id="whatsappBtn" onclick="shareWhatsApp()" style="background:#25D366;color:white;border-color:#25D366;margin-top:8px;">WhatsApp Summary <svg width="16" height="16" viewBox="0 0 24 24" fill="white" style="vertical-align:middle;margin-left:4px;"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.123.555 4.116 1.523 5.845L.057 23.428a.75.75 0 0 0 .915.915l5.638-1.481A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.75a9.703 9.703 0 0 1-4.953-1.355l-.355-.211-3.683.967.983-3.595-.231-.369A9.712 9.712 0 0 1 2.25 12C2.25 6.615 6.615 2.25 12 2.25S21.75 6.615 21.75 12 17.385 21.75 12 21.75z"/></svg></button>
-  <button class="btn-danger" onclick="confirmNewMatchFromSummary()" style="margin-top:8px;">New match</button>
+<!-- ④ END OF MATCH (kept as shell for compatibility) -->
+<div class="screen" id="screen-end" style="display:none!important;">
 </div>
 
 <!-- BOTTOM NAV -->
@@ -1335,7 +1343,7 @@
 
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyRiGa5jg1roJh3drjIvHv96axQiX_bTDnGiGAeeGFsxb94_G1xA1z6GFkk5n0eZ97B5g/exec";
-const APP_VERSION = "2026-07-06-03"; // bumped automatically on every update
+const APP_VERSION = "2026-07-06-06"; // bumped automatically on every update
 const AGE = "U11";
 
 const DEFAULT_SQUADS = {
@@ -1533,25 +1541,20 @@ function switchTab(tab) {
 
 function showMatchDayScreens() {
   if (!state.team) {
-    // No team — send to Team tab to select one
     switchTab('team');
     return;
   }
-  if (state._matchEnded) {
-    showScreen('screen-end');
-    document.getElementById('headerTitle').textContent = 'KPR ' + state.team + ' · Summary';
-    setHeaderBack(true, () => {
-      state._matchEnded = false;
-      showScreen('screen-match');
-      document.getElementById('headerTitle').textContent = 'KPR ' + state.team + ' · Match Day';
-      setHeaderBack(false);
-    });
-  } else {
-    showScreen('screen-match');
-    document.getElementById('headerTitle').textContent = 'KPR ' + state.team + ' · Match Day';
-    setHeaderBack(false);
-    updateMatchDetailsSummary();
-  }
+  showScreen('screen-match');
+  document.getElementById('headerTitle').textContent = 'KPR ' + state.team + ' · Match Day';
+  setHeaderBack(false);
+  updateMatchDetailsSummary();
+  // Restore summary section visibility based on match state
+  const ended = state._matchEnded;
+  document.getElementById('summaryBanner').style.display = ended ? '' : 'none';
+  document.getElementById('summaryQuarterCard').style.display = ended ? '' : 'none';
+  document.getElementById('summaryAwardsCard').style.display = ended ? '' : 'none';
+  document.getElementById('summaryButtons').style.display = ended ? '' : 'none';
+  document.getElementById('endMatchBtnWrap').style.display = ended ? 'none' : '';
 }
 
 function hideAllScreens() {
@@ -2041,9 +2044,20 @@ function proceedToEndMatch() {
 
   renderAwardGrids();
   state._matchEnded = true;
-  showScreen('screen-end');
-  document.getElementById('headerTitle').textContent = 'KPR ' + state.team + ' · Summary';
-  setHeaderBack(true, () => { state._matchEnded = false; showScreen('screen-match'); document.getElementById('headerTitle').textContent = 'KPR ' + state.team + ' · Match Day'; setHeaderBack(true, goToSetup); });
+
+  // Show summary sections inline
+  document.getElementById('summaryBanner').style.display = '';
+  document.getElementById('summaryQuarterCard').style.display = '';
+  document.getElementById('summaryAwardsCard').style.display = '';
+  document.getElementById('summaryButtons').style.display = '';
+  document.getElementById('endMatchBtnWrap').style.display = 'none';
+
+  // Scroll to summary section
+  setTimeout(() => {
+    document.getElementById('summaryBanner').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 100);
+
+  document.getElementById('headerTitle').textContent = 'KPR ' + state.team + ' · Match Day';
 }
 
 function renderAwardGrids() {
@@ -2121,7 +2135,17 @@ function buildRows() {
 }
 
 // ── SUBMIT ──
-function goFixSetup() { closeModal('submitConfirmModal'); switchTab('matchday'); }
+function goFixSetup() {
+  closeModal('submitConfirmModal');
+  state._matchEnded = false;
+  showScreen('screen-match');
+  document.getElementById('headerTitle').textContent = 'KPR ' + state.team + ' · Match Day';
+  setHeaderBack(false);
+  setTimeout(() => {
+    const opp = document.getElementById('matchOpponent');
+    if (opp) { opp.focus(); opp.select(); }
+  }, 100);
+}
 function goFixMatchDay() { closeModal('submitConfirmModal'); showScreen('screen-match'); document.getElementById('headerTitle').textContent = 'KPR ' + state.team + ' · Match Day'; setHeaderBack(true, goToSetup); }
 function goFixSummary() { closeModal('submitConfirmModal'); /* already on summary */ }
 
@@ -2545,6 +2569,13 @@ function newMatch() {
 
   const submitBtn = document.getElementById('submitBtn');
   if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Submit results'; }
+
+  // Hide summary sections
+  ['summaryBanner','summaryQuarterCard','summaryGoalsCard','summaryAssistsCard','summaryCSGKCard','summaryCSDefCard','summaryAwardsCard','summaryButtons'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.style.display = 'none';
+  });
+  const endBtn = document.getElementById('endMatchBtnWrap');
+  if (endBtn) endBtn.style.display = '';
 
   showScreen('screen-match');
   window.scrollTo(0, 0);
