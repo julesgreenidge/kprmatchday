@@ -386,23 +386,25 @@
 
   /* ── SCORE BAR ── */
   .score-bar-wrap {
-    z-index: 1;
+    position: sticky;
+    top: 54px;
+    z-index: 80;
     background: var(--off-white);
-    margin: 0 0 12px;
-    padding: 0;
+    margin: 0 -16px 12px;
+    padding: 0 16px;
   }
   .score-bar {
     background: var(--navy);
     color: white;
     border-radius: 12px;
-    padding: 12px 16px;
+    padding: 16px 16px;
     display: grid;
     grid-template-columns: 1fr auto 1fr;
     align-items: center;
   }
   .score-bar .team-label { font-size: 11px; font-weight: 700; opacity: 0.85; line-height: 1.25; word-break: break-word; }
   #scoreRight .team-label { text-align: right; }
-  .score-bar .score { font-size: 28px; font-weight: 800; letter-spacing: -0.02em; line-height: 1; margin-top: 2px; }
+  .score-bar .score { font-size: 37px; font-weight: 800; letter-spacing: -0.02em; line-height: 1; margin-top: 2px; }
   .score-bar .vs { font-size: 13px; opacity: 0.5; font-weight: 600; text-align: center; padding: 0 12px; }
   .score-bar .q-scores { font-size: 11px; opacity: 0.6; margin-top: 2px; }
 
@@ -1333,7 +1335,7 @@
 
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyRiGa5jg1roJh3drjIvHv96axQiX_bTDnGiGAeeGFsxb94_G1xA1z6GFkk5n0eZ97B5g/exec";
-const APP_VERSION = "2026-07-06-02"; // bumped automatically on every update
+const APP_VERSION = "2026-07-06-03"; // bumped automatically on every update
 const AGE = "U11";
 
 const DEFAULT_SQUADS = {
