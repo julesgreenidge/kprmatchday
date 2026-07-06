@@ -913,13 +913,13 @@
   <div style="background:white;border:1.5px solid #00295c;border-radius:10px;padding:10px 12px;margin-bottom:10px;">
     <div style="display:flex;gap:10px;align-items:center;margin-bottom:9px;">
       <span style="font-size:11px;font-weight:700;color:#9aa3ad;width:50px;flex-shrink:0;text-transform:uppercase;letter-spacing:0.04em;">Date</span>
-      <input type="date" id="matchDate" onchange="state.matchDate=this.value;updateMatchDetailsSummary();updateScoreBarLayout();" style="flex:1;height:38px;border:1.5px solid #e0e4e8;border-radius:8px;font-size:14px;background:white;color:#1a2330;padding:0 10px;color-scheme:light;min-width:0;">
+      <input type="date" id="matchDate" onchange="state.matchDate=this.value;updateMatchDetailsSummary();updateScoreBarLayout();updateLiveSummary();" style="flex:1;height:38px;border:1.5px solid #e0e4e8;border-radius:8px;font-size:14px;background:white;color:#1a2330;padding:0 10px;color-scheme:light;min-width:0;">
     </div>
     <div style="display:flex;gap:10px;align-items:center;margin-bottom:9px;">
       <span style="font-size:11px;font-weight:700;color:#9aa3ad;width:50px;flex-shrink:0;text-transform:uppercase;letter-spacing:0.04em;">VS</span>
       <div style="flex:1;position:relative;">
         <input type="text" id="matchOpponent" placeholder="Start typing opponent name…" autocomplete="off" autocapitalize="words"
-          oninput="handleOpponentInput();updateMatchDetailsSummary();updateScoreBarLayout();updateLiveSummary();"
+          oninput="state.opponent=this.value.trim();handleOpponentInput();updateMatchDetailsSummary();updateScoreBarLayout();updateLiveSummary();"
           onfocus="handleOpponentInput()"
           onblur="setTimeout(hideOpponentDropdown,150);setTimeout(updateScoreBarLayout,200);setTimeout(updateLiveSummary,250);"
           style="width:100%;height:38px;border:1.5px solid #e0e4e8;border-radius:8px;font-size:14px;background:white;color:#1a2330;padding:0 10px;text-align:center;">
@@ -1488,7 +1488,11 @@ function handleOpponentInput() {
 
 function selectOpponent(name) {
   document.getElementById('matchOpponent').value = name;
+  state.opponent = name;
   hideOpponentDropdown();
+  updateMatchDetailsSummary();
+  updateScoreBarLayout();
+  updateLiveSummary();
 }
 
 function renderTeamTab() {
@@ -2167,10 +2171,6 @@ function goFixSetup() {
   document.getElementById('headerTitle').textContent = 'KPR ' + state.team + ' · Match Day';
   setHeaderBack(false);
   window.scrollTo({ top: 0, behavior: 'smooth' });
-  setTimeout(() => {
-    const opp = document.getElementById('matchOpponent');
-    if (opp) { opp.focus(); opp.select(); }
-  }, 400);
 }
 function goFixMatchDay() { closeModal('submitConfirmModal'); showScreen('screen-match'); document.getElementById('headerTitle').textContent = 'KPR ' + state.team + ' · Match Day'; setHeaderBack(true, goToSetup); }
 function goFixSummary() { closeModal('submitConfirmModal'); /* already on summary */ }
