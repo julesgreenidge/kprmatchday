@@ -883,9 +883,9 @@
       <span style="font-size:11px;font-weight:700;color:#9aa3ad;width:50px;flex-shrink:0;text-transform:uppercase;letter-spacing:0.04em;">VS</span>
       <div style="flex:1;position:relative;">
         <input type="text" id="matchOpponent" placeholder="Start typing opponent name…" autocomplete="off" autocapitalize="words"
-          oninput="handleOpponentInput();updateMatchDetailsSummary();updateScoreBarLayout();"
+          oninput="handleOpponentInput();updateMatchDetailsSummary();updateScoreBarLayout();updateLiveSummary();"
           onfocus="handleOpponentInput()"
-          onblur="setTimeout(hideOpponentDropdown,150);setTimeout(updateScoreBarLayout,200);"
+          onblur="setTimeout(hideOpponentDropdown,150);setTimeout(updateScoreBarLayout,200);setTimeout(updateLiveSummary,250);"
           style="width:100%;height:38px;border:1.5px solid #e0e4e8;border-radius:8px;font-size:14px;background:white;color:#1a2330;padding:0 10px;text-align:center;">
         <div id="opponentDropdown" style="display:none;"></div>
       </div>
@@ -893,8 +893,8 @@
     <div style="display:flex;gap:10px;align-items:center;">
       <span style="font-size:11px;font-weight:700;color:#9aa3ad;width:50px;flex-shrink:0;text-transform:uppercase;letter-spacing:0.04em;">Venue</span>
       <div class="toggle-row" style="flex:1;padding:3px;border-radius:8px;">
-        <button class="toggle-btn active" id="venueHome" onclick="setVenue('Home');updateMatchDetailsSummary();updateScoreBarLayout();" style="font-size:14px;">Home</button>
-        <button class="toggle-btn" id="venueAway" onclick="setVenue('Away');updateMatchDetailsSummary();updateScoreBarLayout();" style="font-size:14px;">Away</button>
+        <button class="toggle-btn active" id="venueHome" onclick="setVenue('Home');updateMatchDetailsSummary();updateScoreBarLayout();updateLiveSummary();" style="font-size:14px;">Home</button>
+        <button class="toggle-btn" id="venueAway" onclick="setVenue('Away');updateMatchDetailsSummary();updateScoreBarLayout();updateLiveSummary();" style="font-size:14px;">Away</button>
       </div>
     </div>
   </div>
@@ -970,18 +970,24 @@
     <div class="event-list" id="eventList-4"></div>
   </div>
 
-  <div style="margin-top:20px;border-top:2px solid var(--light-grey);padding-top:16px;">
-    <div style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--mid-grey);text-align:center;margin-bottom:12px;">Match Summary</div>
+  <div id="summarySection" style="display:none;">
+  <div style="margin-top:20px;background:var(--navy);border-radius:12px;padding:14px 16px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;">
+    <div>
+      <div style="font-size:13px;font-weight:700;color:white;letter-spacing:0.04em;">Match Summary</div>
+      <div style="font-size:11px;color:rgba(255,255,255,0.6);margin-top:2px;">Scroll up to edit events</div>
+    </div>
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+  </div>
 
     <!-- Final score banner -->
-    <div id="summaryBanner" style="background:#228B22;border-radius:12px;padding:16px;text-align:center;color:white;margin-bottom:12px;display:none;">
+    <div id="summaryBanner" style="background:#228B22;border-radius:12px;padding:16px;text-align:center;color:white;margin-bottom:12px;">
       <div style="font-size:11px;font-weight:700;letter-spacing:0.1em;margin-bottom:6px;">FINAL SCORE</div>
       <div style="font-size:18px;font-weight:800;" id="summaryScoreLine"></div>
       <div style="font-size:12px;opacity:0.85;margin-top:4px;" id="summaryDateLine"></div>
     </div>
 
     <!-- Quarter grid -->
-    <div class="card" id="summaryQuarterCard" style="margin-bottom:12px;display:none;">
+    <div class="card" id="summaryQuarterCard" style="margin-bottom:12px;">
       <div class="card-title">Score by Quarter</div>
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;" id="summaryQuarterGrid"></div>
     </div>
@@ -1011,25 +1017,23 @@
     </div>
 
     <!-- Awards -->
-    <div class="card" id="summaryAwardsCard" style="margin-bottom:12px;display:none;">
+    <div class="card" id="summaryAwardsCard" style="margin-bottom:12px;">
       <div style="font-size:15px;font-weight:700;color:#92400e;margin-bottom:10px;">Match Awards</div>
       <div class="section-label">Star Player</div>
       <div class="modal-player-grid" id="starPlayerGrid"></div>
       <div class="section-label" style="margin-top:12px;">Over-achiever</div>
       <div class="modal-player-grid" id="bestPasserGrid"></div>
     </div>
-
-    <!-- Submit buttons - shown after end match -->
-    <div id="summaryButtons" style="display:none;">
+    <div id="summaryButtons">
       <button class="btn-primary" id="submitBtn" onclick="confirmSubmit()">Submit results</button>
       <button class="btn-secondary" id="whatsappBtn" onclick="shareWhatsApp()" style="background:#25D366;color:white;border-color:#25D366;margin-top:8px;">WhatsApp Summary <svg width="16" height="16" viewBox="0 0 24 24" fill="white" style="vertical-align:middle;margin-left:4px;"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.123.555 4.116 1.523 5.845L.057 23.428a.75.75 0 0 0 .915.915l5.638-1.481A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.75a9.703 9.703 0 0 1-4.953-1.355l-.355-.211-3.683.967.983-3.595-.231-.369A9.712 9.712 0 0 1 2.25 12C2.25 6.615 6.615 2.25 12 2.25S21.75 6.615 21.75 12 17.385 21.75 12 21.75z"/></svg></button>
       <button class="btn-danger" onclick="confirmNewMatchFromSummary()" style="margin-top:8px;">New match</button>
     </div>
 
-    <!-- End match button - hidden after match ends -->
-    <div id="endMatchBtnWrap">
-      <button class="btn-primary" onclick="endMatch()">End match →</button>
-    </div>
+  </div><!-- end summarySection -->
+
+  <div id="endMatchBtnWrap" style="margin-top:16px;">
+    <button class="btn-primary" onclick="endMatch()">End match →</button>
   </div>
 </div>
 
@@ -1343,7 +1347,7 @@
 
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyRiGa5jg1roJh3drjIvHv96axQiX_bTDnGiGAeeGFsxb94_G1xA1z6GFkk5n0eZ97B5g/exec";
-const APP_VERSION = "2026-07-06-06"; // bumped automatically on every update
+const APP_VERSION = "2026-07-06-11"; // bumped automatically on every update
 const AGE = "U11";
 
 const DEFAULT_SQUADS = {
@@ -1550,11 +1554,10 @@ function showMatchDayScreens() {
   updateMatchDetailsSummary();
   // Restore summary section visibility based on match state
   const ended = state._matchEnded;
-  document.getElementById('summaryBanner').style.display = ended ? '' : 'none';
-  document.getElementById('summaryQuarterCard').style.display = ended ? '' : 'none';
-  document.getElementById('summaryAwardsCard').style.display = ended ? '' : 'none';
-  document.getElementById('summaryButtons').style.display = ended ? '' : 'none';
-  document.getElementById('endMatchBtnWrap').style.display = ended ? 'none' : '';
+  const ss = document.getElementById('summarySection');
+  if (ss) ss.style.display = ended ? '' : 'none';
+  const endBtnEl = document.getElementById('endMatchBtnWrap');
+  if (endBtnEl) endBtnEl.style.display = ended ? 'none' : '';
 }
 
 function hideAllScreens() {
@@ -1649,6 +1652,7 @@ function startMatch() {
 function renderAllQuarters() {
   [1,2,3,4].forEach(q => renderEventListForQ(q));
   updateScoreBar();
+  updateLiveSummary();
 }
 
 function renderEventListForQ(q) {
@@ -1760,18 +1764,13 @@ function renderGoalModal() {
   ).join('');
 
   const assistOptions = [...state.selectedPlayers, 'No assist'];
-  document.getElementById('goalAssistGrid').innerHTML = assistOptions.map(p => {
-    const isScorer = p === tempScorer;
-    const isSelected = p === tempAssister;
-    const greyed = isScorer ? ' style="opacity:0.3;pointer-events:none;"' : '';
-    // No assist uses selected-scorer when selected, otherwise plain button
-    return `<button class="modal-player-btn${isSelected ? ' selected-scorer' : ''}"${greyed} onclick="selectAssist('${p}')">${p}</button>`;
-  }).join('');
+  document.getElementById('goalAssistGrid').innerHTML = assistOptions.map(p =>
+    `<button class="modal-player-btn${p === tempAssister ? ' selected-scorer' : ''}" onclick="selectAssist('${p}')">${p}</button>`
+  ).join('');
 }
 
 function selectScorer(name) {
   tempScorer = name;
-  tempAssister = null;
   renderGoalModal();
 }
 
@@ -1834,8 +1833,7 @@ function renderCSDefGrid() {
   grid.innerHTML = state.selectedPlayers.map(p => {
     const isGK = p === tempGK;
     const isSelected = tempDefenders.includes(p);
-    const greyed = isGK ? ' style="opacity:0.3;pointer-events:none;"' : '';
-    return `<button class="modal-player-btn${isSelected ? ' cs-def-selected' : ''}"${greyed} onclick="toggleCSDef('${p}')">${p}</button>`;
+    return `<button class="modal-player-btn${isSelected ? ' cs-def-selected' : ''}" onclick="toggleCSDef('${p}')">${p}</button>`;
   }).join('');
 }
 
@@ -1925,47 +1923,23 @@ function goToSetup() {
 }
 
 function endMatch() {
-  const conflicting = [1,2,3,4].filter(q => {
-    const hasOppo = state.events.some(e => e.quarter === q && e.type === 'oppo');
-    const hasCS = state.events.some(e => e.quarter === q && e.type === 'cs');
-    return hasOppo && hasCS;
-  });
-
-  const missingCS = [1,2,3,4].filter(q => {
-    const hasOppo = state.events.some(e => e.quarter === q && e.type === 'oppo');
-    const hasCS = state.events.some(e => e.quarter === q && e.type === 'cs');
-    return !hasOppo && !hasCS;
-  });
-
-  if (conflicting.length === 0 && missingCS.length === 0) {
-    proceedToEndMatch();
-    return;
-  }
-
-  const triangle = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;flex-shrink:0;margin-right:6px;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
-
-  let messages = [];
-  if (conflicting.length > 0) {
-    const qList = conflicting.map(q => 'Q' + q).join(', ');
-    messages.push(`<div style="display:flex;align-items:flex-start;margin-bottom:${missingCS.length?'10px':'0'};color:var(--navy);">${triangle}<span>${qList} has both an opposition goal and a clean sheet - remove one before continuing.</span></div>`);
-  }
-  if (missingCS.length > 0) {
-    const qList = missingCS.map(q => 'Q' + q).join(', ');
-    messages.push(`<div style="display:flex;align-items:flex-start;color:var(--navy);">${triangle}<span>${qList} has no opposition goal or clean sheet - add one before ending the match.</span></div>`);
-  }
-
-  const title = conflicting.length > 0 ? 'Conflicting data' : 'Check quarters';
-  document.getElementById('endMatchWarningTitle').textContent = title;
-  document.getElementById('endMatchWarningSub').innerHTML = messages.join('');
-  document.getElementById('endMatchWarningContinueBtn').style.display = 'block';
-
-  openModal('endMatchWarningModal');
+  proceedToEndMatch();
 }
 
-function proceedToEndMatch() {
+function updateLiveSummary() {
+  if (!state._matchEnded) return;
+  // Re-run proceedToEndMatch but without scrolling
+  const scroll = false;
+  proceedToEndMatch(scroll);
+}
+
+function proceedToEndMatch(doScroll = true) {
+  // Always read live values from the form fields
+  const oppEl = document.getElementById('matchOpponent');
+  const opp = (oppEl ? oppEl.value.trim() : '') || state.opponent || 'Opposition';
+  const venue = state.venue || 'Home';
   const goalsFor = state.events.filter(e => e.type === 'goal').length;
   const goalsAgainst = state.events.filter(e => e.type === 'oppo').length;
-  const opp = state.opponent || 'Opposition';
 
   // Score line: "KPR Blues 3 - 1 Corinthian Casuals" (home) or reversed (away)
   const scoreLine = state.venue === 'Home'
@@ -2045,17 +2019,16 @@ function proceedToEndMatch() {
   renderAwardGrids();
   state._matchEnded = true;
 
-  // Show summary sections inline
-  document.getElementById('summaryBanner').style.display = '';
-  document.getElementById('summaryQuarterCard').style.display = '';
-  document.getElementById('summaryAwardsCard').style.display = '';
-  document.getElementById('summaryButtons').style.display = '';
+  // Show summary section
+  document.getElementById('summarySection').style.display = '';
   document.getElementById('endMatchBtnWrap').style.display = 'none';
 
-  // Scroll to summary section
-  setTimeout(() => {
-    document.getElementById('summaryBanner').scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, 100);
+  // Scroll to summary only on first End match tap
+  if (doScroll) {
+    setTimeout(() => {
+      document.getElementById('summarySection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+  }
 
   document.getElementById('headerTitle').textContent = 'KPR ' + state.team + ' · Match Day';
 }
@@ -2141,10 +2114,11 @@ function goFixSetup() {
   showScreen('screen-match');
   document.getElementById('headerTitle').textContent = 'KPR ' + state.team + ' · Match Day';
   setHeaderBack(false);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
   setTimeout(() => {
     const opp = document.getElementById('matchOpponent');
     if (opp) { opp.focus(); opp.select(); }
-  }, 100);
+  }, 400);
 }
 function goFixMatchDay() { closeModal('submitConfirmModal'); showScreen('screen-match'); document.getElementById('headerTitle').textContent = 'KPR ' + state.team + ' · Match Day'; setHeaderBack(true, goToSetup); }
 function goFixSummary() { closeModal('submitConfirmModal'); /* already on summary */ }
@@ -2424,14 +2398,12 @@ function renderEditGoalGrids() {
   document.getElementById('editAssistGrid').innerHTML = assistOptions.map(p => {
     const isScorer = p === editTempScorer;
     const isSelected = p === editTempAssister || (p === 'No assist' && !editTempAssister);
-    const greyed = isScorer ? ' style="opacity:0.3;pointer-events:none;"' : '';
-    return `<button class="modal-player-btn${isSelected ? ' selected-scorer' : ''}${p === 'No assist' ? ' no-assist' : ''}"${greyed} onclick="editPickAssist('${p}')">${p}</button>`;
+    return `<button class="modal-player-btn${isSelected ? ' selected-scorer' : ''}${p === 'No assist' ? ' no-assist' : ''}" onclick="editPickAssist('${p}')">${p}</button>`;
   }).join('');
 }
 
 function editPickScorer(name) {
   editTempScorer = name;
-  editTempAssister = null;
   renderEditGoalGrids();
 }
 
@@ -2458,14 +2430,12 @@ function renderEditCSGrids() {
   document.getElementById('editCSDefGrid').innerHTML = state.selectedPlayers.map(p => {
     const isGK = p === editTempCSGK;
     const isSelected = editTempCSDefs.includes(p);
-    const greyed = isGK ? ' style="opacity:0.3;pointer-events:none;"' : '';
-    return `<button class="modal-player-btn${isSelected ? ' cs-def-selected' : ''}"${greyed} onclick="editToggleDefNew('${p}')">${p}</button>`;
+    return `<button class="modal-player-btn${isSelected ? ' cs-def-selected' : ''}" onclick="editToggleDefNew('${p}')">${p}</button>`;
   }).join('');
 }
 
 function editPickCSGK(name) {
   editTempCSGK = name;
-  editTempCSDefs = editTempCSDefs.filter(p => p !== name);
   renderEditCSGrids();
 }
 
@@ -2570,10 +2540,9 @@ function newMatch() {
   const submitBtn = document.getElementById('submitBtn');
   if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Submit results'; }
 
-  // Hide summary sections
-  ['summaryBanner','summaryQuarterCard','summaryGoalsCard','summaryAssistsCard','summaryCSGKCard','summaryCSDefCard','summaryAwardsCard','summaryButtons'].forEach(id => {
-    const el = document.getElementById(id); if (el) el.style.display = 'none';
-  });
+  // Hide summary section
+  const ss = document.getElementById('summarySection');
+  if (ss) ss.style.display = 'none';
   const endBtn = document.getElementById('endMatchBtnWrap');
   if (endBtn) endBtn.style.display = '';
 
