@@ -1428,7 +1428,7 @@
 
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyRiGa5jg1roJh3drjIvHv96axQiX_bTDnGiGAeeGFsxb94_G1xA1z6GFkk5n0eZ97B5g/exec";
-const APP_VERSION = "2026-07-07-2053"; // must be bumped manually on every deploy — see note below
+const APP_VERSION = "2026-07-07-2141"; // must be bumped manually on every deploy — see note below
 const AGE = "U11";
 
 const DEFAULT_SQUADS = {
@@ -2423,26 +2423,36 @@ function buildRows() {
   const date = formatDate(state.matchDate);
   const base = { Date: date, Age: AGE, Team: state.team, League: state.league, Opponent: state.opponent, Result: result, Venue: state.venue, MatchID: state.matchId };
 
+  // A guest's Player-field prefix is their own real home team, not the team
+  // whose match this is — so a loaned player's personal stats always sit
+  // under their true identity, never fragmented by whichever team borrowed
+  // them. The match's own Team column above is unaffected either way.
+  const playerPrefix = name => {
+    const guest = (state.guests || []).find(g => g.name === name && g.homeTeam);
+    return guest ? guest.homeTeam : state.team;
+  };
+
   const rows = [];
 
   // Goals
   state.events.filter(e => e.type === 'goal').forEach(e => {
-    const playerName = e.scorer === 'Own Goal' ? state.team + ' - Oppo' : state.team + ' - ' + e.scorer;
+    const playerName = e.scorer === 'Own Goal' ? state.team + ' - Oppo' : playerPrefix(e.scorer) + ' - ' + e.scorer;
     rows.push({ ...base, Player: playerName, Stat: '1. Goal', Quarter: 'Q' + e.quarter, Count: 1 });
     if (e.assister) {
-      rows.push({ ...base, Player: state.team + ' - ' + e.assister, Stat: '2. Assist', Quarter: 'Q' + e.quarter, Count: 1 });
+      rows.push({ ...base, Player: playerPrefix(e.assister) + ' - ' + e.assister, Stat: '2. Assist', Quarter: 'Q' + e.quarter, Count: 1 });
     }
   });
 
   // Clean sheets
   state.events.filter(e => e.type === 'cs').forEach(e => {
-    rows.push({ ...base, Player: state.team + ' - ' + e.gk, Stat: '4. Clean Sheet GK', Quarter: 'Q' + e.quarter, Count: 1 });
+    rows.push({ ...base, Player: playerPrefix(e.gk) + ' - ' + e.gk, Stat: '4. Clean Sheet GK', Quarter: 'Q' + e.quarter, Count: 1 });
     e.defenders.forEach(def => {
-      rows.push({ ...base, Player: state.team + ' - ' + def, Stat: '3. Clean Sheet DEF', Quarter: 'Q' + e.quarter, Count: 1 });
+      rows.push({ ...base, Player: playerPrefix(def) + ' - ' + def, Stat: '3. Clean Sheet DEF', Quarter: 'Q' + e.quarter, Count: 1 });
     });
   });
 
-  // Concede (total oppo goals as single row per quarter)
+  // Concede (total oppo goals as single row per quarter) — always the match's
+  // own team; "Oppo" represents the opposition, not a guest identity.
   const oppoGoals = state.events.filter(e => e.type === 'oppo').length;
   if (oppoGoals > 0) {
     [1,2,3,4].forEach(q => {
@@ -2455,10 +2465,10 @@ function buildRows() {
 
   // Awards
   if (state.starPlayer) {
-    rows.push({ ...base, Player: state.team + ' - ' + state.starPlayer, Stat: '5. Star Player', Quarter: '-', Count: 1 });
+    rows.push({ ...base, Player: playerPrefix(state.starPlayer) + ' - ' + state.starPlayer, Stat: '5. Star Player', Quarter: '-', Count: 1 });
   }
   if (state.bestPasser) {
-    rows.push({ ...base, Player: state.team + ' - ' + state.bestPasser, Stat: '6. Best Passer', Quarter: '-', Count: 1 });
+    rows.push({ ...base, Player: playerPrefix(state.bestPasser) + ' - ' + state.bestPasser, Stat: '6. Best Passer', Quarter: '-', Count: 1 });
   }
 
   return rows;
@@ -3063,7 +3073,11 @@ function parseSheetRows(rows) {
       };
     }
     const m = matchMap[key];
-    const player = (r['Player']||'').replace(r['Team'] + ' - ', '');
+    // Keep the Player field exactly as recorded — its team prefix is now the
+    // player's own true team (buildRows writes a guest's real team here, not
+    // the match's team), so this is the reliable identity, not something to
+    // strip away.
+    const player = r['Player'] || '';
     const stat = r['Stat']||'';
     const count = parseInt(r['Count'])||0;
     const quarter = r['Quarter'] || '';
@@ -3251,20 +3265,21 @@ function renderClubTab(data) {
 function renderPlayersTab(data) {
   if (!data.length) return '<div style="color:var(--mid-grey);text-align:center;padding:60px 0;font-size:14px;">No data — check filters</div>';
 
-  const stripTeam = p => p ? p.replace(/^[^-]+ - /, '') : p;
-  const homeTeamOf = name => {
-    if (SQUAD_DATA) {
-      for (const t of ALL_TEAMS) {
-        if (SQUAD_DATA[t] && SQUAD_DATA[t].includes(name)) return t;
-      }
-    }
-    return null; // not in any current squad (e.g. a departed player) — fall back below
+  // The Player field is now always "TrueTeam - Name" — buildRows() writes a
+  // guest's own real team here, not the match's team, so this string is
+  // already a correct, unique identity. No guessing needed: just split it.
+  const splitPlayer = full => {
+    const idx = (full || '').indexOf(' - ');
+    return idx === -1 ? { team: null, name: full || '' } : { team: full.slice(0, idx), name: full.slice(idx + 3) };
   };
-  const goalMap={}, assistMap={}, csGKMap={}, csDefMap={}, starMap={}, passerMap={}, teamMap={};
+
+  const goalMap={}, assistMap={}, csGKMap={}, csDefMap={}, starMap={}, passerMap={}, teamMap={}, nameMap={};
   data.forEach(m => {
     const add = (map,p,n) => {
-      const name=stripTeam(p); map[name]=(map[name]||0)+n;
-      if(!teamMap[name]) teamMap[name] = homeTeamOf(name) || m.team;
+      const { team, name } = splitPlayer(p);
+      map[p] = (map[p]||0)+n;
+      teamMap[p] = team || m.team;
+      nameMap[p] = name;
     };
     Object.entries(m.goals).forEach(([p,n])=>add(goalMap,p,n));
     Object.entries(m.assists).forEach(([p,n])=>add(assistMap,p,n));
@@ -3291,7 +3306,7 @@ function renderPlayersTab(data) {
   const lb = (map) => {
     const sorted = Object.entries(map).sort((a,b)=>b[1]-a[1]);
     if(!sorted.length) return '<div style="color:var(--mid-grey);font-size:13px;">No data</div>';
-    const rows = sorted.map(([p,v],i)=>`<div class="stat-row"><span class="rank">${i+1}</span>${teamTag(p)}<span class="name">${p}</span><span class="val" style="color:var(--navy)">${v}</span></div>`).join('');
+    const rows = sorted.map(([p,v],i)=>`<div class="stat-row"><span class="rank">${i+1}</span>${teamTag(p)}<span class="name">${nameMap[p]||p}</span><span class="val" style="color:var(--navy)">${v}</span></div>`).join('');
     if(sorted.length <= 5) return rows;
     // Show 10 full rows + half of 11th to hint scrollability (~32px per row)
     return `<div style="max-height:336px;overflow-y:auto;-webkit-overflow-scrolling:touch;">${rows}</div>`;
