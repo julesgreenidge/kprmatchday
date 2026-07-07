@@ -165,10 +165,11 @@
   /* ── CARDS ── */
   .card {
     background: white;
+    border: 1px solid var(--light-grey);
     border-radius: 12px;
     padding: 16px;
     margin-bottom: 12px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
   }
   .card-title {
     font-size: 11px;
@@ -666,6 +667,27 @@
     color: white;
     border-color: var(--navy);
   }
+  .stat-tabs-wrap {
+    position: relative;
+    margin-bottom: 10px;
+  }
+  .stat-tabs-scroll {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .stat-tabs-fade {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 2px;
+    width: 36px;
+    background: linear-gradient(to right, rgba(245,247,250,0), var(--off-white) 70%);
+    pointer-events: none;
+    transition: opacity 0.15s;
+  }
   .stat-kpi-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -738,10 +760,11 @@
   /* ── QUARTER BLOCKS ── */
   .quarter-block {
     background: white;
+    border: 1px solid var(--light-grey);
     border-radius: 12px;
     margin-bottom: 10px;
     overflow: hidden;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
   }
   .quarter-header {
     display: flex;
@@ -910,7 +933,7 @@
 
   <!-- Match details -->
   <!-- Match details - always visible, 3 rows -->
-  <div style="background:white;border:1.5px solid #00295c;border-radius:10px;padding:10px 12px;margin-bottom:10px;">
+  <div style="background:white;border:1px solid var(--light-grey);border-radius:10px;padding:10px 12px;margin-bottom:10px;box-shadow:0 1px 3px rgba(0,0,0,0.07);">
     <div style="display:flex;gap:10px;align-items:center;margin-bottom:9px;">
       <span style="font-size:11px;font-weight:700;color:#9aa3ad;width:50px;flex-shrink:0;text-transform:uppercase;letter-spacing:0.04em;">Date</span>
       <input type="date" id="matchDate" onchange="state.matchDate=this.value;updateMatchDetailsSummary();updateScoreBarLayout();updateLiveSummary();" style="flex:1;height:38px;border:1.5px solid #e0e4e8;border-radius:8px;font-size:14px;background:white;color:#1a2330;padding:0 10px;color-scheme:light;min-width:0;">
@@ -1007,12 +1030,12 @@
   </div>
 
   <div id="summarySection" style="display:none;">
-  <div style="margin-top:20px;background:var(--navy);border-radius:12px;padding:14px 16px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;">
+  <div onclick="window.scrollTo({top:0, behavior:'smooth'});" style="margin-top:20px;background:var(--navy);border-radius:12px;padding:14px 16px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;">
     <div>
       <div style="font-size:13px;font-weight:700;color:white;letter-spacing:0.04em;">Match Summary</div>
       <div style="font-size:11px;color:rgba(255,255,255,0.6);margin-top:2px;">Scroll up to edit events</div>
     </div>
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg>
   </div>
 
     <!-- Match report: one card, all sections -->
@@ -1116,7 +1139,7 @@
       </select>
       <select id="historyFilterAge" onchange="renderHistoryList()" style="flex:1;padding:8px 10px;border:1.5px solid var(--light-grey);border-radius:8px;font-size:13px;background:white;">
         <option value="">All seasons</option>
-        <option value="U11">U11</option>
+        <option value="U11" selected>U11</option>
         <option value="U10">U10</option>
         <option value="U9">U9</option>
       </select>
@@ -1156,8 +1179,8 @@
         </select>
         <select id="statsFilterAge" onchange="renderStats()" style="flex:1;min-width:0;padding:7px 8px;border:1.5px solid var(--light-grey);border-radius:8px;font-size:13px;background:white;">
           <option value="">All seasons</option>
-          <option value="U11">U11</option>
-          <option value="U10" selected>U10</option>
+          <option value="U11" selected>U11</option>
+          <option value="U10">U10</option>
           <option value="U9">U9</option>
         </select>
       </div>
@@ -1165,12 +1188,15 @@
     </div>
 
     <!-- Stat tabs -->
-    <div style="display:flex;gap:6px;margin-bottom:10px;overflow-x:auto;padding-bottom:2px;-webkit-overflow-scrolling:touch;">
-      <button class="stat-tab active" onclick="switchStatTab('club')">Club</button>
-      <button class="stat-tab" onclick="switchStatTab('players')">Players</button>
-      <button class="stat-tab" onclick="switchStatTab('teams')">KPR Teams</button>
-      <button class="stat-tab" onclick="switchStatTab('opponents')">Opponents</button>
-      <button class="stat-tab" onclick="switchStatTab('quarters')">Quarters</button>
+    <div class="stat-tabs-wrap">
+      <div class="stat-tabs-scroll" id="statTabsScroll" onscroll="updateStatTabsFade()">
+        <button class="stat-tab active" onclick="switchStatTab('club')">Club</button>
+        <button class="stat-tab" onclick="switchStatTab('players')">Players</button>
+        <button class="stat-tab" onclick="switchStatTab('teams')">KPR Teams</button>
+        <button class="stat-tab" onclick="switchStatTab('opponents')">Opponents</button>
+        <button class="stat-tab" onclick="switchStatTab('quarters')">Quarters</button>
+      </div>
+      <div class="stat-tabs-fade" id="statTabsFade"></div>
     </div>
 
     <div id="statsContent"></div>
@@ -1532,6 +1558,14 @@ function openTeamChangeModal() {
 }
 
 // ── NAVIGATION ──
+function updateStatTabsFade() {
+  const scroll = document.getElementById('statTabsScroll');
+  const fade = document.getElementById('statTabsFade');
+  if (!scroll || !fade) return;
+  const atEnd = scroll.scrollLeft + scroll.clientWidth >= scroll.scrollWidth - 4;
+  fade.style.opacity = atEnd ? '0' : '1';
+}
+
 function switchTab(tab) {
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('nav-' + tab)?.classList.add('active');
@@ -1556,6 +1590,7 @@ function switchTab(tab) {
     document.getElementById('headerTitle').textContent = 'Stats';
     setHeaderBack(false);
     loadSheetData();
+    requestAnimationFrame(updateStatTabsFade);
   }
 }
 
@@ -3106,12 +3141,13 @@ function renderTeamsTab(data) {
     </div>`;
   };
 
-  const metric = (label, key, fmt) => {
+  const metric = (label, key, fmt, ascending) => {
     const vals = teams.filter(t=>teamStats[t]).map(t=>({t, v:teamStats[t][key]}));
     const max = Math.max(...vals.map(x=>x.v));
+    const sorted = ascending ? vals.sort((a,b)=>a.v-b.v) : vals.sort((a,b)=>b.v-a.v);
     return `<div class="card" style="margin-bottom:10px;">
       <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:10px;">${label}</div>
-      ${vals.sort((a,b)=>b.v-a.v).map(({t,v}) => {
+      ${sorted.map(({t,v}) => {
         const pct = max ? Math.round(v/max*100) : 0;
         const barStyle = t === 'Stripes'
           ? `background:repeating-linear-gradient(90deg,#1a3a8f 0px,#1a3a8f 40px,#cc1818 40px,#cc1818 80px);opacity:0.9;`
@@ -3136,8 +3172,8 @@ function renderTeamsTab(data) {
     metric('Goals For', 'gf', 'int'),
     metric('Goals For Per Game', 'gfpg', 'dec'),
     metric('% Games Scored', 'pctScored', 'pct'),
-    metric('Goals Against', 'ga', 'int'),
-    metric('Goals Against Per Game', 'gapg', 'dec'),
+    metric('Goals Against', 'ga', 'int', true),
+    metric('Goals Against Per Game', 'gapg', 'dec', true),
     metric('Assists', 'ast', 'int'),
     metric('Assists Per Game', 'apg', 'dec'),
     metric('% Goals from Assist', 'pctAssist', 'pct'),
