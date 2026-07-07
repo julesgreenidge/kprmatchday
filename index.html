@@ -688,6 +688,15 @@
     pointer-events: none;
     transition: opacity 0.15s;
   }
+  .stat-box-label {
+    font-size: 11px;
+    color: var(--mid-grey);
+    font-weight: 600;
+  }
+  .stat-box-value {
+    font-size: 24px;
+    font-weight: 900;
+  }
   .stat-kpi-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -2980,27 +2989,30 @@ function renderClubTab(data) {
     </div>`;
   };
 
+  const statBox = (label, value, colour) =>
+    `<div class="card" style="margin-bottom:0;"><div class="stat-box-label">${label}</div><div class="stat-box-value" style="color:${colour || 'var(--navy)'};">${value}</div></div>`;
+
   return `
     <div class="stat-kpi-grid">${kpi('Games Played',played)}${kpi('Wins',wins)}${kpi('Draws',draws)}${kpi('Losses',losses)}${kpi('Win Rate',winRate+'%')}${kpi('Pts / Game',ppg)}</div>
     <div style="border-top:1.5px solid #c9d0d8;margin:14px 0;"></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-      <div class="card" style="margin-bottom:0;"><div style="font-size:11px;color:var(--mid-grey);font-weight:600;">Goals For</div><div style="font-size:24px;font-weight:900;color:var(--navy);">${gf}</div></div>
-      <div class="card" style="margin-bottom:0;"><div style="font-size:11px;color:var(--mid-grey);font-weight:600;">Goals Against</div><div style="font-size:24px;font-weight:900;color:var(--red);">-${ga}</div></div>
-      <div class="card" style="margin-bottom:0;"><div style="font-size:11px;color:var(--mid-grey);font-weight:600;">Goals For / Game</div><div style="font-size:24px;font-weight:900;color:var(--navy);">${gfpg}</div></div>
-      <div class="card" style="margin-bottom:0;"><div style="font-size:11px;color:var(--mid-grey);font-weight:600;">Goals Against / Game</div><div style="font-size:24px;font-weight:900;color:var(--red);">${gapg}</div></div>
-      <div class="card" style="margin-bottom:0;"><div style="font-size:11px;color:var(--mid-grey);font-weight:600;">% Games Scored</div><div style="font-size:24px;font-weight:900;color:var(--navy);">${pctScored}%</div></div>
+      ${statBox('Goals For', gf)}
+      ${statBox('Goals Against', '-'+ga, 'var(--red)')}
+      ${statBox('Goals For / Game', gfpg)}
+      ${statBox('Goals Against / Game', gapg, 'var(--red)')}
+      ${statBox('% Games Scored', pctScored+'%')}
     </div>
     <div style="border-top:1.5px solid #c9d0d8;margin:14px 0;"></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-      <div class="card" style="margin-bottom:0;"><div style="font-size:11px;color:var(--mid-grey);font-weight:600;">Assists</div><div style="font-size:24px;font-weight:900;color:var(--navy);">${assists}</div></div>
-      <div class="card" style="margin-bottom:0;"><div style="font-size:11px;color:var(--mid-grey);font-weight:600;">Assists / Game</div><div style="font-size:24px;font-weight:900;color:var(--navy);">${apg}</div></div>
-      <div class="card" style="margin-bottom:0;"><div style="font-size:11px;color:var(--mid-grey);font-weight:600;">% Goals from Assist</div><div style="font-size:24px;font-weight:900;color:var(--navy);">${pctFromAssist}%</div></div>
+      ${statBox('Assists', assists)}
+      ${statBox('Assists / Game', apg)}
+      ${statBox('% Goals from Assist', pctFromAssist+'%')}
     </div>
     <div style="border-top:1.5px solid #c9d0d8;margin:14px 0;"></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-      <div class="card" style="margin-bottom:0;"><div style="font-size:11px;color:var(--mid-grey);font-weight:600;">Clean Sheet Qs</div><div style="font-size:24px;font-weight:900;color:var(--navy);">${csQs}</div></div>
-      <div class="card" style="margin-bottom:0;"><div style="font-size:11px;color:var(--mid-grey);font-weight:600;">CS Qs / Game</div><div style="font-size:24px;font-weight:900;color:var(--navy);">${cspg} <span style="font-size:14px;font-weight:700;color:var(--mid-grey);">(${pctCSQs}%)</span></div></div>
-      <div class="card" style="margin-bottom:0;"><div style="font-size:11px;color:var(--mid-grey);font-weight:600;">% Clean Sheet Games</div><div style="font-size:24px;font-weight:900;color:var(--navy);">${pctCS}%</div></div>
+      ${statBox('Clean Sheet Qs', csQs)}
+      ${statBox('CS Qs / Game', `${cspg} <span style="font-size:14px;font-weight:700;color:var(--mid-grey);">(${pctCSQs}%)</span>`)}
+      ${statBox('% Clean Sheet Games', pctCS+'%')}
     </div>
     <div style="border-top:1.5px solid #c9d0d8;margin:14px 0;"></div>
     ${hBar('Goals For per Game', hgfpg, agfpg)}
