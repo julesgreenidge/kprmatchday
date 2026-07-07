@@ -1761,7 +1761,6 @@ function ensureMatchStarted() {
     // Update opponent/date/venue from inline fields each time
     state.matchDate = document.getElementById('matchDate')?.value || state.matchDate;
     state.opponent = document.getElementById('matchOpponent')?.value?.trim() || state.opponent;
-    saveCustomOpponent(state.opponent);
   }
   saveMatchDraft();
 }
@@ -2349,6 +2348,7 @@ async function submitMatch() {
     showToast('Results submitted successfully');
     btn.textContent = 'Submitted';
     clearMatchDraft();
+    saveCustomOpponent(state.opponent);
     // Save to match history
     const goalsFor = state.events.filter(e => e.type === 'goal').length;
     const goalsAgainst = state.events.filter(e => e.type === 'oppo').length;
