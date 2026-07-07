@@ -965,6 +965,15 @@
         <button class="toggle-btn" id="venueAway" onclick="setVenue('Away');updateScoreBarLayout();updateLiveSummary();" style="font-size:14px;">Away</button>
       </div>
     </div>
+
+    <div id="guestSection" style="margin-top:9px;padding-top:9px;border-top:1px solid var(--light-grey);">
+      <div id="guestSummary" style="font-size:13px;color:var(--mid-grey);display:flex;align-items:center;flex-wrap:wrap;gap:6px;"></div>
+      <div id="guestPicker" style="display:none;margin-top:8px;">
+        <select id="guestPickerSelect" onchange="handleGuestPick(this.value)" style="width:100%;height:38px;border:1.5px solid var(--light-grey);border-radius:8px;font-size:14px;background:white;color:var(--text);padding:0 10px;">
+          <option value="">Select a player…</option>
+        </select>
+      </div>
+    </div>
   </div>
 
 
@@ -1257,7 +1266,7 @@
     <div class="squad-list" id="squadList"></div>
     <div class="add-player-row">
       <input type="text" id="newPlayerInput" placeholder="Player name" onkeydown="if(event.key==='Enter')addPlayer()">
-      <button onclick="addPlayer()">Add</button>
+      <button id="addPlayerBtn" onclick="addPlayer()">Add</button>
     </div>
     <button class="btn-secondary" style="margin-top:12px;" onclick="closeModal('squadModal')">Done</button>
   </div>
@@ -1269,7 +1278,7 @@
     <div class="modal-handle"></div>
     <div class="modal-title">Remove <span id="removePlayerName"></span>?</div>
     <div class="modal-sub">They'll no longer appear in the squad for future matches. Their existing match history and stats will not be affected.</div>
-    <button class="btn-danger" onclick="removePlayer(playerPendingRemoval)">Remove player</button>
+    <button class="btn-danger" id="confirmRemoveBtn" onclick="removePlayer(playerPendingRemoval)">Remove player</button>
     <button class="btn-secondary" onclick="closeModal('removePlayerModal')">Cancel</button>
   </div>
 </div>
@@ -1405,7 +1414,7 @@
 
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyRiGa5jg1roJh3drjIvHv96axQiX_bTDnGiGAeeGFsxb94_G1xA1z6GFkk5n0eZ97B5g/exec";
-const APP_VERSION = "2026-07-07-1848"; // must be bumped manually on every deploy — see note below
+const APP_VERSION = "2026-07-07-1937"; // must be bumped manually on every deploy — see note below
 const AGE = "U11";
 
 const DEFAULT_SQUADS = {
@@ -1414,6 +1423,46 @@ const DEFAULT_SQUADS = {
   Royals:  ['Aaban','Albie','Arthur','Evan','Gio','Harry','Huxley GC','Liam','Olly H','Ted','Teo'],
   Stripes: ['Arlo','Aurelian','Ayden','Elliott','Ferdinand','Hugo','Ismayil','Jacob','Magnus','Marco','Max','Otto']
 };
+const ALL_TEAMS = ['Blues','Reds','Royals','Stripes'];
+
+// ── SQUADS: shared across all managers via the Sheet, not local-only ──
+let SQUAD_DATA = null; // null = not yet loaded; falls back to DEFAULT_SQUADS meanwhile
+const SQUAD_CACHE_KEY = 'kprSquadData';
+const SQUAD_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+async function loadSquadData(force = false) {
+  if (!force) {
+    try {
+      const cached = JSON.parse(localStorage.getItem(SQUAD_CACHE_KEY) || 'null');
+      if (cached && (Date.now() - cached.ts) < SQUAD_CACHE_TTL) {
+        SQUAD_DATA = cached.data;
+        return;
+      }
+    } catch (e) { /* fall through to fetch */ }
+  }
+  try {
+    const resp = await fetch(SCRIPT_URL + '?sheet=squads');
+    const data = await resp.json();
+    if (!data.success) throw new Error(data.error || 'Failed to load squads');
+    const grouped = { Blues: [], Reds: [], Royals: [], Stripes: [] };
+    data.rows.forEach(r => { if (grouped[r.Team]) grouped[r.Team].push(r.Player); });
+    SQUAD_DATA = grouped;
+    localStorage.setItem(SQUAD_CACHE_KEY, JSON.stringify({ ts: Date.now(), data: grouped }));
+  } catch (err) {
+    // Network hiccup — fall back to whatever's cached (even if stale), or defaults
+    if (!SQUAD_DATA) {
+      try {
+        const cached = JSON.parse(localStorage.getItem(SQUAD_CACHE_KEY) || 'null');
+        SQUAD_DATA = cached ? cached.data : { ...DEFAULT_SQUADS };
+      } catch (e) { SQUAD_DATA = { ...DEFAULT_SQUADS }; }
+    }
+  }
+}
+
+function getSquad(team) {
+  if (SQUAD_DATA && SQUAD_DATA[team]) return [...SQUAD_DATA[team]];
+  return [...(DEFAULT_SQUADS[team] || [])]; // fallback while the real list is still loading
+}
 
 const TEAM_LEAGUES = {
   Blues: 'Azure', Reds: 'White', Royals: 'Lime', Stripes: 'Emerald'
@@ -1442,6 +1491,7 @@ let state = {
   starPlayer: null,
   bestPasser: null,
   matchId: null,
+  guests: [], // [{id, name, homeTeam}] — homeTeam is null for a Non-KPR guest
 };
 
 function generateMatchId() {
@@ -1454,14 +1504,6 @@ let tempScorer = null;
 let tempGK = null;
 let tempDefenders = [];
 let managingTeam = null;
-
-function getSquad(team) {
-  const saved = localStorage.getItem('kprSquad_' + team);
-  return saved ? JSON.parse(saved) : [...DEFAULT_SQUADS[team]];
-}
-function saveSquad(team, squad) {
-  localStorage.setItem('kprSquad_' + team, JSON.stringify(squad));
-}
 
 // ── OPPONENT DROPDOWN ──
 const BASE_OPPONENTS = [
@@ -1644,6 +1686,7 @@ function selectTeam(team) {
   state.events = [];
   state.starPlayer = null;
   state.bestPasser = null;
+  state.guests = [];
 
   localStorage.setItem('kprLastTeam', team);
 
@@ -1715,6 +1758,7 @@ function checkForMatchDraft() {
 
 function restoreMatchDraft(draftState) {
   state = draftState;
+  if (!state.guests) state.guests = []; // safety for drafts saved before this feature existed
 
   const dateEl = document.getElementById('matchDate');
   if (dateEl) dateEl.value = state.matchDate || '';
@@ -1754,6 +1798,7 @@ function ensureMatchStarted() {
     state.currentQ = 1;
     state.starPlayer = null;
     state.bestPasser = null;
+    state.guests = [];
     state.matchId = generateMatchId();
     state._matchStarted = true;
     updateScoreBarLayout();
@@ -1832,6 +1877,7 @@ function updateScoreBar() {
 
   const scoreVsEl = document.getElementById('scoreVs');
   if (scoreVsEl) scoreVsEl.innerHTML = state._matchEnded ? '<span class="ft-badge">FT</span>' : 'vs';
+  renderGuestRow();
 
   // Update per-quarter score labels (rolling + Q score)
   let rollingFor = 0, rollingAgainst = 0;
@@ -1992,6 +2038,95 @@ function confirmCS() {
   renderAllQuarters();
 }
 
+// ── GUEST PLAYERS (loaned from another squad, or a one-off non-KPR player) ──
+function renderGuestRow() {
+  const wrap = document.getElementById('guestSummary');
+  if (!wrap) return;
+  const guests = state.guests || [];
+
+  if (guests.length === 0) {
+    wrap.innerHTML = `<span onclick="toggleGuestPicker()" style="cursor:pointer;">+ Add guest player</span>`;
+    return;
+  }
+
+  const chips = guests.map(g => {
+    const label = g.homeTeam ? `${g.name} (${g.homeTeam})` : g.name;
+    return `<span style="background:var(--off-white);border-radius:20px;padding:3px 6px 3px 10px;display:inline-flex;align-items:center;gap:4px;font-size:12px;color:var(--text);">
+      ${label}
+      <button onclick="event.stopPropagation();removeGuest('${g.id}')" style="background:none;border:none;color:var(--mid-grey);font-size:15px;line-height:1;padding:2px 3px;cursor:pointer;">×</button>
+    </span>`;
+  }).join('');
+
+  wrap.innerHTML = `<span style="color:var(--mid-grey);">Guests:</span> ${chips} <button onclick="toggleGuestPicker()" style="background:none;border:1px solid var(--light-grey);border-radius:50%;width:22px;height:22px;color:var(--navy);font-weight:700;font-size:14px;cursor:pointer;line-height:1;">+</button>`;
+}
+
+function toggleGuestPicker() {
+  const picker = document.getElementById('guestPicker');
+  const opening = picker.style.display === 'none';
+  picker.style.display = opening ? 'block' : 'none';
+  if (opening) populateGuestPickerOptions();
+}
+
+function populateGuestPickerOptions() {
+  const sel = document.getElementById('guestPickerSelect');
+  const options = ['<option value="">Select a player…</option>'];
+  ALL_TEAMS.filter(t => t !== state.team).forEach(t => {
+    getSquad(t).forEach(p => {
+      options.push(`<option value="${t}|${p}">${p} (${t})</option>`);
+    });
+  });
+  options.push(`<option value="NONKPR|Unregistered Player">Non-KPR guest</option>`);
+  sel.innerHTML = options.join('');
+}
+
+function handleGuestPick(value) {
+  if (!value) return;
+  const [team, name] = value.split('|');
+  addGuest(team === 'NONKPR' ? null : team, name);
+  toggleGuestPicker();
+}
+
+function addGuest(homeTeam, name) {
+  if (!state.guests) state.guests = [];
+  const dup = state.guests.find(g => g.name === name && g.homeTeam === homeTeam);
+  if (dup) { showToast('Already added'); return; }
+  const id = 'g_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+  state.guests.push({ id, name, homeTeam });
+  if (!state.selectedPlayers.includes(name)) state.selectedPlayers.push(name);
+  renderGuestRow();
+  renderAwardGrids();
+  saveMatchDraft();
+}
+
+function guestHasEvents(name) {
+  return state.events.some(e =>
+    e.scorer === name || e.assister === name || e.gk === name ||
+    (e.defenders && e.defenders.includes(name))
+  ) || state.starPlayer === name || state.bestPasser === name;
+}
+
+function removeGuest(id) {
+  const guest = (state.guests || []).find(g => g.id === id);
+  if (!guest) return;
+
+  if (guestHasEvents(guest.name)) {
+    if (!confirm(`${guest.name} already has events recorded this match. Removing them will also remove those events. Continue?`)) return;
+    state.events = state.events.filter(e =>
+      e.scorer !== guest.name && e.assister !== guest.name && e.gk !== guest.name &&
+      !(e.defenders && e.defenders.includes(guest.name))
+    );
+    if (state.starPlayer === guest.name) state.starPlayer = null;
+    if (state.bestPasser === guest.name) state.bestPasser = null;
+  }
+
+  state.guests = state.guests.filter(g => g.id !== id);
+  state.selectedPlayers = state.selectedPlayers.filter(p => p !== guest.name);
+  renderGuestRow();
+  renderAllQuarters();
+  renderAwardGrids();
+  saveMatchDraft();
+}
+
 // ── SQUAD MANAGER ──
 function openSquadManager(team) {
   managingTeam = team;
@@ -2008,16 +2143,29 @@ function renderSquadList() {
   ).join('');
 }
 
-function addPlayer() {
+async function addPlayer() {
   const input = document.getElementById('newPlayerInput');
   const name = input.value.trim();
   if (!name) return;
   const squad = getSquad(managingTeam);
   if (squad.includes(name)) { showToast('Already in squad'); return; }
-  squad.push(name);
-  saveSquad(managingTeam, squad);
-  input.value = '';
-  renderSquadList();
+
+  const btn = document.getElementById('addPlayerBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Adding...'; }
+  try {
+    await postToSheet('addSquadPlayer', { team: managingTeam, player: name });
+    if (!SQUAD_DATA) SQUAD_DATA = { Blues: [], Reds: [], Royals: [], Stripes: [] };
+    if (!SQUAD_DATA[managingTeam]) SQUAD_DATA[managingTeam] = [];
+    SQUAD_DATA[managingTeam].push(name);
+    localStorage.setItem(SQUAD_CACHE_KEY, JSON.stringify({ ts: Date.now(), data: SQUAD_DATA }));
+    input.value = '';
+    renderSquadList();
+    showToast('Player added');
+  } catch (err) {
+    showToast('Error: ' + err.message);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Add'; }
+  }
 }
 
 let playerPendingRemoval = null;
@@ -2028,12 +2176,24 @@ function confirmRemovePlayer(name) {
   openModal('removePlayerModal');
 }
 
-function removePlayer(name) {
-  const squad = getSquad(managingTeam).filter(p => p !== name);
-  saveSquad(managingTeam, squad);
-  renderSquadList();
-  playerPendingRemoval = null;
-  closeModal('removePlayerModal');
+async function removePlayer(name) {
+  const btn = document.getElementById('confirmRemoveBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Removing...'; }
+  try {
+    await postToSheet('removeSquadPlayer', { team: managingTeam, player: name });
+    if (SQUAD_DATA && SQUAD_DATA[managingTeam]) {
+      SQUAD_DATA[managingTeam] = SQUAD_DATA[managingTeam].filter(p => p !== name);
+      localStorage.setItem(SQUAD_CACHE_KEY, JSON.stringify({ ts: Date.now(), data: SQUAD_DATA }));
+    }
+    renderSquadList();
+    playerPendingRemoval = null;
+    closeModal('removePlayerModal');
+    showToast('Player removed');
+  } catch (err) {
+    showToast('Error: ' + err.message);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Remove player'; }
+  }
 }
 
 // ── END MATCH ──
@@ -2667,7 +2827,7 @@ function newMatch() {
 
   const team = state.team; // preserve team
   const league = state.league;
-  state = { team, league, matchDate: '', opponent: '', venue: 'Home', selectedPlayers: [...getSquad(team)], currentQ: 1, events: [], starPlayer: null, bestPasser: null, matchId: generateMatchId(), _matchStarted: true, _matchEnded: false };
+  state = { team, league, matchDate: '', opponent: '', venue: 'Home', selectedPlayers: [...getSquad(team)], currentQ: 1, events: [], starPlayer: null, bestPasser: null, matchId: generateMatchId(), guests: [], _matchStarted: true, _matchEnded: false };
 
   const submitBtn = document.getElementById('submitBtn');
   if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Submit results'; }
@@ -3937,6 +4097,7 @@ updateScoreBar();
 loadSheetData(); // populate SHEET_DATA in the background so opponents from
                   // match history are ready for the dropdown regardless of
                   // which screen is opened first
+loadSquadData(); // same idea for squads, so guest-picker and rosters are ready early
 
 // Restore last team or prompt to select one
 const lastTeam = localStorage.getItem('kprLastTeam');
