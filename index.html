@@ -1405,7 +1405,7 @@
 
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyRiGa5jg1roJh3drjIvHv96axQiX_bTDnGiGAeeGFsxb94_G1xA1z6GFkk5n0eZ97B5g/exec";
-const APP_VERSION = "2026-07-07-1611"; // must be bumped manually on every deploy — see note below
+const APP_VERSION = "2026-07-07-1848"; // must be bumped manually on every deploy — see note below
 const AGE = "U11";
 
 const DEFAULT_SQUADS = {
@@ -2667,7 +2667,7 @@ function newMatch() {
 
   const team = state.team; // preserve team
   const league = state.league;
-  state = { team, league, matchDate: '', opponent: '', venue: 'Home', selectedPlayers: [], currentQ: 1, events: [], starPlayer: null, bestPasser: null, matchId: generateMatchId(), _matchStarted: true, _matchEnded: false };
+  state = { team, league, matchDate: '', opponent: '', venue: 'Home', selectedPlayers: [...getSquad(team)], currentQ: 1, events: [], starPlayer: null, bestPasser: null, matchId: generateMatchId(), _matchStarted: true, _matchEnded: false };
 
   const submitBtn = document.getElementById('submitBtn');
   if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Submit results'; }
@@ -3886,6 +3886,9 @@ async function deleteHistoryMatch() {
   }
   if (!confirm(`Delete this match (${m.date} · ${m.team} vs ${m.opponent})? This cannot be undone.`)) return;
 
+  const btn = document.getElementById('hdDeleteBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Deleting...'; }
+
   try {
     if (!m.matchId) throw new Error('This match has no Match ID yet — run the backfill script before deleting it.');
     await postToSheet('deleteMatch', { matchId: m.matchId });
@@ -3897,6 +3900,7 @@ async function deleteHistoryMatch() {
     renderHistoryList();
   } catch (err) {
     showToast('Error: ' + err.message);
+    if (btn) { btn.disabled = false; btn.textContent = 'Delete match'; }
   }
 }
 
