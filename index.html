@@ -1428,7 +1428,7 @@
 
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyRiGa5jg1roJh3drjIvHv96axQiX_bTDnGiGAeeGFsxb94_G1xA1z6GFkk5n0eZ97B5g/exec";
-const APP_VERSION = "2026-07-07-2018"; // must be bumped manually on every deploy — see note below
+const APP_VERSION = "2026-07-07-2032"; // must be bumped manually on every deploy — see note below
 const AGE = "U11";
 
 const DEFAULT_SQUADS = {
@@ -2929,7 +2929,15 @@ async function postToSheet(action, payload) {
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
     body: JSON.stringify({ action, ...payload })
   });
-  const data = await resp.json();
+  let data;
+  try {
+    data = await resp.json();
+  } catch (err) {
+    // Server response wasn't valid JSON — usually a brief network/server hiccup,
+    // not a problem with the data itself. Safe to just try again: appendRows is
+    // idempotent per Match ID, so a retry can't create a duplicate.
+    throw new Error('Lost connection to the server — please try again.');
+  }
   if (!data.success) throw new Error(data.error || 'Request failed');
   return data;
 }
@@ -3241,9 +3249,20 @@ function renderPlayersTab(data) {
   if (!data.length) return '<div style="color:var(--mid-grey);text-align:center;padding:60px 0;font-size:14px;">No data — check filters</div>';
 
   const stripTeam = p => p ? p.replace(/^[^-]+ - /, '') : p;
+  const homeTeamOf = name => {
+    if (SQUAD_DATA) {
+      for (const t of ALL_TEAMS) {
+        if (SQUAD_DATA[t] && SQUAD_DATA[t].includes(name)) return t;
+      }
+    }
+    return null; // not in any current squad (e.g. a departed player) — fall back below
+  };
   const goalMap={}, assistMap={}, csGKMap={}, csDefMap={}, starMap={}, passerMap={}, teamMap={};
   data.forEach(m => {
-    const add = (map,p,n) => { const name=stripTeam(p); map[name]=(map[name]||0)+n; if(!teamMap[name]) teamMap[name]=m.team; };
+    const add = (map,p,n) => {
+      const name=stripTeam(p); map[name]=(map[name]||0)+n;
+      if(!teamMap[name]) teamMap[name] = homeTeamOf(name) || m.team;
+    };
     Object.entries(m.goals).forEach(([p,n])=>add(goalMap,p,n));
     Object.entries(m.assists).forEach(([p,n])=>add(assistMap,p,n));
     Object.entries(m.csGK).forEach(([p,n])=>add(csGKMap,p,n));
