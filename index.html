@@ -1481,7 +1481,14 @@ const BASE_OPPONENTS = [
 
 function getOpponentList() {
   const saved = JSON.parse(localStorage.getItem('kprCustomOpponents') || '[]');
-  const all = [...new Set([...BASE_OPPONENTS, ...saved])];
+  // Also pull in any opponent that's actually been played, from the shared
+  // Sheet data — this is what makes a one-off custom opponent typed on one
+  // device show up for every other manager too, not just the device that
+  // typed it in.
+  const fromHistory = (typeof SHEET_DATA !== 'undefined' && Array.isArray(SHEET_DATA))
+    ? SHEET_DATA.map(m => m.opponent).filter(Boolean)
+    : [];
+  const all = [...new Set([...BASE_OPPONENTS, ...saved, ...fromHistory])];
   return all.sort((a,b) => a.localeCompare(b));
 }
 
@@ -3922,6 +3929,9 @@ setInterval(checkForUpdate, 2 * 60 * 1000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) checkForUpdate(); });
 populateOpponentDatalist();
 updateScoreBar();
+loadSheetData(); // populate SHEET_DATA in the background so opponents from
+                  // match history are ready for the dropdown regardless of
+                  // which screen is opened first
 
 // Restore last team or prompt to select one
 const lastTeam = localStorage.getItem('kprLastTeam');
