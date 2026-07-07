@@ -2985,6 +2985,7 @@ function renderClubTab(data) {
 
   return `
     <div class="stat-kpi-grid">${kpi('Games Played',played)}${kpi('Wins',wins)}${kpi('Draws',draws)}${kpi('Losses',losses)}${kpi('Win Rate',winRate+'%')}${kpi('Pts / Game',ppg)}</div>
+    <div style="border-top:1.5px solid #c9d0d8;margin:14px 0;"></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
       <div class="card" style="margin-bottom:0;"><div style="font-size:11px;color:var(--mid-grey);font-weight:600;">Goals For</div><div style="font-size:24px;font-weight:900;color:var(--navy);">${gf}</div></div>
       <div class="card" style="margin-bottom:0;"><div style="font-size:11px;color:var(--mid-grey);font-weight:600;">Goals Against</div><div style="font-size:24px;font-weight:900;color:var(--red);">-${ga}</div></div>
@@ -2992,18 +2993,19 @@ function renderClubTab(data) {
       <div class="card" style="margin-bottom:0;"><div style="font-size:11px;color:var(--mid-grey);font-weight:600;">Goals Against / Game</div><div style="font-size:24px;font-weight:900;color:var(--red);">${gapg}</div></div>
       <div class="card" style="margin-bottom:0;"><div style="font-size:11px;color:var(--mid-grey);font-weight:600;">% Games Scored</div><div style="font-size:24px;font-weight:900;color:var(--navy);">${pctScored}%</div></div>
     </div>
-    <div style="border-top:1px solid var(--light-grey);margin:12px 0;"></div>
+    <div style="border-top:1.5px solid #c9d0d8;margin:14px 0;"></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
       <div class="card" style="margin-bottom:0;"><div style="font-size:11px;color:var(--mid-grey);font-weight:600;">Assists</div><div style="font-size:24px;font-weight:900;color:var(--navy);">${assists}</div></div>
       <div class="card" style="margin-bottom:0;"><div style="font-size:11px;color:var(--mid-grey);font-weight:600;">Assists / Game</div><div style="font-size:24px;font-weight:900;color:var(--navy);">${apg}</div></div>
       <div class="card" style="margin-bottom:0;"><div style="font-size:11px;color:var(--mid-grey);font-weight:600;">% Goals from Assist</div><div style="font-size:24px;font-weight:900;color:var(--navy);">${pctFromAssist}%</div></div>
     </div>
-    <div style="border-top:1px solid var(--light-grey);margin:12px 0;"></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+    <div style="border-top:1.5px solid #c9d0d8;margin:14px 0;"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
       <div class="card" style="margin-bottom:0;"><div style="font-size:11px;color:var(--mid-grey);font-weight:600;">Clean Sheet Qs</div><div style="font-size:24px;font-weight:900;color:var(--navy);">${csQs}</div></div>
       <div class="card" style="margin-bottom:0;"><div style="font-size:11px;color:var(--mid-grey);font-weight:600;">CS Qs / Game</div><div style="font-size:24px;font-weight:900;color:var(--navy);">${cspg} <span style="font-size:14px;font-weight:700;color:var(--mid-grey);">(${pctCSQs}%)</span></div></div>
       <div class="card" style="margin-bottom:0;"><div style="font-size:11px;color:var(--mid-grey);font-weight:600;">% Clean Sheet Games</div><div style="font-size:24px;font-weight:900;color:var(--navy);">${pctCS}%</div></div>
     </div>
+    <div style="border-top:1.5px solid #c9d0d8;margin:14px 0;"></div>
     ${hBar('Goals For per Game', hgfpg, agfpg)}
     ${hBar('Goals Against per Game', hgapg, agapg)}
     ${hBar('Assists per Game', hapg, aapg)}
