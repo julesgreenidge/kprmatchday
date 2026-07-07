@@ -1428,7 +1428,7 @@
 
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyRiGa5jg1roJh3drjIvHv96axQiX_bTDnGiGAeeGFsxb94_G1xA1z6GFkk5n0eZ97B5g/exec";
-const APP_VERSION = "2026-07-07-2032"; // must be bumped manually on every deploy — see note below
+const APP_VERSION = "2026-07-07-2046"; // must be bumped manually on every deploy — see note below
 const AGE = "U11";
 
 const DEFAULT_SQUADS = {
@@ -3022,7 +3022,10 @@ async function loadSheetData(force = false) {
     renderStats();
     renderHistoryList();
   } catch(err) {
-    document.getElementById('statsContent').innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--red);">Could not load data: ' + err.message + '</div>';
+    const msg = '<div style="text-align:center;padding:40px 20px;color:var(--red);">Could not load data: ' + err.message + '<br><button onclick="loadSheetData(true)" class="btn-secondary" style="margin-top:14px;">Retry</button></div>';
+    document.getElementById('statsContent').innerHTML = msg;
+    const hEl = document.getElementById('historyList');
+    if (hEl) hEl.innerHTML = msg;
   } finally {
     sheetDataLoading = false;
   }
@@ -3591,7 +3594,7 @@ function deleteMatchFromHistory(id) {
 function renderHistoryList() {
   if (!sheetDataLoaded) {
     document.getElementById('historyList').innerHTML = '<div style="text-align:center;color:var(--mid-grey);padding:60px 0;font-size:14px;">Loading data...</div>';
-    loadSheetData().then(renderHistoryList);
+    if (!sheetDataLoading) loadSheetData(); // loadSheetData itself calls renderHistoryList again once it resolves — no chaining needed here
     return;
   }
 
