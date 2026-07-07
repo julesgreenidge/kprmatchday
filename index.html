@@ -464,16 +464,34 @@
     margin-bottom: 14px;
   }
   .modal-player-btn {
-    padding: 12px 6px;
+    padding: 10px 6px;
     border: 2px solid var(--light-grey);
     border-radius: 9px;
     background: white;
-    font-size: 13px;
+    font-size: 11px;
     font-weight: 600;
     text-align: center;
     cursor: pointer;
     color: var(--text);
     transition: all 0.12s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 38px;
+    line-height: 1.15;
+  }
+  .modal-player-btn.guest-player {
+    border-style: dashed;
+    background: #f5f3ff;
+  }
+  .guest-divider {
+    grid-column: 1 / -1;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--mid-grey);
+    margin: 2px 0 -2px;
   }
   .modal-player-btn:active { transform: scale(0.96); }
   .modal-player-btn.selected-scorer {
@@ -968,11 +986,7 @@
 
     <div id="guestSection" style="margin-top:9px;padding-top:9px;border-top:1px solid var(--light-grey);">
       <div id="guestSummary" style="font-size:13px;color:var(--mid-grey);display:flex;align-items:center;flex-wrap:wrap;gap:6px;"></div>
-      <div id="guestPicker" style="display:none;margin-top:8px;">
-        <select id="guestPickerSelect" onchange="handleGuestPick(this.value)" style="width:100%;height:38px;border:1.5px solid var(--light-grey);border-radius:8px;font-size:14px;background:white;color:var(--text);padding:0 10px;">
-          <option value="">Select a player…</option>
-        </select>
-      </div>
+      <div id="guestPicker" style="display:none;margin-top:8px;border:1.5px solid var(--light-grey);border-radius:9px;max-height:220px;overflow-y:auto;-webkit-overflow-scrolling:touch;"></div>
     </div>
   </div>
 
@@ -1414,7 +1428,7 @@
 
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyRiGa5jg1roJh3drjIvHv96axQiX_bTDnGiGAeeGFsxb94_G1xA1z6GFkk5n0eZ97B5g/exec";
-const APP_VERSION = "2026-07-07-1937"; // must be bumped manually on every deploy — see note below
+const APP_VERSION = "2026-07-07-2018"; // must be bumped manually on every deploy — see note below
 const AGE = "U11";
 
 const DEFAULT_SQUADS = {
@@ -1790,7 +1804,8 @@ function setVenue(v) {
 function ensureMatchStarted() {
   // Auto-initialise match state when first event is added
   if (!state._matchStarted) {
-    state.selectedPlayers = [...getSquad(state.team)];
+    if (!state.guests) state.guests = [];
+    state.selectedPlayers = [...getSquad(state.team), ...state.guests.map(g => g.name)];
     state.matchDate = document.getElementById('matchDate')?.value || '';
     state.opponent = document.getElementById('matchOpponent')?.value?.trim() || '';
     state._matchEnded = false;
@@ -1798,7 +1813,6 @@ function ensureMatchStarted() {
     state.currentQ = 1;
     state.starPlayer = null;
     state.bestPasser = null;
-    state.guests = [];
     state.matchId = generateMatchId();
     state._matchStarted = true;
     updateScoreBarLayout();
@@ -1927,17 +1941,25 @@ function openGoalModal() {
 }
 
 function renderGoalModal() {
-  const players = [...state.selectedPlayers, 'Own Goal'];
-  document.getElementById('goalScorerGrid').innerHTML = players.map(p => {
-    const greyed = (p !== 'Own Goal' && p === tempAssister) ? ' style="opacity:0.3;pointer-events:none;"' : '';
-    return `<button class="modal-player-btn${p === tempScorer ? ' selected-scorer' : ''}"${greyed} onclick="selectScorer('${p}')">${p}</button>`;
-  }).join('');
+  const { squad, guests, guestNames } = splitSquadAndGuests(state.selectedPlayers);
 
-  const assistOptions = [...state.selectedPlayers, 'No assist'];
-  document.getElementById('goalAssistGrid').innerHTML = assistOptions.map(p => {
+  const scorerBtn = p => {
+    const greyed = (p !== 'Own Goal' && p === tempAssister) ? ' style="opacity:0.3;pointer-events:none;"' : '';
+    const guestCls = guestNames.has(p) ? ' guest-player' : '';
+    return `<button class="modal-player-btn${p === tempScorer ? ' selected-scorer' : ''}${guestCls}"${greyed} onclick="selectScorer('${p}')">${p}</button>`;
+  };
+  let scorerHTML = squad.map(scorerBtn).join('') + scorerBtn('Own Goal');
+  if (guests.length) scorerHTML += guestDividerHTML + guests.map(scorerBtn).join('');
+  document.getElementById('goalScorerGrid').innerHTML = scorerHTML;
+
+  const assistBtn = p => {
     const greyed = (p !== 'No assist' && p === tempScorer) ? ' style="opacity:0.3;pointer-events:none;"' : '';
-    return `<button class="modal-player-btn${p === tempAssister ? ' selected-scorer' : ''}"${greyed} onclick="selectAssist('${p}')">${p}</button>`;
-  }).join('');
+    const guestCls = guestNames.has(p) ? ' guest-player' : '';
+    return `<button class="modal-player-btn${p === tempAssister ? ' selected-scorer' : ''}${guestCls}"${greyed} onclick="selectAssist('${p}')">${p}</button>`;
+  };
+  let assistHTML = squad.map(assistBtn).join('') + assistBtn('No assist');
+  if (guests.length) assistHTML += guestDividerHTML + guests.map(assistBtn).join('');
+  document.getElementById('goalAssistGrid').innerHTML = assistHTML;
 }
 
 function selectScorer(name) {
@@ -1987,10 +2009,15 @@ function openCSModal() {
 }
 
 function renderCSModal() {
-  document.getElementById('csGKGrid').innerHTML = state.selectedPlayers.map(p => {
+  const { squad, guests, guestNames } = splitSquadAndGuests(state.selectedPlayers);
+  const gkBtn = p => {
     const greyed = tempDefenders.includes(p) ? ' style="opacity:0.3;pointer-events:none;"' : '';
-    return `<button class="modal-player-btn${p === tempGK ? ' cs-def-selected' : ''}"${greyed} onclick="selectCSGK('${p}')">${p}</button>`;
-  }).join('');
+    const guestCls = guestNames.has(p) ? ' guest-player' : '';
+    return `<button class="modal-player-btn${p === tempGK ? ' cs-def-selected' : ''}${guestCls}"${greyed} onclick="selectCSGK('${p}')">${p}</button>`;
+  };
+  let gkHTML = squad.map(gkBtn).join('');
+  if (guests.length) gkHTML += guestDividerHTML + guests.map(gkBtn).join('');
+  document.getElementById('csGKGrid').innerHTML = gkHTML;
   renderCSDefGrid();
 }
 
@@ -2001,12 +2028,17 @@ function selectCSGK(name) {
 
 function renderCSDefGrid() {
   const grid = document.getElementById('csDefGrid');
-  grid.innerHTML = state.selectedPlayers.map(p => {
+  const { squad, guests, guestNames } = splitSquadAndGuests(state.selectedPlayers);
+  const defBtn = p => {
     const isGK = p === tempGK;
     const isSelected = tempDefenders.includes(p);
     const greyed = isGK ? ' style="opacity:0.3;pointer-events:none;"' : '';
-    return `<button class="modal-player-btn${isSelected ? ' cs-def-selected' : ''}"${greyed} onclick="toggleCSDef('${p}')">${p}</button>`;
-  }).join('');
+    const guestCls = guestNames.has(p) ? ' guest-player' : '';
+    return `<button class="modal-player-btn${isSelected ? ' cs-def-selected' : ''}${guestCls}"${greyed} onclick="toggleCSDef('${p}')">${p}</button>`;
+  };
+  let defHTML = squad.map(defBtn).join('');
+  if (guests.length) defHTML += guestDividerHTML + guests.map(defBtn).join('');
+  grid.innerHTML = defHTML;
 }
 
 function toggleCSDef(name) {
@@ -2039,13 +2071,23 @@ function confirmCS() {
 }
 
 // ── GUEST PLAYERS (loaned from another squad, or a one-off non-KPR player) ──
+function splitSquadAndGuests(players) {
+  const guestNames = new Set((state.guests || []).map(g => g.name));
+  return {
+    squad: players.filter(p => !guestNames.has(p)),
+    guests: players.filter(p => guestNames.has(p)),
+    guestNames
+  };
+}
+const guestDividerHTML = `<div class="guest-divider">Loan Players</div>`;
+
 function renderGuestRow() {
   const wrap = document.getElementById('guestSummary');
   if (!wrap) return;
   const guests = state.guests || [];
 
   if (guests.length === 0) {
-    wrap.innerHTML = `<span onclick="toggleGuestPicker()" style="cursor:pointer;">+ Add guest player</span>`;
+    wrap.innerHTML = `<span onclick="toggleGuestPicker()" style="cursor:pointer;">+ Add one-off loan player</span>`;
     return;
   }
 
@@ -2057,33 +2099,36 @@ function renderGuestRow() {
     </span>`;
   }).join('');
 
-  wrap.innerHTML = `<span style="color:var(--mid-grey);">Guests:</span> ${chips} <button onclick="toggleGuestPicker()" style="background:none;border:1px solid var(--light-grey);border-radius:50%;width:22px;height:22px;color:var(--navy);font-weight:700;font-size:14px;cursor:pointer;line-height:1;">+</button>`;
+  wrap.innerHTML = `<span style="color:var(--mid-grey);">Loan players:</span> ${chips} <button onclick="toggleGuestPicker()" style="background:none;border:1px solid var(--light-grey);border-radius:50%;width:22px;height:22px;color:var(--navy);font-weight:700;font-size:14px;cursor:pointer;line-height:1;">+</button>`;
 }
 
 function toggleGuestPicker() {
   const picker = document.getElementById('guestPicker');
   const opening = picker.style.display === 'none';
-  picker.style.display = opening ? 'block' : 'none';
-  if (opening) populateGuestPickerOptions();
+  if (opening) {
+    populateGuestPickerOptions();
+    picker.style.display = 'block';
+  } else {
+    picker.style.display = 'none';
+  }
 }
 
 function populateGuestPickerOptions() {
-  const sel = document.getElementById('guestPickerSelect');
-  const options = ['<option value="">Select a player…</option>'];
+  const picker = document.getElementById('guestPicker');
+  const rows = [];
   ALL_TEAMS.filter(t => t !== state.team).forEach(t => {
     getSquad(t).forEach(p => {
-      options.push(`<option value="${t}|${p}">${p} (${t})</option>`);
+      const safe = p.replace(/'/g, "\\'");
+      rows.push(`<div class="opp-option" onclick="handleGuestPick('${t}','${safe}')">${p} <span style="color:var(--mid-grey);font-weight:600;">(${t})</span></div>`);
     });
   });
-  options.push(`<option value="NONKPR|Unregistered Player">Non-KPR guest</option>`);
-  sel.innerHTML = options.join('');
+  rows.push(`<div class="opp-option" onclick="handleGuestPick('NONKPR','Unregistered Player')" style="font-weight:700;color:var(--navy);">+ Non-KPR guest (one-off loan)</div>`);
+  picker.innerHTML = rows.join('');
 }
 
-function handleGuestPick(value) {
-  if (!value) return;
-  const [team, name] = value.split('|');
+function handleGuestPick(team, name) {
   addGuest(team === 'NONKPR' ? null : team, name);
-  toggleGuestPicker();
+  toggleGuestPicker(); // collapse after picking
 }
 
 function addGuest(homeTeam, name) {
@@ -2338,12 +2383,14 @@ function renderAwardSection(containerId, label, selected, selectFn, key) {
         </button>
       </div>`;
   } else {
+    const { squad, guests, guestNames } = splitSquadAndGuests(state.selectedPlayers);
+    const awardBtn = p => `<button class="modal-player-btn${selected===p?' selected-scorer':''}${guestNames.has(p)?' guest-player':''}" onclick="${selectFn}('${p}')">${p}</button>`;
+    let html = squad.map(awardBtn).join('');
+    if (guests.length) html += guestDividerHTML + guests.map(awardBtn).join('');
     el.innerHTML = `
       <div class="card-title">${label}</div>
       <div class="modal-player-grid">
-        ${state.selectedPlayers.map(p =>
-          `<button class="modal-player-btn${selected===p?' selected-scorer':''}" onclick="${selectFn}('${p}')">${p}</button>`
-        ).join('')}
+        ${html}
       </div>`;
   }
 }
