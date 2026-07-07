@@ -1789,14 +1789,16 @@ function openGoalModal() {
 
 function renderGoalModal() {
   const players = [...state.selectedPlayers, 'Own Goal'];
-  document.getElementById('goalScorerGrid').innerHTML = players.map(p =>
-    `<button class="modal-player-btn${p === tempScorer ? ' selected-scorer' : ''}" onclick="selectScorer('${p}')">${p}</button>`
-  ).join('');
+  document.getElementById('goalScorerGrid').innerHTML = players.map(p => {
+    const greyed = (p !== 'Own Goal' && p === tempAssister) ? ' style="opacity:0.3;pointer-events:none;"' : '';
+    return `<button class="modal-player-btn${p === tempScorer ? ' selected-scorer' : ''}"${greyed} onclick="selectScorer('${p}')">${p}</button>`;
+  }).join('');
 
   const assistOptions = [...state.selectedPlayers, 'No assist'];
-  document.getElementById('goalAssistGrid').innerHTML = assistOptions.map(p =>
-    `<button class="modal-player-btn${p === tempAssister ? ' selected-scorer' : ''}" onclick="selectAssist('${p}')">${p}</button>`
-  ).join('');
+  document.getElementById('goalAssistGrid').innerHTML = assistOptions.map(p => {
+    const greyed = (p !== 'No assist' && p === tempScorer) ? ' style="opacity:0.3;pointer-events:none;"' : '';
+    return `<button class="modal-player-btn${p === tempAssister ? ' selected-scorer' : ''}"${greyed} onclick="selectAssist('${p}')">${p}</button>`;
+  }).join('');
 }
 
 function selectScorer(name) {
@@ -1846,15 +1848,15 @@ function openCSModal() {
 }
 
 function renderCSModal() {
-  document.getElementById('csGKGrid').innerHTML = state.selectedPlayers.map(p =>
-    `<button class="modal-player-btn${p === tempGK ? ' cs-def-selected' : ''}" onclick="selectCSGK('${p}')">${p}</button>`
-  ).join('');
+  document.getElementById('csGKGrid').innerHTML = state.selectedPlayers.map(p => {
+    const greyed = tempDefenders.includes(p) ? ' style="opacity:0.3;pointer-events:none;"' : '';
+    return `<button class="modal-player-btn${p === tempGK ? ' cs-def-selected' : ''}"${greyed} onclick="selectCSGK('${p}')">${p}</button>`;
+  }).join('');
   renderCSDefGrid();
 }
 
 function selectCSGK(name) {
   tempGK = name;
-  tempDefenders = tempDefenders.filter(p => p !== name);
   renderCSModal();
 }
 
@@ -1863,7 +1865,8 @@ function renderCSDefGrid() {
   grid.innerHTML = state.selectedPlayers.map(p => {
     const isGK = p === tempGK;
     const isSelected = tempDefenders.includes(p);
-    return `<button class="modal-player-btn${isSelected ? ' cs-def-selected' : ''}" onclick="toggleCSDef('${p}')">${p}</button>`;
+    const greyed = isGK ? ' style="opacity:0.3;pointer-events:none;"' : '';
+    return `<button class="modal-player-btn${isSelected ? ' cs-def-selected' : ''}"${greyed} onclick="toggleCSDef('${p}')">${p}</button>`;
   }).join('');
 }
 
@@ -2007,39 +2010,38 @@ function proceedToEndMatch(doScroll = true) {
     }
   });
 
-  const statRow = (name, val) =>
-    `<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;">
-      <span style="font-weight:600;">${name}</span>
-      <span style="font-weight:800;color:var(--navy);">${val}</span>
-    </div>`;
+  const statLine = (entries) =>
+    `<div style="font-size:16px;font-weight:600;color:var(--text);line-height:1.5;">${
+      entries.map(([name, val]) => val > 1 ? `${name} (${val})` : name).join(', ')
+    }</div>`;
 
   // Goals
   const scorers = Object.entries(stats).filter(([,s]) => s.goals > 0).sort((a,b) => b[1].goals - a[1].goals);
   if (scorers.length > 0 || ogGoals > 0) {
-    let html = scorers.map(([n,s]) => statRow(n, s.goals)).join('');
-    if (ogGoals > 0) html += statRow('Own Goal', ogGoals);
-    document.getElementById('summaryGoalsList').innerHTML = html;
+    const entries = scorers.map(([n,s]) => [n, s.goals]);
+    if (ogGoals > 0) entries.push(['Own Goal', ogGoals]);
+    document.getElementById('summaryGoalsList').innerHTML = statLine(entries);
     document.getElementById('summaryGoalsSection').style.display = '';
   } else { document.getElementById('summaryGoalsSection').style.display = 'none'; }
 
   // Assists
   const assisters = Object.entries(stats).filter(([,s]) => s.assists > 0).sort((a,b) => b[1].assists - a[1].assists);
   if (assisters.length > 0) {
-    document.getElementById('summaryAssistsList').innerHTML = assisters.map(([n,s]) => statRow(n, s.assists)).join('');
+    document.getElementById('summaryAssistsList').innerHTML = statLine(assisters.map(([n,s]) => [n, s.assists]));
     document.getElementById('summaryAssistsSection').style.display = '';
   } else { document.getElementById('summaryAssistsSection').style.display = 'none'; }
 
   // CS GK
   const csGKs = Object.entries(stats).filter(([,s]) => s.csGK > 0).sort((a,b) => b[1].csGK - a[1].csGK);
   if (csGKs.length > 0) {
-    document.getElementById('summaryCSGKList').innerHTML = csGKs.map(([n,s]) => statRow(n, s.csGK)).join('');
+    document.getElementById('summaryCSGKList').innerHTML = statLine(csGKs.map(([n,s]) => [n, s.csGK]));
     document.getElementById('summaryCSGKSection').style.display = '';
   } else { document.getElementById('summaryCSGKSection').style.display = 'none'; }
 
   // CS DEF
   const csDefs = Object.entries(stats).filter(([,s]) => s.csDef > 0).sort((a,b) => b[1].csDef - a[1].csDef);
   if (csDefs.length > 0) {
-    document.getElementById('summaryCSDefList').innerHTML = csDefs.map(([n,s]) => statRow(n, s.csDef)).join('');
+    document.getElementById('summaryCSDefList').innerHTML = statLine(csDefs.map(([n,s]) => [n, s.csDef]));
     document.getElementById('summaryCSDefSection').style.display = '';
   } else { document.getElementById('summaryCSDefSection').style.display = 'none'; }
 
