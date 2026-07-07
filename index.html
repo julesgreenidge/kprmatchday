@@ -1405,7 +1405,7 @@
 
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyRiGa5jg1roJh3drjIvHv96axQiX_bTDnGiGAeeGFsxb94_G1xA1z6GFkk5n0eZ97B5g/exec";
-const APP_VERSION = "2026-07-07-1600"; // must be bumped manually on every deploy — see note below
+const APP_VERSION = "2026-07-07-1611"; // must be bumped manually on every deploy — see note below
 const AGE = "U11";
 
 const DEFAULT_SQUADS = {
@@ -1815,6 +1815,7 @@ function updateScoreBarLayout() {
   }
   document.getElementById('scoreBar').style.background = 'var(--navy)';
   saveMatchDraft();
+  updateScoreBar(); // keep the actual score numbers (and per-quarter labels) in sync with venue
 }
 
 function updateScoreBar() {
