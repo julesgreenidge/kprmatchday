@@ -1505,17 +1505,6 @@ function renderTeamTab() {
   nameEl.textContent = state.team;
 }
 
-function toggleMatchDetails() {
-  const body = document.getElementById('matchDetailsBody');
-  const chevron = document.getElementById('matchDetailsChevron');
-  const header = document.getElementById('matchDetailsHeader');
-  const open = body.style.display !== 'none';
-  body.style.display = open ? 'none' : 'block';
-  chevron.style.transform = open ? 'rotate(0deg)' : 'rotate(180deg)';
-  header.style.borderRadius = open ? '10px' : '10px 10px 0 0';
-  header.style.borderBottom = open ? '1.5px solid #c8cdd2' : 'none';
-}
-
 function updateMatchDetailsSummary() {
   const date = document.getElementById('matchDate')?.value;
   const opp = document.getElementById('matchOpponent')?.value?.trim();
@@ -1642,6 +1631,72 @@ function goToTeamSelect() {
 }
 
 // ── SETUP ──
+// ── IN-PROGRESS MATCH DRAFT (crash/reload recovery) ──
+const MATCH_DRAFT_KEY = 'kprMatchDraft';
+
+function saveMatchDraft() {
+  // Only worth saving once a match has actually started — avoids storing empty state
+  if (!state._matchStarted) return;
+  try {
+    localStorage.setItem(MATCH_DRAFT_KEY, JSON.stringify({ ts: Date.now(), state }));
+  } catch (e) {
+    // Storage full/unavailable — not critical, just means no crash-recovery this session
+  }
+}
+
+function clearMatchDraft() {
+  localStorage.removeItem(MATCH_DRAFT_KEY);
+}
+
+function checkForMatchDraft() {
+  try {
+    const raw = localStorage.getItem(MATCH_DRAFT_KEY);
+    if (!raw) return;
+    const draft = JSON.parse(raw);
+    if (!draft || !draft.state || !draft.state._matchStarted) { clearMatchDraft(); return; }
+
+    // Only offer to resume drafts from today — avoids resurrecting a long-abandoned match
+    const sameDay = new Date(draft.ts).toDateString() === new Date().toDateString();
+    if (!sameDay) { clearMatchDraft(); return; }
+
+    if (draft.state.team !== state.team) return; // different team context — leave it, don't prompt
+
+    const opp = draft.state.opponent || 'an opponent';
+    const resume = confirm('An in-progress match vs ' + opp + ' was found from earlier today (likely from a refresh or accidental close). Resume it?');
+    if (resume) {
+      restoreMatchDraft(draft.state);
+    } else {
+      clearMatchDraft();
+    }
+  } catch (e) {
+    clearMatchDraft();
+  }
+}
+
+function restoreMatchDraft(draftState) {
+  state = draftState;
+
+  const dateEl = document.getElementById('matchDate');
+  if (dateEl) dateEl.value = state.matchDate || '';
+  const oppEl = document.getElementById('matchOpponent');
+  if (oppEl) oppEl.value = state.opponent || '';
+  document.getElementById('venueHome').classList.toggle('active', state.venue === 'Home');
+  document.getElementById('venueAway').classList.toggle('active', state.venue !== 'Home');
+
+  updateMatchDetailsSummary();
+  updateScoreBarLayout();
+  renderAllQuarters();
+  renderAwardGrids();
+
+  if (state._matchEnded) {
+    document.getElementById('summarySection').style.display = '';
+    document.getElementById('endMatchBtnWrap').style.display = 'none';
+  }
+
+  switchTab('matchday');
+  showToast('Match resumed');
+}
+
 function setVenue(v) {
   state.venue = v;
   document.getElementById('venueHome').classList.toggle('active', v === 'Home');
@@ -1668,11 +1723,7 @@ function ensureMatchStarted() {
     state.opponent = document.getElementById('matchOpponent')?.value?.trim() || state.opponent;
     saveCustomOpponent(state.opponent);
   }
-}
-
-function startMatch() {
-  // Legacy — kept for any remaining references
-  ensureMatchStarted();
+  saveMatchDraft();
 }
 
 // ── QUARTERS (all visible) ──
@@ -1680,6 +1731,7 @@ function renderAllQuarters() {
   [1,2,3,4].forEach(q => renderEventListForQ(q));
   updateScoreBar();
   updateLiveSummary();
+  saveMatchDraft();
 }
 
 function renderEventListForQ(q) {
@@ -1723,6 +1775,7 @@ function updateScoreBarLayout() {
     document.getElementById('scoreRightLabel').textContent = kprName;
   }
   document.getElementById('scoreBar').style.background = 'var(--navy)';
+  saveMatchDraft();
 }
 
 function updateScoreBar() {
@@ -2067,6 +2120,7 @@ const awardEditing = { star: false, passer: false };
 function renderAwardGrids() {
   renderAwardSection('starPlayerSection', 'Star Player', state.starPlayer, 'selectStar', 'star');
   renderAwardSection('bestPasserSection', 'Over-achiever', state.bestPasser, 'selectBestPasser', 'passer');
+  saveMatchDraft();
 }
 
 function renderAwardSection(containerId, label, selected, selectFn, key) {
@@ -2266,6 +2320,7 @@ async function submitMatch() {
     if (data.success) {
       showToast('Results submitted successfully');
       btn.textContent = 'Submitted';
+      clearMatchDraft();
       // Save to match history
       const goalsFor = state.events.filter(e => e.type === 'goal').length;
       const goalsAgainst = state.events.filter(e => e.type === 'oppo').length;
@@ -2587,6 +2642,7 @@ function confirmNewMatchFromSummary() {
 
 function newMatch() {
   document.querySelectorAll('.modal-overlay').forEach(m => m.classList.add('hidden'));
+  clearMatchDraft();
 
   const team = state.team; // preserve team
   const league = state.league;
@@ -3850,6 +3906,7 @@ if (lastTeam && ['Blues','Reds','Royals','Stripes'].includes(lastTeam)) {
   state.matchDate = today;
   renderTeamTab();
   switchTab('matchday');
+  checkForMatchDraft();
 } else {
   switchTab('team');
   openTeamChangeModal();
