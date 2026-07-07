@@ -1428,7 +1428,7 @@
 
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyRiGa5jg1roJh3drjIvHv96axQiX_bTDnGiGAeeGFsxb94_G1xA1z6GFkk5n0eZ97B5g/exec";
-const APP_VERSION = "2026-07-07-2141"; // must be bumped manually on every deploy — see note below
+const APP_VERSION = "2026-07-07-2151"; // must be bumped manually on every deploy — see note below
 const AGE = "U11";
 
 const DEFAULT_SQUADS = {
@@ -1773,6 +1773,7 @@ function checkForMatchDraft() {
 function restoreMatchDraft(draftState) {
   state = draftState;
   if (!state.guests) state.guests = []; // safety for drafts saved before this feature existed
+  repairSelectedPlayersAndGuests(); // fixes an already-corrupted name collision, not just future ones
 
   const dateEl = document.getElementById('matchDate');
   if (dateEl) dateEl.value = state.matchDate || '';
@@ -1801,11 +1802,27 @@ function setVenue(v) {
 }
 
 
+function repairSelectedPlayersAndGuests() {
+  const squad = [...getSquad(state.team)];
+  const used = new Set(squad);
+  (state.guests || []).forEach(g => {
+    if (!g.realName) g.realName = g.name; // safety for guests added before this fix existed
+    if (used.has(g.name)) {
+      let candidate = g.homeTeam ? `${g.realName} (${g.homeTeam})` : g.realName;
+      let n = 2;
+      while (used.has(candidate)) { candidate = `${g.realName} (${g.homeTeam || 'Guest'} ${n})`; n++; }
+      g.name = candidate;
+    }
+    used.add(g.name);
+  });
+  state.selectedPlayers = [...squad, ...(state.guests || []).map(g => g.name)];
+}
+
 function ensureMatchStarted() {
   // Auto-initialise match state when first event is added
   if (!state._matchStarted) {
     if (!state.guests) state.guests = [];
-    state.selectedPlayers = [...getSquad(state.team), ...state.guests.map(g => g.name)];
+    repairSelectedPlayersAndGuests();
     state.matchDate = document.getElementById('matchDate')?.value || '';
     state.opponent = document.getElementById('matchOpponent')?.value?.trim() || '';
     state._matchEnded = false;
@@ -2092,7 +2109,7 @@ function renderGuestRow() {
   }
 
   const chips = guests.map(g => {
-    const label = g.homeTeam ? `${g.name} (${g.homeTeam})` : g.name;
+    const label = g.homeTeam ? `${g.realName} (${g.homeTeam})` : g.realName;
     return `<span style="background:var(--off-white);border-radius:20px;padding:3px 6px 3px 10px;display:inline-flex;align-items:center;gap:4px;font-size:12px;color:var(--text);">
       ${label}
       <button onclick="event.stopPropagation();removeGuest('${g.id}')" style="background:none;border:none;color:var(--mid-grey);font-size:15px;line-height:1;padding:2px 3px;cursor:pointer;">×</button>
@@ -2133,11 +2150,36 @@ function handleGuestPick(team, name) {
 
 function addGuest(homeTeam, name) {
   if (!state.guests) state.guests = [];
-  const dup = state.guests.find(g => g.name === name && g.homeTeam === homeTeam);
+
+  // Non-KPR guests are intentionally one shared, anonymous entry — never
+  // disambiguated, matching the existing "Unregistered Player" convention.
+  if (!homeTeam) {
+    if (state.guests.some(g => g.homeTeam === null)) { showToast('Already added'); return; }
+    const id = 'g_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+    state.guests.push({ id, name, realName: name, homeTeam: null });
+    if (!state.selectedPlayers.includes(name)) state.selectedPlayers.push(name);
+    renderGuestRow();
+    renderAwardGrids();
+    saveMatchDraft();
+    return;
+  }
+
+  const dup = state.guests.find(g => g.realName === name && g.homeTeam === homeTeam);
   if (dup) { showToast('Already added'); return; }
+
+  // If this name collides with an existing squad member or another
+  // already-added guest, give it a genuinely unique internal identifier —
+  // otherwise two different people who happen to share a name become
+  // indistinguishable in the picker and in events (this was the actual bug).
+  const existingNames = new Set([...state.selectedPlayers, ...state.guests.map(g => g.name)]);
+  let uniqueName = name;
+  if (existingNames.has(uniqueName)) uniqueName = `${name} (${homeTeam})`;
+  let n = 2;
+  while (existingNames.has(uniqueName)) { uniqueName = `${name} (${homeTeam} ${n})`; n++; }
+
   const id = 'g_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
-  state.guests.push({ id, name, homeTeam });
-  if (!state.selectedPlayers.includes(name)) state.selectedPlayers.push(name);
+  state.guests.push({ id, name: uniqueName, realName: name, homeTeam });
+  if (!state.selectedPlayers.includes(uniqueName)) state.selectedPlayers.push(uniqueName);
   renderGuestRow();
   renderAwardGrids();
   saveMatchDraft();
@@ -2431,23 +2473,30 @@ function buildRows() {
     const guest = (state.guests || []).find(g => g.name === name && g.homeTeam);
     return guest ? guest.homeTeam : state.team;
   };
+  // A guest's stored identifier may be disambiguated internally (e.g.
+  // "Jack (Reds)" if that name collides with an existing squad member) —
+  // the Sheet should always show their clean real name, not that internal tag.
+  const playerName = name => {
+    const guest = (state.guests || []).find(g => g.name === name);
+    return guest ? guest.realName : name;
+  };
 
   const rows = [];
 
   // Goals
   state.events.filter(e => e.type === 'goal').forEach(e => {
-    const playerName = e.scorer === 'Own Goal' ? state.team + ' - Oppo' : playerPrefix(e.scorer) + ' - ' + e.scorer;
-    rows.push({ ...base, Player: playerName, Stat: '1. Goal', Quarter: 'Q' + e.quarter, Count: 1 });
+    const player = e.scorer === 'Own Goal' ? state.team + ' - Oppo' : playerPrefix(e.scorer) + ' - ' + playerName(e.scorer);
+    rows.push({ ...base, Player: player, Stat: '1. Goal', Quarter: 'Q' + e.quarter, Count: 1 });
     if (e.assister) {
-      rows.push({ ...base, Player: playerPrefix(e.assister) + ' - ' + e.assister, Stat: '2. Assist', Quarter: 'Q' + e.quarter, Count: 1 });
+      rows.push({ ...base, Player: playerPrefix(e.assister) + ' - ' + playerName(e.assister), Stat: '2. Assist', Quarter: 'Q' + e.quarter, Count: 1 });
     }
   });
 
   // Clean sheets
   state.events.filter(e => e.type === 'cs').forEach(e => {
-    rows.push({ ...base, Player: playerPrefix(e.gk) + ' - ' + e.gk, Stat: '4. Clean Sheet GK', Quarter: 'Q' + e.quarter, Count: 1 });
+    rows.push({ ...base, Player: playerPrefix(e.gk) + ' - ' + playerName(e.gk), Stat: '4. Clean Sheet GK', Quarter: 'Q' + e.quarter, Count: 1 });
     e.defenders.forEach(def => {
-      rows.push({ ...base, Player: playerPrefix(def) + ' - ' + def, Stat: '3. Clean Sheet DEF', Quarter: 'Q' + e.quarter, Count: 1 });
+      rows.push({ ...base, Player: playerPrefix(def) + ' - ' + playerName(def), Stat: '3. Clean Sheet DEF', Quarter: 'Q' + e.quarter, Count: 1 });
     });
   });
 
@@ -2465,10 +2514,10 @@ function buildRows() {
 
   // Awards
   if (state.starPlayer) {
-    rows.push({ ...base, Player: playerPrefix(state.starPlayer) + ' - ' + state.starPlayer, Stat: '5. Star Player', Quarter: '-', Count: 1 });
+    rows.push({ ...base, Player: playerPrefix(state.starPlayer) + ' - ' + playerName(state.starPlayer), Stat: '5. Star Player', Quarter: '-', Count: 1 });
   }
   if (state.bestPasser) {
-    rows.push({ ...base, Player: playerPrefix(state.bestPasser) + ' - ' + state.bestPasser, Stat: '6. Best Passer', Quarter: '-', Count: 1 });
+    rows.push({ ...base, Player: playerPrefix(state.bestPasser) + ' - ' + playerName(state.bestPasser), Stat: '6. Best Passer', Quarter: '-', Count: 1 });
   }
 
   return rows;
