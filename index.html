@@ -1428,7 +1428,7 @@
 
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyRiGa5jg1roJh3drjIvHv96axQiX_bTDnGiGAeeGFsxb94_G1xA1z6GFkk5n0eZ97B5g/exec";
-const APP_VERSION = "2026-07-07-2046"; // must be bumped manually on every deploy — see note below
+const APP_VERSION = "2026-07-07-2053"; // must be bumped manually on every deploy — see note below
 const AGE = "U11";
 
 const DEFAULT_SQUADS = {
@@ -4125,6 +4125,7 @@ async function deleteHistoryMatch() {
 
     removeSheetDataCache(m.matchId);
 
+    if (btn) { btn.disabled = false; btn.textContent = 'Delete match'; }
     closeHistoryDetail();
     renderHistoryList();
   } catch (err) {
