@@ -1439,7 +1439,7 @@
 
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyRiGa5jg1roJh3drjIvHv96axQiX_bTDnGiGAeeGFsxb94_G1xA1z6GFkk5n0eZ97B5g/exec";
-const APP_VERSION = "2026-07-14-2044"; // must be bumped manually on every deploy — see note below
+const APP_VERSION = "2026-07-14-2109"; // must be bumped manually on every deploy — see note below
 const AGE = "U11";
 
 // ── ACCESS CONTROL ──
@@ -1579,7 +1579,15 @@ let state = {
 };
 
 function generateMatchId() {
-  return 'm_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  // Real UUID v4 — matches the format already used by your backfilled historical
+  // matches, so every Match ID looks consistent going forward.
+  if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+  // Fallback for older browsers without crypto.randomUUID
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
 }
 
 
