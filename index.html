@@ -1439,7 +1439,7 @@
 
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyRiGa5jg1roJh3drjIvHv96axQiX_bTDnGiGAeeGFsxb94_G1xA1z6GFkk5n0eZ97B5g/exec";
-const APP_VERSION = "2026-07-14-2109"; // must be bumped manually on every deploy — see note below
+const APP_VERSION = "2026-07-15-0654"; // must be bumped manually on every deploy — see note below
 const AGE = "U11";
 
 // ── ACCESS CONTROL ──
@@ -3645,11 +3645,11 @@ function renderQuartersTab(data) {
   const csFreq = labels.map((l,i) => ({label:l, v: Math.round(qs[i+1].cs/matchCount*100), colour:gold, display: Math.round(qs[i+1].cs/matchCount*100)+'%'}));
 
   return [
-    metric('Goals for: % of quarters with at least 1 goal', gfFreq),
+    metric('When in the Match Do We Score?', gfFreq),
     metric('Goals for: avg per quarter', gfAvg),
-    metric('Goals against: % of quarters with at least 1 goal against', gaFreq),
+    metric('When in the Match Do We Concede?', gaFreq),
     metric('Goals against: avg per quarter', gaAvg),
-    metric('Clean sheets: % of quarters kept', csFreq),
+    metric('When in the Match Do We Keep a Clean Sheet?', csFreq),
   ].join('');
 }
 
