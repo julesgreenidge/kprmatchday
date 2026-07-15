@@ -1439,7 +1439,7 @@
 
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyRiGa5jg1roJh3drjIvHv96axQiX_bTDnGiGAeeGFsxb94_G1xA1z6GFkk5n0eZ97B5g/exec";
-const APP_VERSION = "2026-07-15-0851"; // must be bumped manually on every deploy — see note below
+const APP_VERSION = "2026-07-15-2041"; // must be bumped manually on every deploy — see note below
 const AGE = "U11";
 
 // ── ACCESS CONTROL ──
@@ -2612,7 +2612,18 @@ function goFixSetup() {
   setHeaderBack(false);
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
-function goFixMatchDay() { closeModal('submitConfirmModal'); showScreen('screen-match'); document.getElementById('headerTitle').textContent = 'KPR ' + state.team + ' · Match Day'; setHeaderBack(true, goToSetup); }
+function goFixMatchDay(quarter) {
+  closeModal('submitConfirmModal');
+  showScreen('screen-match');
+  document.getElementById('headerTitle').textContent = 'KPR ' + state.team + ' · Match Day';
+  setHeaderBack(true, goToSetup);
+  if (quarter) {
+    setTimeout(() => {
+      const el = document.getElementById('qblock-' + quarter);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
+  }
+}
 function goFixSummary() { closeModal('submitConfirmModal'); /* already on summary */ }
 
 function confirmSubmit() {
@@ -2637,7 +2648,7 @@ function confirmSubmit() {
   );
   if (conflicting.length > 0) {
     const qList = conflicting.map(q=>'Q'+q).join(', ');
-    errors.push({ msg: `${qList} has both an opposition goal and a clean sheet.`, fix: 'goFixMatchDay()' });
+    errors.push({ msg: `${qList} has both an opposition goal and a clean sheet.`, fix: `goFixMatchDay(${conflicting[0]})` });
   }
 
   const missingCS = [1,2,3,4].filter(q =>
@@ -2646,7 +2657,7 @@ function confirmSubmit() {
   );
   if (missingCS.length > 0) {
     const qList = missingCS.map(q=>'Q'+q).join(', ');
-    errors.push({ msg: `${qList} has no opposition goal or clean sheet.`, fix: 'goFixMatchDay()' });
+    errors.push({ msg: `${qList} has no opposition goal or clean sheet.`, fix: `goFixMatchDay(${missingCS[0]})` });
   }
 
   if (!state.starPlayer) errors.push({ msg: 'No Star Player selected.', fix: 'goFixSummary()' });
