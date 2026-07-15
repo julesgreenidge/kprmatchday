@@ -1439,7 +1439,7 @@
 
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyRiGa5jg1roJh3drjIvHv96axQiX_bTDnGiGAeeGFsxb94_G1xA1z6GFkk5n0eZ97B5g/exec";
-const APP_VERSION = "2026-07-15-0654"; // must be bumped manually on every deploy — see note below
+const APP_VERSION = "2026-07-15-0851"; // must be bumped manually on every deploy — see note below
 const AGE = "U11";
 
 // ── ACCESS CONTROL ──
@@ -1485,12 +1485,12 @@ async function submitPin() {
       loadSheetData(true);
       loadSquadData(true);
     } else {
-      errEl.textContent = data.error || 'Incorrect PIN';
+      errEl.textContent = data.error === 'Incorrect PIN' ? 'That PIN isn\'t right — please try again.' : (data.error || 'That PIN isn\'t right — please try again.');
       input.value = '';
       input.focus();
     }
   } catch (err) {
-    errEl.textContent = 'Connection error — please try again.';
+    errEl.textContent = 'Couldn\'t reach the server — check your connection and try again.';
   } finally {
     btn.disabled = false;
     btn.textContent = 'Unlock';
@@ -3645,11 +3645,11 @@ function renderQuartersTab(data) {
   const csFreq = labels.map((l,i) => ({label:l, v: Math.round(qs[i+1].cs/matchCount*100), colour:gold, display: Math.round(qs[i+1].cs/matchCount*100)+'%'}));
 
   return [
-    metric('When in the Match Do We Score?', gfFreq),
+    metric('How Often Do We Score in Each Quarter?', gfFreq),
     metric('Goals for: avg per quarter', gfAvg),
-    metric('When in the Match Do We Concede?', gaFreq),
+    metric('How Often Do We Concede in Each Quarter?', gaFreq),
     metric('Goals against: avg per quarter', gaAvg),
-    metric('When in the Match Do We Keep a Clean Sheet?', csFreq),
+    metric('How Often Do We Keep a Clean Sheet in Each Quarter?', csFreq),
   ].join('');
 }
 
