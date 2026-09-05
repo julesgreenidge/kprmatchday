@@ -7,6 +7,15 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>KPR Match Day</title>
+
+<!-- App icon + "Add to Home Screen" behaviour (iOS + Android) -->
+<link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9Ijk2IiBmaWxsPSIjMDAyOTVjIi8+CiAgPHRleHQgeD0iMjU2IiB5PSIzMDAiIGZvbnQtZmFtaWx5PSItYXBwbGUtc3lzdGVtLCBIZWx2ZXRpY2EsIEFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjE1MCIgZm9udC13ZWlnaHQ9IjgwMCIgZmlsbD0iI2ZmZmZmZiIgdGV4dC1hbmNob3I9Im1pZGRsZSI+S1BSPC90ZXh0Pgo8L3N2Zz4K">
+<link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9Ijk2IiBmaWxsPSIjMDAyOTVjIi8+CiAgPHRleHQgeD0iMjU2IiB5PSIzMDAiIGZvbnQtZmFtaWx5PSItYXBwbGUtc3lzdGVtLCBIZWx2ZXRpY2EsIEFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjE1MCIgZm9udC13ZWlnaHQ9IjgwMCIgZmlsbD0iI2ZmZmZmZiIgdGV4dC1hbmNob3I9Im1pZGRsZSI+S1BSPC90ZXh0Pgo8L3N2Zz4K">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="KPR Match Day">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#00295c">
 <style>
   :root {
     --navy: #00295c;
@@ -1439,7 +1448,7 @@
 
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyRiGa5jg1roJh3drjIvHv96axQiX_bTDnGiGAeeGFsxb94_G1xA1z6GFkk5n0eZ97B5g/exec";
-const APP_VERSION = "2026-07-15-2041"; // must be bumped manually on every deploy — see note below
+const APP_VERSION = "2026-09-05-1438"; // must be bumped manually on every deploy — see note below
 const AGE = "U11";
 
 // ── ACCESS CONTROL ──
@@ -1600,13 +1609,13 @@ let managingTeam = null;
 // ── OPPONENT DROPDOWN ──
 const BASE_OPPONENTS = [
   "A.C. Fulham","Abbey Rangers Youth","Addlestone","AFC Walcountians","Alexandra United","Ascot United",
-  "Ashford Town Juniors","Ashtead Colts","Barnes Eagles","BedHead Youth","Bedfont Eagles",
+  "Ashford Town Juniors","Ashtead Colts","Balham","Barnes Eagles","BedHead Youth","Bedfont Eagles",
   "Bracknell Town FC Youth","Bracknell Town Robins","Burpham Juniors","CB Hounslow & Abbots",
   "Carshalton Athletic","Chipstead Youth","Claygate Royals","Colliers Wood United Youth",
   "Corinthian Casuals","Croygas Falcons","Dorking Wanderers Youth","Doverhouse Lions",
-  "Esher Youth","Guildford City","Hampton Rangers","Hampton and Richmond","Isleworthians Youth",
-  "Kew Park Rangers","Leatherhead Youth","Manorcroft United","Meadow Sports",
-  "Metropolitan Police Youth","Mitcham Park","Motspur Park","Nork Park Rangers","NPL Youth","Raynes Park Vale Youth",
+  "Epsom & Ewell Colts","Esher Youth","Falcons Youth","Guildford City","Hampton Rangers","Hampton and Richmond","Isleworthians Youth",
+  "Kew Park Rangers","Kingsmeadow United","Leatherhead Youth","Manorcroft United","Meadow Sports",
+  "Metropolitan Police Youth","Mitcham Park","Molesey Juniors","Motspur Park","Nork Park Rangers","NPL Youth","Old Rutlishians Youth","Raynes Park Vale Youth",
   "Richmond & Kew FC","Rocks Lane","Sandgate Youth","Sheen Lions","South Park Juniors",
   "Spelthorne Sports Youth","St. Helier","Sutton Common Rovers","Sutton United Colts",
   "Teddington Athletic","Twickenham Tigers","Walton & Hersham United","Wandgas","Westside Youth",
