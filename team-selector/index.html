@@ -185,13 +185,15 @@ td .thin{color:var(--muted);font-weight:400;font-size:12px}
 
   <section style="display:grid;gap:16px">
     <div class="tabs" role="tablist">
-      <button role="tab" id="t-players" aria-selected="true" data-tab="players">Players</button>
+      <button role="tab" id="t-mine" aria-selected="true" data-tab="mine">Check my plan</button>
+      <button role="tab" id="t-players" aria-selected="false" data-tab="players">Players</button>
       <button role="tab" id="t-pairs" aria-selected="false" data-tab="pairs">Partnerships</button>
       <button role="tab" id="t-checks" aria-selected="false" data-tab="checks">Data checks</button>
       <button role="tab" id="t-lineups" aria-selected="false" data-tab="lineups">Line-ups</button>
       <button role="tab" id="t-how" aria-selected="false" data-tab="how">How it works</button>
     </div>
-    <div id="v-players"></div>
+    <div id="v-mine"></div>
+    <div id="v-players" hidden></div>
     <div id="v-pairs" hidden></div>
     <div id="v-checks" hidden></div>
     <div id="v-lineups" hidden></div>
@@ -478,7 +480,8 @@ const Core = (() => {
     // next match: a dated team sheet later than every recorded result
     const lastResult = matches.length ? matches[matches.length - 1].d.replace(/-/g, '') : '';
     const nextTab = sheets.tabs.filter(t => t.dt.length === 8 && t.dt > lastResult).sort((a, b) => a.dt < b.dt ? -1 : 1)[0];
-    const upcoming = nextTab ? { name: nextTab.n, d: `${nextTab.dt.slice(0, 4)}-${nextTab.dt.slice(4, 6)}-${nextTab.dt.slice(6)}`, players: [...new Set(Object.keys(nextTab.p).map(nm))] } : null;
+    const upcoming = nextTab ? { name: nextTab.n, d: `${nextTab.dt.slice(0, 4)}-${nextTab.dt.slice(4, 6)}-${nextTab.dt.slice(6)}`, players: [...new Set(Object.keys(nextTab.p).map(nm))],
+      lineup: Object.entries(nextTab.p).reduce((o, [raw, segs]) => { const p = nm(raw); o[p] = (o[p] || []).concat(segs); return o; }, {}) } : null;
     return { matches, sel, withL, players, pairs: pairList, chem, lineups: lineupList, timedHalves, allPos, checks, exactQuarters, latest, upcoming, unlinkedTabs: sheets.tabs.filter(t => !upcoming || t.n !== upcoming.name).filter(t => !Object.values(links).some(x => x && x.n === t.n)), avg: { avgOut, avgCG, avgCD, avgGAq } };
   }
 
@@ -536,6 +539,112 @@ const Core = (() => {
     for (let a = 0; a < S; a++) for (let b = a + 1; b < S; b++) { const c = chem[pairKey(names[a], names[b])] || { v: 0, exQ: 0, Q: 0 }; pairs.push({ a: names[a], b: names[b], chem: c.v, exQ: c.exQ, Q: c.Q }); }
     out.pairs = pairs; out.chemBonus = weight * best.ch / 3; out.total = best.total; out.groupsChecked = 0;
     return out;
+  }
+
+  // ---------- Groups: how players who've been on the pitch together have done ----------
+  function groupTools(R) {
+    const halves = R.timedHalves.map(h => ({ set: new Set(h.set), rel: h.rel, gf: h.gf, ga: h.ga, d: h.d, opp: h.opp }));
+    function adj(names, baseRate) {
+      baseRate = baseRate || 0;
+      let sw = 0, swr = 0;
+      for (const h of halves) {
+        let o = 0; for (const x of names) if (h.set.has(x)) o++;
+        if (o < 2) continue;
+        const w = Math.pow(o / 7, 3) * 0.5;
+        sw += w; swr += w * h.rel;
+      }
+      return { adj: sw ? (swr - sw * baseRate) / (sw + K) : 0, weight: sw };
+    }
+    function story(names) {
+      const bySet = {};
+      for (const h of halves) {
+        const common = names.filter(x => h.set.has(x));
+        if (common.length < 3) continue;
+        const k = common.slice().sort().join('|');
+        const g = (bySet[k] = bySet[k] || { players: common.slice().sort(), halves: 0, gf: 0, ga: 0, dates: new Set() });
+        g.halves++; g.gf += h.gf; g.ga += h.ga; g.dates.add(h.d);
+      }
+      const list = Object.values(bySet);
+      for (const g of list) for (const o of list) if (o !== g && o.players.length > g.players.length && g.players.every(p => o.players.includes(p))) { g.halves += o.halves; g.gf += o.gf; g.ga += o.ga; o.dates.forEach(d => g.dates.add(d)); }
+      list.sort((a, b) => (b.players.length - a.players.length) || (b.halves - a.halves));
+      const best = list[0];
+      return best ? { players: best.players, quarters: best.halves / 2, gf: best.gf, ga: best.ga, matches: best.dates.size } : null;
+    }
+    return { adj, story };
+  }
+
+  // ---------- Checking a plan you've written yourself ----------
+  /*
+   * grid: {name: [slot or '' for each half-quarter]} (8 half-quarters)
+   * opts: positions, wholeMatch (names), keeper (name, optional)
+   * Returns rule checks and the same expected-edge score the planner uses.
+   */
+  function evaluatePlan(R, grid, opts) {
+    opts = opts || {};
+    const P = 8, unit = 0.5;
+    const names = Object.keys(grid).filter(n => grid[n].some(Boolean));
+    const byName = Object.fromEntries(R.players.map(r => [r.name, r]));
+    const blank = n => ({ name: n, pos: { GK: 0, DEF: 0, MID: 0, WING: 0, FOR: 0 }, out: 0, gkAdj: 0, defAdj: 0 });
+    const rec = n => byName[n] || blank(n);
+    const eligOf = n => new Set((opts.positions && opts.positions[n]) || defaultPositions(R, n));
+    const GT = groupTools(R);
+    const checks = [];
+    const add = (ok, text, level) => checks.push({ ok, text, level: level || (ok ? 'ok' : 'bad') });
+    const QL = p => 'Q' + (Math.floor(p / 2) + 1) + (p % 2 ? ' (2nd half)' : ' (1st half)');
+    const list = a => a.length > 1 ? a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1] : a[0] || '';
+    // 1. seven on the pitch in the right shape
+    const need = { GK: 1, DEF: 2, MID: 1, WING: 2, FOR: 1 };
+    const shapeProblems = [];
+    const periods = [];
+    for (let p = 0; p < P; p++) {
+      const on = names.filter(n => grid[n][p]).map(n => ({ name: n, slot: grid[n][p] }));
+      const c = {}; on.forEach(x => c[x.slot] = (c[x.slot] || 0) + 1);
+      const wrong = GROUPS.filter(g => (c[g] || 0) !== need[g]).map(g => `${c[g] || 0} ${g}`);
+      if (on.length !== 7) shapeProblems.push(`${QL(p)}: ${on.length} players on the pitch, not 7`);
+      else if (wrong.length) shapeProblems.push(`${QL(p)}: ${wrong.join(', ')} (needs 1 GK, 2 DEF, 1 MID, 2 WING, 1 FOR)`);
+      const ind = on.reduce((s, x) => s + slotScore(rec(x.name), x.slot).ind, 0);
+      const g = GT.adj(on.map(x => x.name), 0);
+      periods.push({ lineup: on.sort((a, b) => SLOTS.indexOf(a.slot) - SLOTS.indexOf(b.slot)), pred: ind + g.adj, story: GT.story(on.map(x => x.name)) });
+    }
+    if (shapeProblems.length) add(false, 'Line-up shape: ' + shapeProblems.join('; ') + '.');
+    else add(true, 'Every half-quarter has 7 players: 1 keeper, 2 defenders, 1 midfielder, 2 wingers and 1 forward.');
+    // 2. playing time
+    const played = Object.fromEntries(names.map(n => [n, grid[n].filter(Boolean).length * unit]));
+    const unused = (opts.squad || []).filter(n => !names.includes(n));
+    if (unused.length) add(false, `${list(unused)} ${unused.length === 1 ? 'isn’t' : 'aren’t'} playing at all.`);
+    const short = names.filter(n => played[n] < 2);
+    if (short.length) add(false, `Under 2 quarters: ${short.map(n => `${n} (${played[n]})`).join(', ')}.`);
+    else add(true, 'Everyone plays at least 2 quarters.');
+    const whole = new Set((opts.wholeMatch || []).concat(opts.keeper ? [opts.keeper] : []));
+    names.forEach(n => { if (played[n] === 4) whole.add(n); });
+    const sharers = names.filter(n => !whole.has(n));
+    if (sharers.length) {
+      const lo = Math.min(...sharers.map(n => played[n])), hi = Math.max(...sharers.map(n => played[n]));
+      if (hi - lo > 0.5) add(false, `Playing time isn’t even: ${sharers.filter(n => played[n] === hi).join(', ')} get${sharers.filter(n => played[n] === hi).length === 1 ? 's' : ''} ${hi} quarters, ${sharers.filter(n => played[n] === lo).join(', ')} only ${lo}.`, 'warn');
+      else add(true, `Playing time is even: ${lo === hi ? lo : lo + '–' + hi} quarters each for everyone not playing the whole match.`);
+    }
+    // 3. bench spells
+    const cold = [];
+    names.forEach(n => { let run = 0, worst = 0; grid[n].forEach(v => { run = v ? 0 : run + 1; worst = Math.max(worst, run); }); if (worst > 2) cold.push(`${n} (${worst * unit} quarters)`); });
+    if (cold.length) add(false, `On the bench for more than 1 quarter in a row: ${cold.join(', ')}.`);
+    else add(true, 'Nobody sits out more than 1 quarter in a row.');
+    // 4. one position per quarter
+    const switches = [];
+    names.forEach(n => { for (let q = 0; q < 4; q++) { const a = grid[n][2 * q], b = grid[n][2 * q + 1]; if (a && b && a !== b) switches.push(`${n} in Q${q + 1} (${a} then ${b})`); } });
+    if (switches.length) add(false, `Changes position during a quarter: ${switches.join(', ')}.`, 'warn');
+    else add(true, 'Everyone keeps one position for the whole quarter.');
+    // 5. whole quarters
+    const splits = [];
+    names.forEach(n => { let c = 0; for (let q = 0; q < 4; q++) if (!!grid[n][2 * q] !== !!grid[n][2 * q + 1]) c++; const minSplits = (grid[n].filter(Boolean).length % 2); if (c > minSplits) splits.push(`${n} (${c})`); });
+    if (splits.length) add(false, `Split quarters that could be whole: ${splits.join(', ')}.`, 'warn');
+    else add(true, 'Players play whole quarters wherever the numbers allow.');
+    // 6. ticked positions
+    const offPos = [];
+    names.forEach(n => { const e = eligOf(n); const bad = [...new Set(grid[n].filter(v => v && !e.has(v)))]; if (bad.length) offPos.push(`${n} at ${bad.join('/')}`); });
+    if (offPos.length) add(false, `Positions not ticked for the player: ${offPos.join(', ')}.`, 'warn');
+    else add(true, 'Everyone is in a position ticked for them.');
+    const perQuarter = periods.reduce((s, x) => s + x.pred, 0) / P;
+    return { checks, periods, played, perQuarter, P, names };
   }
 
   // ---------- Match planner ----------
@@ -631,34 +740,9 @@ const Core = (() => {
       if (best > -Infinity) while (mask) { const p = from[mask]; k--; slotOf[p] = k; mask &= ~(1 << p); }
       return { v: best, slotOf };
     }
-    const halves = R.timedHalves.map(h => ({ set: new Set(h.set), rel: h.rel, gf: h.gf, ga: h.ga, d: h.d, opp: h.opp }));
-    function groupAdj(names, baseRate) {
-      let sw = 0, swr = 0;
-      for (const h of halves) {
-        let o = 0; for (const x of names) if (h.set.has(x)) o++;
-        if (o < 2) continue;
-        const w = Math.pow(o / 7, 3) * 0.5;
-        sw += w; swr += w * h.rel;
-      }
-      return { adj: sw ? (swr - sw * baseRate) / (sw + K) : 0, weight: sw };
-    }
-    // plain-English detail: the biggest group of these players who have played together before, and how it went
-    function groupStory(names) {
-      const bySet = {};
-      for (const h of halves) {
-        const common = names.filter(x => h.set.has(x));
-        if (common.length < 3) continue;
-        const k = common.slice().sort().join('|');
-        const g = (bySet[k] = bySet[k] || { players: common.slice().sort(), halves: 0, gf: 0, ga: 0, dates: new Set() });
-        g.halves++; g.gf += h.gf; g.ga += h.ga; g.dates.add(h.d);
-      }
-      // groups nested inside a bigger group also played whenever the bigger one did: count those too
-      const list = Object.values(bySet);
-      for (const g of list) for (const o of list) if (o !== g && o.players.length > g.players.length && g.players.every(p => o.players.includes(p))) { g.halves += o.halves; g.gf += o.gf; g.ga += o.ga; o.dates.forEach(d => g.dates.add(d)); }
-      list.sort((a, b) => (b.players.length - a.players.length) || (b.halves - a.halves));
-      const best = list[0];
-      return best ? { players: best.players, quarters: best.halves / 2, gf: best.gf, ga: best.ga, matches: best.dates.size } : null;
-    }
+    const GT = groupTools(R);
+    const groupAdj = (names, baseRate) => GT.adj(names, baseRate);
+    const groupStory = names => GT.story(names);
     // team strength of one half-quarter's seven (plus-minus and groupings)
     const halfMemo = new Map();
     function halfInfo(ids) {
@@ -808,7 +892,7 @@ const Core = (() => {
       elig: Object.fromEntries(Object.entries(elig).map(([k, v]) => [k, [...v]])), squad: squad.map(r => r.name), newPlayers: squad.filter(r => r.isNew).map(r => r.name) };
   }
 
-  return { TEAM, GROUPS, SLOTS, planMatch, parseStatsRows, defaultPositions, K, MIN_POS_Q, parseStats, parseWorkbook, analyse, pickSeven, slotScore };
+  return { TEAM, GROUPS, SLOTS, planMatch, evaluatePlan, groupTools, parseStatsRows, defaultPositions, K, MIN_POS_Q, parseStats, parseWorkbook, analyse, pickSeven, slotScore };
 })();
 
 
@@ -826,7 +910,7 @@ const ROLE_C={GK:'var(--r-gk)',DEF:'var(--r-def)',MID:'var(--r-mid)',WING:'var(-
 const ROLE_N={GK:'in goal',DEF:'in defence',MID:'in midfield',WING:'on the wing',FOR:'up front'};
 const store={get(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 
-const S={db:null,stats:null,sheets:null,config:{links:{}},ages:null,avail:null,tab:'players',sortP:{k:'Q',d:-1},sortPair:{k:'Q',d:-1},pairRole:'ANY',pairMin:4,canEdit:false,R:null,loaded:{}};
+const S={db:null,stats:null,sheets:null,config:{links:{}},ages:null,avail:null,tab:'mine',sortP:{k:'Q',d:-1},sortPair:{k:'Q',d:-1},pairRole:'ANY',pairMin:4,canEdit:false,R:null,loaded:{}};
 
 function toast(msg){const t=$('toast');t.textContent=msg;t.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>t.hidden=true,3200);}
 
@@ -878,6 +962,7 @@ async function load(pin){
     const wb={SheetNames:d.team.names,Sheets:Object.fromEntries(d.team.names.map(n=>[n,Object.fromEntries(Object.entries(d.team.grids[n]||{}).map(([k,v])=>[k,{v}]))]))};
     const sheets=Core.parseWorkbook(XL,wb); sheets.uploadedAt=d.teamUpdated;
     S.db={doc:p=>({set:async v=>{if(p!=='data/config')return;S.config=v;refresh();const r=await api({action:'saveConfig',pin,config:v});if(r.error)throw new Error(r.error);}})};
+    S.saveQuiet=async v=>{const r=await api({action:'saveConfig',pin,config:v});if(r.error)throw new Error(r.error);};
     S.stats=stats; S.sheets=sheets; S.config=d.config||{links:{}}; if(!S.config.links)S.config.links={};
     S.loaded={stats:1,sheets:1,config:1};
     refresh();
@@ -1066,9 +1151,9 @@ function renderPosEditor(squad,eligOf){
 document.querySelectorAll('.tabs button').forEach(b=>b.addEventListener('click',()=>{S.tab=b.dataset.tab;renderTab();}));
 function renderTab(){
   document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.tab===S.tab)));
-  for(const t of['players','pairs','lineups','checks','how'])$('v-'+t).hidden=t!==S.tab;
+  for(const t of['mine','players','pairs','lineups','checks','how'])$('v-'+t).hidden=t!==S.tab;
   if(!S.R)return;
-  ({players:renderPlayers,pairs:renderPairs,lineups:renderLineups,checks:renderChecks,how:renderHow})[S.tab]();
+  ({mine:renderMine,players:renderPlayers,pairs:renderPairs,lineups:renderLineups,checks:renderChecks,how:renderHow})[S.tab]();
 }
 
 function sortable(cols,rows,state,rerender){
@@ -1079,6 +1164,62 @@ function sortable(cols,rows,state,rerender){
 }
 const tdNum=(x,fmt,cls)=>el('td',{class:cls||''},fmt(x));
 const tdPM=(pm,exQ)=>el('td',{class:pm==null?'':pm>0.005?'pos':pm<-0.005?'neg':''},pm==null?'–':sgn(pm),exQ?el('span',{class:'thin'},' '+qfmt(exQ)+'q'):null);
+
+
+// ---------- Check my plan ----------
+const SLOT_OPTS=['','GK','DEF','MID','WING','FOR'];
+function saveConfigQuiet(cfg){S.config=cfg;try{return S.saveQuiet?S.saveQuiet(cfg):S.db.doc('data/config').set(cfg);}catch(e){}}
+function renderMine(){
+  const R=S.R, box=$('v-mine');
+  const my=(S.config.myPlan&&S.config.myPlan.grid)?S.config.myPlan:{grid:{},source:''};
+  const grid=my.grid;
+  const squad=[...(S.avail||[])];
+  const rows=[...new Set([...Object.keys(grid).filter(n=>grid[n].some(Boolean)),...squad])].sort((a,b)=>a.localeCompare(b));
+  rows.forEach(n=>{if(!grid[n])grid[n]=Array(8).fill('');});
+  const save=src=>{const cur=S.config.myPlan||{grid};const cfg={...S.config,myPlan:{grid:cur.grid||grid,source:src!==undefined?src:(cur.source||''),savedAt:new Date().toISOString()}};clearTimeout(renderMine.t);renderMine.t=setTimeout(()=>{const r=saveConfigQuiet(cfg);if(r&&r.catch)r.catch(e=>toast('Couldn’t save your plan ('+(e.code||e.message)+')'));},700);S.config=cfg;};
+  const loadFrom=(lineup,label)=>{const g={};Object.entries(lineup).forEach(([n,segs])=>{g[n]=Array(8).fill('');segs.forEach(([q,h,pos])=>g[n][(q-1)*2+h]=pos);});S.config={...S.config,myPlan:{grid:g,source:label}};save(label);renderMine();};
+  const sheetSrc=R.upcoming?{lineup:R.upcoming.lineup,label:`${R.upcoming.name.replace(/\s*20\d{6}.*$/,'')}, ${fmtDate(R.upcoming.d)}`}:(R.latest?{lineup:R.latest.lineup,label:`${R.latest.opp}, ${fmtDate(R.latest.d)}`}:null);
+  const controls=el('div',{class:'bar'},
+    sheetSrc?el('button',{type:'button',class:'btn',onclick:()=>loadFrom(sheetSrc.lineup,'Team sheet: '+sheetSrc.label)},`Load my team sheet (${sheetSrc.label})`):null,
+    S.plan&&!S.plan.error?el('button',{type:'button',class:'btn',onclick:()=>{const g={};S.plan.squad.forEach(n=>g[n]=S.plan.periods.map(pd=>{const x=pd.lineup.find(y=>y.name===n);return x?x.slot:'';}));S.config={...S.config,myPlan:{grid:g,source:'Copy of the suggested plan'}};save('Copy of the suggested plan');renderMine();}},'Start from the suggested plan'):null,
+    el('button',{type:'button',class:'btn',onclick:()=>{S.config={...S.config,myPlan:{grid:{},source:''}};save('');renderMine();}},'Clear'));
+  // editable grid
+  const head=[el('tr',{},el('th',{rowspan:'2'},'Player'),[0,1,2,3].map(q=>el('th',{colspan:'2',style:'text-align:center;border-bottom:0'},'Q'+(q+1))),el('th',{rowspan:'2'},'Quarters')),
+    el('tr',{},[...Array(8)].map((_,p)=>el('th',{style:'text-align:center;font-size:11px'},p%2?'2nd':'1st')))];
+  const body=rows.map(n=>el('tr',{},el('td',{},el('b',{text:n})),grid[n].map((v,p)=>el('td',{style:'text-align:center;padding:4px'},
+      el('select',{id:`my-${n.replace(/\W/g,'_')}-${p}`,'aria-label':`${n}, ${'Q'+(Math.floor(p/2)+1)} ${p%2?'2nd':'1st'} half`,class:'btn',style:'padding:4px 2px;font-size:13px;min-width:62px'+(v?';border-color:'+ROLE_C[v]:''),onchange:e=>{
+        const val=e.target.value, old=grid[n][p];
+        grid[n][p]=val;
+        if(p%2===0&&(grid[n][p+1]===''||grid[n][p+1]===old))grid[n][p+1]=val; // a whole quarter by default
+        save();renderMine();}},
+        SLOT_OPTS.map(o=>el('option',{value:o,selected:o===v},o===''?'–':o==='WING'?'W':o))))),
+    el('td',{},qfmt(grid[n].filter(Boolean).length/2))));
+  const kids=[el('p',{class:'muted',style:'margin:0 0 10px'},'Enter your own plan, or load one, and see how it measures up against your rules and the suggested plan. Picking a position in a 1st half fills the 2nd half too, so you only need to change the 2nd half for a half-time change.'),controls];
+  if(my.source)kids.push(el('p',{class:'muted',style:'margin:8px 0 0;font-size:13px'},'Loaded from: '+my.source+'. Changes are saved.'));
+  kids.push(el('div',{class:'tbl',style:'margin-top:10px'},el('table',{class:'grid'},el('thead',{},head),el('tbody',{},body))));
+  const used=rows.filter(n=>grid[n].some(Boolean));
+  if(used.length){
+    const ev=Core.evaluatePlan(R,grid,{squad,positions:S.config.positions,wholeMatch:S.config.wholeMatch});
+    const mine=ev.perQuarter*4, sug=S.plan&&!S.plan.error?S.plan.perQuarter*4:null;
+    const diff=sug==null?null:mine-sug;
+    const verdict=sug==null?'':Math.abs(diff)<0.05?' That’s the same as the suggested plan.':diff>0?` That’s ${diff.toFixed(2)} goals better than the suggested plan.`:` The suggested plan is ${(-diff).toFixed(2)} goals better${-diff<0.3?', which is a small difference':''}.`;
+    const mark={ok:['✓','var(--good)'],warn:['!','var(--warn)'],bad:['✗','var(--bad)']};
+    kids.push(el('div',{class:'panel',style:'margin-top:14px;display:grid;gap:10px'},
+      el('h3',{},'How your plan measures up'),
+      el('div',{},'Expected edge: ',el('b',{class:'num',text:sgn(mine)+' goals'}),' over the match compared with an average Blues line-up.',verdict),
+      el('ul',{style:'margin:0;padding:0;list-style:none;display:grid;gap:6px'},ev.checks.map(c=>el('li',{style:'display:flex;gap:8px;align-items:flex-start'},el('b',{style:'color:'+mark[c.level][1]+';width:1em;flex:none',text:mark[c.level][0]}),el('span',{text:c.text})))),
+      el('div',{},el('b',{},'Each quarter'),el('ul',{style:'margin:6px 0 0;padding-left:18px;display:grid;gap:6px;font-size:14px'},[0,1,2,3].map(q=>{
+        const a=ev.periods[2*q], b2=ev.periods[2*q+1], nA=a.lineup.map(x=>x.name), nB=b2.lineup.map(x=>x.name);
+        const off=nA.filter(x=>!nB.includes(x)), on=nB.filter(x=>!nA.includes(x));
+        const L=arr=>arr.length>1?arr.slice(0,-1).join(', ')+' and '+arr[arr.length-1]:arr[0]||'';
+        let line=nA.length?L(nA)+'.':'Nobody picked.';
+        if(off.length||on.length)line+=` At half-time ${on.length?L(on):'nobody'} replace${on.length===1?'s':''} ${off.length?L(off):'nobody'}.`;
+        const st=a.story;
+        return el('li',{},el('b',{text:'Q'+(q+1)+': '}),line,el('span',{class:'muted'},st?` ${st.players.length} of them (${L(st.players)}) have played ${qfmt(st.quarters)} quarter${st.quarters===1?'':'s'} together before: Blues scored ${qfmt(st.gf)}, conceded ${qfmt(st.ga)}.`:' This group hasn’t played together in a logged match yet.'));
+      })))));
+  }
+  box.replaceChildren(...kids);
+}
 
 function renderPlayers(){
   const R=S.R;
