@@ -405,7 +405,7 @@ const Core = (() => {
       for (const [key, list] of Object.entries(onHalf)) {
         const q = +key[0];
         const hGF = m.qGF[q - 1] / 2, hGA = m.qGA[q - 1] / 2;
-        if (m.exact) timedHalves.push({ set: list.map(x => x[0]), rel: ((hGF - hGA) - avgHalf) * 2, m: m.id, q, h: +key[2] });
+        if (m.exact) timedHalves.push({ set: list.map(x => x[0]), rel: ((hGF - hGA) - avgHalf) * 2, gf: hGF, ga: hGA, d: m.d, opp: m.opp, m: m.id, q, h: +key[2] });
         { // the whole group on the pitch together for this half-quarter
           const sorted = [...list].sort((x, y) => x[0] < y[0] ? -1 : 1);
           const lk = sorted.map(x => x[0]).join('|');
@@ -630,28 +630,92 @@ const Core = (() => {
       if (best > -Infinity) while (mask) { const p = from[mask]; k--; slotOf[p] = k; mask &= ~(1 << p); }
       return { v: best, slotOf };
     }
-    const halves = R.timedHalves.map(h => ({ set: new Set(h.set), rel: h.rel }));
+    const halves = R.timedHalves.map(h => ({ set: new Set(h.set), rel: h.rel, gf: h.gf, ga: h.ga, d: h.d, opp: h.opp }));
     function groupAdj(names, baseRate) {
-      let sw = 0, swr = 0, bestO = 0, bestRel = [];
+      let sw = 0, swr = 0;
       for (const h of halves) {
         let o = 0; for (const x of names) if (h.set.has(x)) o++;
         if (o < 2) continue;
         const w = Math.pow(o / 7, 3) * 0.5;
         sw += w; swr += w * h.rel;
-        if (o > bestO) { bestO = o; bestRel = [h.rel]; } else if (o === bestO) bestRel.push(h.rel);
       }
-      return { adj: sw ? (swr - sw * baseRate) / (sw + K) : 0, weight: sw, bestO, bestRel: bestRel.length ? bestRel.reduce((a, b) => a + b, 0) / bestRel.length : null };
+      return { adj: sw ? (swr - sw * baseRate) / (sw + K) : 0, weight: sw };
     }
-    function periodValue(ids) { // ids: pool players on in this period (fixed players are added)
+    // plain-English detail: the biggest group of these players who have played together before, and how it went
+    function groupStory(names) {
+      const bySet = {};
+      for (const h of halves) {
+        const common = names.filter(x => h.set.has(x));
+        if (common.length < 3) continue;
+        const k = common.slice().sort().join('|');
+        const g = (bySet[k] = bySet[k] || { players: common.slice().sort(), halves: 0, gf: 0, ga: 0, dates: new Set() });
+        g.halves++; g.gf += h.gf; g.ga += h.ga; g.dates.add(h.d);
+      }
+      // groups nested inside a bigger group also played whenever the bigger one did: count those too
+      const list = Object.values(bySet);
+      for (const g of list) for (const o of list) if (o !== g && o.players.length > g.players.length && g.players.every(p => o.players.includes(p))) { g.halves += o.halves; g.gf += o.gf; g.ga += o.ga; o.dates.forEach(d => g.dates.add(d)); }
+      list.sort((a, b) => (b.players.length - a.players.length) || (b.halves - a.halves));
+      const best = list[0];
+      return best ? { players: best.players, quarters: best.halves / 2, gf: best.gf, ga: best.ga, matches: best.dates.size } : null;
+    }
+    // team strength of one half-quarter's seven (plus-minus and groupings)
+    const halfMemo = new Map();
+    function halfInfo(ids) {
       const key = ids.slice().sort((a, b) => a - b).join(',');
-      if (memo.has(key)) return memo.get(key);
-      const full = ids.concat(fixedIds), a = assign(full);
-      const members = full.map(i => all[i]);
+      if (halfMemo.has(key)) return halfMemo.get(key);
+      const members = ids.concat(fixedIds).map(i => all[i]);
       const baseRate = members.reduce((s, r) => s + r.pmShrunk, 0) / members.length;
       const g = groupAdj(members.map(r => r.name), baseRate);
-      const res = { v: a.v === -Infinity ? -1e6 : baseRate + a.v + groupW * g.adj, baseRate, g, ok: a.v > -Infinity };
-      memo.set(key, res); return res;
+      const res = { baseRate, g };
+      halfMemo.set(key, res); return res;
     }
+    // best positions for players ids onto the free slots in `avail`; val(i,k) scores player i in slot k
+    function fill(ids, avail, val) {
+      const size = 1 << S7, f = new Float64Array(size).fill(-Infinity), fr = new Int8Array(size);
+      f[0] = 0;
+      for (let mask = 0; mask < size; mask++) {
+        if (f[mask] === -Infinity || (mask & ~avail)) continue;
+        let j = 0; for (let t = mask; t; t &= t - 1) j++;
+        if (j >= ids.length) continue;
+        for (let k = 0; k < S7; k++) if ((avail & (1 << k)) && !(mask & (1 << k))) {
+          const v = f[mask] + val(ids[j], k), m2 = mask | (1 << k);
+          if (v > f[m2]) { f[m2] = v; fr[m2] = k; }
+        }
+      }
+      return { f, fr, back(mask) { const out = new Array(ids.length); let m = mask; for (let j = ids.length - 1; j >= 0; j--) { const k = fr[m]; out[j] = k; m &= ~(1 << k); } return out; } };
+    }
+    // Plans one quarter. Players on for both halves keep the same position all quarter;
+    // anyone coming off at half-time is replaced in that same position.
+    const unitMemo = new Map();
+    function unitValue(h1, h2, bonus) {
+      const key = h2 ? h1.slice().sort((a, b) => a - b).join(',') + '|' + h2.slice().sort((a, b) => a - b).join(',') : h1.slice().sort((a, b) => a - b).join(',');
+      if (!bonus && unitMemo.has(key)) return unitMemo.get(key);
+      const full1 = h1.concat(fixedIds), full2 = h2 ? h2.concat(fixedIds) : null;
+      const set2 = full2 ? new Set(full2) : new Set(full1), set1 = new Set(full1);
+      const C = full1.filter(i => set2.has(i)), A = full1.filter(i => !set2.has(i)), B = full2 ? full2.filter(i => !set1.has(i)) : [];
+      const w = full2 ? 2 : 1; // players on for both halves count twice
+      const vb = (i, k) => V[i][k] + (bonus ? bonus(i, k) : 0);
+      const tC = fill(C, (1 << S7) - 1, (i, k) => w * vb(i, k));
+      let best = -Infinity, bestMask = -1, tA = null, tB = null;
+      for (let m = 0; m < (1 << S7); m++) {
+        if (tC.f[m] === -Infinity) continue;
+        let c = 0; for (let t = m; t; t &= t - 1) c++;
+        if (c !== C.length) continue;
+        const rest = ((1 << S7) - 1) & ~m;
+        if (!tA) { tA = fill(A, (1 << S7) - 1, vb); tB = fill(B, (1 << S7) - 1, vb); }
+        const a = tA.f[rest], b = full2 ? tB.f[rest] : 0;
+        if (a === -Infinity || b === -Infinity) continue;
+        const v = tC.f[m] + a + b;
+        if (v > best) { best = v; bestMask = m; }
+      }
+      const i1 = halfInfo(h1), i2 = h2 ? halfInfo(h2) : null;
+      const team = i1.baseRate + groupW * i1.g.adj + (i2 ? i2.baseRate + groupW * i2.g.adj : 0);
+      const res = { v: best === -Infinity ? -1e6 : team + best, ok: best > -Infinity, C, A, B, bestMask, tC, tA, tB, full1, full2 };
+      if (!bonus) unitMemo.set(key, res);
+      return res;
+    }
+    const U = P === 8 ? 4 : P, unitOf = p => (P === 8 ? p >> 1 : p);
+    const unitVal = (per, u) => P === 8 ? unitValue(per[2 * u], per[2 * u + 1]) : unitValue(per[u], null);
     const SPLIT_W = P === 8 ? 1 : 0;
     const splitsOf = (on, i) => { let c = 0; for (let q = 0; q + 1 < P; q += 2) if (on[q].has(i) !== on[q + 1].has(i)) c++; return c; };
     const benchOK = (on, i) => { let run = 0; for (let p = 0; p < P; p++) { if (on[p].has(i)) run = 0; else if (++run > maxOff) return false; } return true; };
@@ -659,7 +723,7 @@ const Core = (() => {
     let best = null;
     if (S === 0 || n === 0) {
       const per = Array.from({ length: P }, () => []);
-      best = { cur: 0, per, vals: per.map(periodValue) };
+      best = { cur: 0, per, vals: Array.from({ length: U }, (_, u) => unitVal(per, u)) };
     } else for (let restart = 0; restart < 6; restart++) {
       const rng = mulberry(1234 + restart * 99);
       const order = restart === 0 ? rank.slice() : rank.slice().sort(() => rng() - 0.5);
@@ -667,11 +731,19 @@ const Core = (() => {
       for (let p = 0; p < P; p++) { const on = []; for (let j = 0; j < S; j++) on.push(order[(p * S + j) % n]); per.push(on); }
       const onSets = per.map(x => new Set(x));
       if (![...Array(n).keys()].every(i => benchOK(onSets, i))) continue;
-      let vals = per.map(periodValue), cur = vals.reduce((s, x) => s + x.v, 0);
+      let vals = Array.from({ length: U }, (_, u) => unitVal(per, u)), cur = vals.reduce((s, x) => s + x.v, 0);
       if (SPLIT_W) for (let i = 0; i < n; i++) cur -= SPLIT_W * splitsOf(onSets, i);
       const count = new Array(n).fill(0); per.forEach(on => on.forEach(i => count[i]++));
       const lo = base, hi = hiCount;
-      const iters = P === 8 ? 14000 : 7000;
+      const iters = P === 8 ? 12000 : 7000;
+      const tryChange = (changes, x, y, d0) => { // changes: [[p, newList]]
+        const old = changes.map(([p]) => per[p]);
+        changes.forEach(([p, l]) => per[p] = l);
+        const units = [...new Set(changes.map(([p]) => unitOf(p)))];
+        const nv = units.map(u => unitVal(per, u));
+        const d = nv.reduce((s, v, j) => s + v.v - vals[units[j]].v, 0) + d0;
+        return { ok: d, apply() { units.forEach((u, j) => vals[u] = nv[j]); cur += d; }, undo() { changes.forEach(([p], j) => per[p] = old[j]); } };
+      };
       for (let it = 0; it < iters; it++) {
         const T = 0.3 * Math.pow(0.002 / 0.3, it / iters);
         const p1 = Math.floor(rng() * P);
@@ -684,10 +756,9 @@ const Core = (() => {
           onSets[p1].delete(x); onSets[p1].add(y); onSets[p2].delete(y); onSets[p2].add(x);
           if (!benchOK(onSets, x) || !benchOK(onSets, y)) { onSets[p1].delete(y); onSets[p1].add(x); onSets[p2].delete(x); onSets[p2].add(y); continue; }
           const sAfter = SPLIT_W ? splitsOf(onSets, x) + splitsOf(onSets, y) : 0;
-          const n1 = per[p1].map(i => i === x ? y : i), n2 = per[p2].map(i => i === y ? x : i);
-          const v1 = periodValue(n1), v2 = periodValue(n2), d = v1.v + v2.v - vals[p1].v - vals[p2].v - SPLIT_W * (sAfter - sBefore);
-          if (d >= 0 || rng() < Math.exp(d / T)) { per[p1] = n1; per[p2] = n2; vals[p1] = v1; vals[p2] = v2; cur += d; }
-          else { onSets[p1].delete(y); onSets[p1].add(x); onSets[p2].delete(x); onSets[p2].add(y); }
+          const t = tryChange([[p1, per[p1].map(i => i === x ? y : i)], [p2, per[p2].map(i => i === y ? x : i)]], x, y, -SPLIT_W * (sAfter - sBefore));
+          if (t.ok >= 0 || rng() < Math.exp(t.ok / T)) t.apply();
+          else { t.undo(); onSets[p1].delete(y); onSets[p1].add(x); onSets[p2].delete(x); onSets[p2].add(y); }
         } else {
           const xs = per[p1].filter(i => count[i] > lo), ys = [...Array(n).keys()].filter(i => !onSets[p1].has(i) && count[i] < hi);
           if (!xs.length || !ys.length || lo === hi) continue;
@@ -696,29 +767,39 @@ const Core = (() => {
           onSets[p1].delete(x); onSets[p1].add(y);
           if (!benchOK(onSets, x) || !benchOK(onSets, y)) { onSets[p1].delete(y); onSets[p1].add(x); continue; }
           const sAfter = SPLIT_W ? splitsOf(onSets, x) + splitsOf(onSets, y) : 0;
-          const n1 = per[p1].map(i => i === x ? y : i), v1 = periodValue(n1), d = v1.v - vals[p1].v - SPLIT_W * (sAfter - sBefore);
-          if (d >= 0 || rng() < Math.exp(d / T)) { per[p1] = n1; vals[p1] = v1; cur += d; count[x]--; count[y]++; }
-          else { onSets[p1].delete(y); onSets[p1].add(x); }
+          const t = tryChange([[p1, per[p1].map(i => i === x ? y : i)]], x, y, -SPLIT_W * (sAfter - sBefore));
+          if (t.ok >= 0 || rng() < Math.exp(t.ok / T)) { t.apply(); count[x]--; count[y]++; }
+          else { t.undo(); onSets[p1].delete(y); onSets[p1].add(x); }
         }
       }
       if (!best || cur > best.cur + 1e-9) best = { cur, per: per.map(x => x.slice()), vals: vals.slice() };
     }
     if (!best) return { error: 'Couldn’t find a plan that keeps everyone’s bench spells to 1 quarter. Try adding or removing a player.' };
     if (best.vals.some(v => !v.ok)) {
-      return { error: 'The ticked positions can’t be filled in every half-quarter while keeping playing time fair. Tick more positions for some players, or mark a player to play the whole match.' };
+      return { error: 'The ticked positions can’t be filled in every quarter while keeping playing time fair. Tick more positions for some players, or mark a player to play the whole match.' };
     }
-    // final positions, preferring to keep players in the same role from one period to the next
-    let prev = {};
-    const periods = best.per.map((ids, p) => {
-      const full = ids.concat(fixedIds);
-      const a = assign(full, (i, k) => prev[i] === SL[k] ? 0.03 : 0);
-      const cur = {}; full.forEach((i, j) => cur[i] = SL[a.slotOf[j]]); prev = cur;
-      const lineup = full.map((i, j) => ({ name: all[i].name, slot: SL[a.slotOf[j]], isNew: !!all[i].isNew }))
-        .sort((x, y) => SL.indexOf(x.slot) - SL.indexOf(y.slot));
-      const val = best.vals[p];
-      const ind = full.reduce((s2, i, j) => s2 + indiv(all[i], SL[a.slotOf[j]]), 0);
-      return { lineup, pred: val.baseRate + ind + val.g.adj, baseRate: val.baseRate, ind, group: val.g };
-    });
+    // final positions: same position all quarter; small preference for the same position as last quarter
+    let prevSlot = {};
+    const periods = [];
+    for (let u = 0; u < U; u++) {
+      const h1 = best.per[P === 8 ? 2 * u : u], h2 = P === 8 ? best.per[2 * u + 1] : null;
+      const r = unitValue(h1, h2, (i, k) => prevSlot[i] === SL[k] ? 0.03 : 0);
+      const slot = {};
+      r.tC.back(r.bestMask).forEach((k, j) => slot[r.C[j]] = SL[k]);
+      const rest = ((1 << S7) - 1) & ~r.bestMask;
+      const slotA = {}, slotB = {};
+      r.tA.back(rest).forEach((k, j) => slotA[r.A[j]] = SL[k]);
+      if (h2) r.tB.back(rest).forEach((k, j) => slotB[r.B[j]] = SL[k]);
+      const halvesHere = h2 ? [[r.full1, slotA], [r.full2, slotB]] : [[r.full1, slotA]];
+      halvesHere.forEach(([full, extra]) => {
+        const lineup = full.map(i => ({ name: all[i].name, slot: slot[i] || extra[i], isNew: !!all[i].isNew }))
+          .sort((x, y) => SL.indexOf(x.slot) - SL.indexOf(y.slot));
+        const hi2 = halfInfo(full.filter(i => i < pool.length));
+        const ind = full.reduce((s2, i) => s2 + indiv(all[i], slot[i] || extra[i]), 0);
+        periods.push({ lineup, pred: hi2.baseRate + ind + hi2.g.adj, baseRate: hi2.baseRate, ind, group: hi2.g, story: groupStory(lineup.map(x => x.name)) });
+      });
+      prevSlot = {}; (h2 ? r.full2 : r.full1).forEach(i => prevSlot[i] = slot[i] || (h2 ? slotB[i] : slotA[i]));
+    }
     const played = {}; squad.forEach(r => played[r.name] = 0);
     periods.forEach(pd => pd.lineup.forEach(x => played[x.name]++));
     const perQuarter = periods.reduce((s, x) => s + x.pred, 0) / P;
@@ -856,14 +937,12 @@ function refresh(){
 }
 
 function renderEvidence(){
-  const R=S.R, total=R.withL.length*4, ex=R.exactQuarters;
-  const level=ex<24?'early':ex<80?'building':'solid';
-  const head={early:'Early days for the timed data',building:'Building up',solid:'Enough timed data to lean on'}[level];
-  const body=level==='early'
-    ?`Goal times are recorded for ${ex} of ${total} quarters in these seasons. Until more matches are logged by quarter, picks lean mostly on season records (goals, assists, clean sheets, time in each position). They’ll shift towards who is on the pitch when goals go in as you log more.`
-    :`Goal times are recorded for ${ex} of ${total} quarters. Picks now weigh who was on the pitch when goals were scored and conceded, alongside season records.`;
-  const pct=Math.min(100,Math.round(ex/80*100));
-  $('evidence').replaceChildren(el('div',{class:'notice '+level},el('span',{class:'dot'}),el('div',{},el('b',{text:head+'. '}),body,el('div',{class:'meter',style:'color:var(--'+(level==='early'?'warn':level==='building'?'accent':'good')+')',title:ex+' of 80 timed quarters'},el('span',{style:'width:'+pct+'%'})),el('div',{class:'muted',style:'font-size:13px;margin-top:4px'},`${ex} / 80 timed quarters (about 20 matches) before the pair and player plus-minus figures settle.`))));
+  const R=S.R, logged=R.checks.exactMatches, total=R.withL.length;
+  const level=logged<6?'early':logged<20?'building':'solid';
+  const head={early:'Still learning',building:'Getting there',solid:'Plenty to go on'}[level];
+  const body=`You’ve logged which quarter each goal came in for ${logged} of ${total} matches in these seasons. That’s how the page learns which players and groups do well together, so the more matches you log this way, the better its suggestions get. About 20 matches gives it plenty to go on.`;
+  const pct=Math.min(100,Math.round(logged/20*100));
+  $('evidence').replaceChildren(el('div',{class:'notice '+level},el('span',{class:'dot'}),el('div',{},el('b',{text:head+'. '}),body,el('div',{class:'meter',style:'color:var(--'+(level==='early'?'warn':level==='building'?'accent':'good')+')',title:logged+' of 20 matches'},el('span',{style:'width:'+pct+'%'})))));
 }
 
 // ---------- picker ----------
@@ -913,7 +992,7 @@ function renderPlanSummary(plan){
   const kp=(plan.keeper?`${plan.keeper} in goal all match. `:'')+(others.length?`${others.join(' and ')} play${others.length===1?'s':''} the whole match. `:'');
   const els=plan.whole.length?' else':'';
   const share=lo===hi?`Everyone${els} plays ${qfmt(lo)} quarters.`:`Everyone${els} plays ${qfmt(lo)}–${qfmt(hi)} quarters (${more.join(', ')} get${more.length===1?'s':''} ${qfmt(hi)}).`;
-  const kids=[el('div',{},el('b',{text:kp+share})),el('div',{},`Rules: everyone plays at least ${qfmt(plan.minQ)} quarters, and nobody sits out more than ${qfmt(plan.maxBenchQ)} quarter in a row.`),el('div',{},`Predicted goal difference: `,el('b',{class:'num',text:sgn(plan.perQuarter)}),` per quarter, compared with an average Blues line-up.`)];
+  const kids=[el('div',{},el('b',{text:kp+share})),el('div',{},`Expected edge: `,el('b',{class:'num',text:sgn(plan.perQuarter*4)+' goals'}),` over the match compared with an average Blues line-up. `,el('span',{class:'muted'},Math.abs(plan.perQuarter*4)<0.5?'That’s a small edge, so treat the plan as a guide.':''))];
   if(plan.infeasible)kids.push(el('div',{style:'color:var(--bad)'},'Some positions couldn’t be filled from the ticked positions. Tick more positions for some players below.'));
   $('planSummary').replaceChildren(el('div',{class:'notice building'},el('span',{class:'dot'}),el('div',{style:'display:grid;gap:4px'},kids)));
 }
@@ -926,8 +1005,7 @@ function renderPlanGrid(plan){
       el('tr',{},plan.periods.map((_,p)=>el('th',{style:'text-align:center;font-size:11px'},p%2?'2nd':'1st')))]
     :el('tr',{},el('th',{},'Player'),plan.periods.map((_,p)=>el('th',{style:'text-align:center'},periodLabel(p,P))),el('th',{},'Quarters'));
   const body=rows.map(n=>el('tr',{},el('td',{},el('b',{text:n})),plan.periods.map(pd=>{const x=pd.lineup.find(y=>y.name===n);return el('td',{style:'text-align:center'},x?el('span',{class:'tag',style:'--c:'+ROLE_C[x.slot]+';display:inline-block;min-width:42px',text:x.slot==='WING'?'W':x.slot}):el('span',{class:'muted'},'–'));}),el('td',{},playedText(plan.played[n],P))));
-  const foot=el('tr',{},el('td',{class:'muted',title:'Predicted goal difference per quarter vs an average Blues line-up'},'Predicted +/−'),plan.periods.map(pd=>el('td',{style:'text-align:center',class:pd.pred>0.005?'pos':pd.pred<-0.005?'neg':''},sgn(pd.pred))),el('td',{}));
-  $('planGrid').replaceChildren(el('div',{class:'tbl'},el('table',{class:'grid'},el('thead',{},head),el('tbody',{},body,foot))));
+  $('planGrid').replaceChildren(el('div',{class:'tbl'},el('table',{class:'grid'},el('thead',{},head),el('tbody',{},body))));
   $('copyPlan').onclick=async()=>{
     const txt=['Player\t'+plan.periods.map((_,p)=>periodLabel(p,P)).join('\t')+'\tQuarters',...rows.map(n=>n+'\t'+plan.periods.map(pd=>{const x=pd.lineup.find(y=>y.name===n);return x?x.slot:'';}).join('\t')+'\t'+playedText(plan.played[n],P))].join('\n');
     try{await navigator.clipboard.writeText(txt);$('copyMsg').textContent='Copied. Paste it into your team sheet.';$('copyText').hidden=true;}
@@ -946,12 +1024,33 @@ function renderPitch(plan){
   });
 }
 function renderGroupNote(plan){
-  const P=plan.P, items=plan.periods.map((pd,p)=>{
-    const g=pd.group;
-    const txt=g.bestO>=2?`${g.bestO} of these players have been on the pitch together in a timed match; that group went ${sgn(g.bestRel)} per quarter.`:'No group of these players has played together in a timed match yet.';
-    return el('li',{},el('b',{text:periodLabel(p,P)+': '}),txt);
-  });
-  $('groupNote').replaceChildren(el('h3',{},'Groupings behind this plan'),el('p',{class:'muted',style:'margin:4px 0 6px;font-size:13px'},S.chemW?'Past groups that share more players with a planned line-up count for more.':'Groupings are being ignored.'),el('ul',{style:'margin:0;padding-left:18px;display:grid;gap:4px;font-size:14px'},items));
+  const P=plan.P, R=S.R, logged=R.checks.exactMatches;
+  const listNames=a=>a.length>1?a.slice(0,-1).join(', ')+' and '+a[a.length-1]:a[0]||'';
+  const others=plan.whole.filter(n=>n!==plan.keeper);
+  const setByYou=[plan.keeper?`${plan.keeper} is in goal all match`:'The keeper role is shared',others.length?`${listNames(others)} play${others.length===1?'s':''} the whole match`:null].filter(Boolean).join('; ')+'. Players only go in positions ticked for them (see “Positions and whole-match players” below).';
+  const outQ=plan.squad.filter(n=>!plan.whole.includes(n)).map(n=>plan.played[n]*4/P);
+  const lo=Math.min(...outQ),hi=Math.max(...outQ);
+  const byRules=`Everyone else plays ${lo===hi?qfmt(lo):qfmt(lo)+'–'+qfmt(hi)} quarters, in whole quarters where possible, keeps one position for the whole quarter, and never sits out more than 1 quarter in a row.`;
+  const fromData=logged
+    ?`Within those rules, the page chooses who plays together in each quarter, based on how the team did when these players were on the pitch. It can only use the ${logged} match${logged===1?'':'es'} where you logged which quarter goals came in, so for now this is a small nudge, not a firm answer.`
+    :'There are no matches yet where you’ve logged which quarter goals came in, so this part isn’t used yet.';
+  const quarters=[];
+  for(let q=0;q<4;q++){
+    const a=plan.periods[P===8?2*q:q], b2=P===8?plan.periods[2*q+1]:null;
+    const namesA=a.lineup.map(x=>x.name), namesB=b2?b2.lineup.map(x=>x.name):namesA;
+    const off=namesA.filter(n=>!namesB.includes(n)), on=namesB.filter(n=>!namesA.includes(n));
+    const st=a.story;
+    let line=listNames(namesA)+'.';
+    if(off.length)line+=` At half-time ${listNames(on)} replace${on.length===1?'s':''} ${listNames(off)}.`;
+    const hist=st?` ${st.players.length} of them (${listNames(st.players)}) have played ${qfmt(st.quarters)} quarter${st.quarters===1?'':'s'} together before: Blues scored ${qfmt(st.gf)}, conceded ${qfmt(st.ga)}.`:' This group hasn’t played together in a logged match yet.';
+    quarters.push(el('li',{},el('b',{text:'Q'+(q+1)+': '}),line,el('span',{class:'muted'},hist)));
+  }
+  $('groupNote').replaceChildren(el('div',{class:'panel',style:'display:grid;gap:10px'},
+    el('h3',{},'Why this plan'),
+    el('div',{},el('b',{},'Set by you. '),setByYou),
+    el('div',{},el('b',{},'Set by the rules. '),byRules),
+    el('div',{},el('b',{},'Chosen from your match data. '),fromData),
+    el('ul',{style:'margin:0;padding-left:18px;display:grid;gap:6px;font-size:14px'},quarters)));
 }
 function renderPosEditor(squad,eligOf){
   const positions={...(S.config.positions||{})};
@@ -991,15 +1090,15 @@ function renderPlayers(){
     {k:'G',h:'Goals',v:r=>r.G,td:r=>tdNum(r.G,String)},
     {k:'A',h:'Assists',v:r=>r.A,td:r=>tdNum(r.A,String)},
     {k:'gaq',h:'G+A /q',t:'Goals plus assists per quarter played',v:r=>r.gaPerQ,td:r=>tdNum(r.gaPerQ,f2)},
-    {k:'gf',h:'Scored /q',t:'Blues goals per quarter while on the pitch (estimated where goal times weren’t recorded)',v:r=>r.onGFq,td:r=>tdNum(r.onGFq,f2)},
-    {k:'ga',h:'Conceded /q',t:'Goals conceded per quarter while on the pitch (estimated where goal times weren’t recorded)',v:r=>r.onGAq,td:r=>tdNum(r.onGAq,f2)},
+    {k:'gf',h:'Scored /q',t:'Blues goals per quarter while on the pitch (estimated where goals weren’t logged by quarter)',v:r=>r.onGFq,td:r=>tdNum(r.onGFq,f2)},
+    {k:'ga',h:'Conceded /q',t:'Goals conceded per quarter while on the pitch (estimated where goals weren’t logged by quarter)',v:r=>r.onGAq,td:r=>tdNum(r.onGAq,f2)},
     {k:'cs',h:'Clean sheet %',t:'Share of quarters in defence or goal that ended without conceding',v:r=>(r.pos.DEF+r.pos.GK)?(r.CD+r.CG)/(r.pos.DEF+r.pos.GK):null,td:r=>tdNum((r.pos.DEF+r.pos.GK)?(r.CD+r.CG)/(r.pos.DEF+r.pos.GK)*100:null,x=>x==null?'–':Math.round(x)+'%')},
-    {k:'pm',h:'Timed +/−',t:'In matches with goal times: goal difference per quarter while on the pitch, compared with the match as a whole. Number of timed quarters shown small.',v:r=>r.pm,td:r=>tdPM(r.pm,r.exQ)},
+    {k:'pm',h:'+/− when on',t:'How much better or worse the Blues’ goal difference was per quarter while this player was on, compared with the rest of that match. Only uses matches where goals are logged by quarter; the small number is how many quarters that covers.',v:r=>r.pm,td:r=>tdPM(r.pm,r.exQ)},
   ];
   $('v-players').replaceChildren(
     el('div',{class:'legend'},Core.GROUPS.map(g=>el('span',{},el('i',{style:'background:'+ROLE_C[g]}),{GK:'Goalkeeper',DEF:'Defender',MID:'Midfield',WING:'Wing',FOR:'Forward'}[g]))),
     sortable(cols,R.players,S.sortP,renderPlayers),
-    el('p',{class:'muted',style:'font-size:13px;margin:8px 0 0'},'Only matches with a team sheet count here. “Scored /q” and “Conceded /q” spread a match’s goals evenly across its quarters when goal times weren’t recorded, so for those matches they mostly reflect the result.'));
+    el('p',{class:'muted',style:'font-size:13px;margin:8px 0 0'},'Only matches with a team sheet count here. “Scored /q” and “Conceded /q” spread a match’s goals evenly across its quarters when goals weren’t logged by quarter, so for those matches they mostly reflect the result.'));
 }
 
 function renderPairs(){
@@ -1012,8 +1111,8 @@ function renderPairs(){
     {k:'gf',h:'Scored /q',v:p=>p.gfq,td:p=>tdNum(p.gfq,f2)},
     {k:'ga',h:'Conceded /q',v:p=>p.gaq,td:p=>tdNum(p.gaq,f2)},
     {k:'net',h:'Net /q',v:p=>p.gfq-p.gaq,td:p=>{const n=p.gfq-p.gaq;return el('td',{class:n>0.005?'pos':n<-0.005?'neg':''},sgn(n));}},
-    {k:'pm',h:'Timed +/−',t:'Goal difference per quarter together vs the match as a whole, from matches with goal times',v:p=>p.pm,td:p=>tdPM(p.pm,p.exQ)},
-    {k:'chem',h:'Chemistry',t:'How much better (+) or worse (−) the pair does together than their own individual records suggest. Starts at zero and grows with timed quarters together.',v:p=>p.chem,td:p=>el('td',{class:p.chem==null?'':p.chem>0.005?'pos':p.chem<-0.005?'neg':''},p.chem==null?'–':sgn(p.chem))},
+    {k:'pm',h:'+/− together',t:'Goal difference per quarter while both were on, compared with the rest of that match. Only uses matches where goals are logged by quarter.',v:p=>p.pm,td:p=>tdPM(p.pm,p.exQ)},
+    {k:'chem',h:'Chemistry',t:'How much better (+) or worse (−) the pair does together than their own individual records suggest. Starts at zero and only moves as they play more quarters together in matches where goals are logged by quarter.',v:p=>p.chem,td:p=>el('td',{class:p.chem==null?'':p.chem>0.005?'pos':p.chem<-0.005?'neg':''},p.chem==null?'–':sgn(p.chem))},
   ];
   $('v-pairs').replaceChildren(
     el('div',{class:'bar',style:'margin-bottom:10px'},
@@ -1022,7 +1121,7 @@ function renderPairs(){
       el('label',{for:'pairMin',class:'eyebrow'},'Min. quarters together'),
       el('select',{id:'pairMin',class:'btn',onchange:e=>{S.pairMin=+e.target.value;renderPairs();}},[1,2,4,6,8,12].map(v=>el('option',{value:v,selected:v===S.pairMin},String(v))))),
     rows.length?sortable(cols,rows,S.sortPair,renderPairs):el('p',{class:'muted'},'No pairs have played this many quarters together in these roles yet.'),
-    el('p',{class:'muted',style:'font-size:13px;margin:8px 0 0'},'Net /q uses every match with a team sheet, so it carries the results of those matches. Timed +/− only uses matches with goal times and compares each pair with the rest of that match, which strips out how strong the opponent was.'));
+    el('p',{class:'muted',style:'font-size:13px;margin:8px 0 0'},'Net /q uses every match with a team sheet, so it carries the results of those matches. “+/− together” only uses matches where goals are logged by quarter, and compares each pair with the rest of that match, which strips out how strong the opponent was.'));
 }
 
 function renderLineups(){
@@ -1036,7 +1135,7 @@ function renderLineups(){
     {k:'Q',h:'Quarters together',v:l=>l.Q,td:l=>tdNum(l.Q,qfmt)},
     {k:'gf',h:'Scored /q',v:l=>l.gfq,td:l=>tdNum(l.gfq,f2)},
     {k:'ga',h:'Conceded /q',v:l=>l.gaq,td:l=>tdNum(l.gaq,f2)},
-    {k:'pm',h:'Timed +/−',t:'Goal difference per quarter vs the match as a whole, from matches with goal times',v:l=>l.pm,td:l=>tdPM(l.pm,l.exQ)},
+    {k:'pm',h:'+/− together',t:'Goal difference per quarter while this group was on, compared with the rest of that match. Only uses matches where goals are logged by quarter.',v:l=>l.pm,td:l=>tdPM(l.pm,l.exQ)},
   ];
   if(!S.sortLu)S.sortLu={k:'Q',d:-1};
   $('v-lineups').replaceChildren(
@@ -1068,30 +1167,27 @@ function renderChecks(){
     block('Stats given to a player who wasn’t on',c.offPitch.length,el('ul',{},off),'Either the team sheet or the stat needs correcting.'),
     block('Quarters with more than 7 on the pitch',c.overfull.length,el('ul',{},Object.values(overfullByMatch).map(o=>el('li',{},`${fmtDate(o.m.d)} v ${o.m.opp}: ${o.qs.join(', ')}`))),'Usually a half-quarter sub where the player coming off isn’t marked. Mark who went off (e.g. “0.5 DEF”) to make on-pitch figures exact.'),
     block('Team sheet tabs not matched to a result',R.unlinkedTabs.length,el('ul',{},R.unlinkedTabs.map(t=>el('li',{text:t.n}))),'For information. These may be friendlies or matches whose result wasn’t logged.'),
-    block('Matches without goal times',c.noQuarters,null,'Record the quarter for every goal scored and conceded in the match-day app. Each timed match adds 4 quarters of evidence to the plus-minus figures.')
+    block('Matches where goals aren’t logged by quarter',c.noQuarters,null,'Record the quarter for every goal scored and conceded in the match-day app. Each match logged this way helps the page learn who plays well together.')
   ));
 }
 
 function renderHow(){
   const a=S.R.avg;
   $('v-how').replaceChildren(el('div',{class:'panel prose'},
-    el('h3',{},'The aim: win the match'),
-    el('p',{},'Everything is built around goal difference: scoring more than you concede in each quarter. The plan picks the line-up for every quarter that adds up to the best predicted goal difference over the whole match, within the playing-time rules below.'),
-    el('h3',{},'What the data can and can’t tell you'),
-    el('p',{},'Your team sheets say who played each quarter and where. Your stats say who scored, assisted and kept clean sheets, and, where you record it, which quarter each goal came in. Joining the two shows who was on the pitch when goals went in. Matches without goal times only give the final score, so they can’t separate one player’s effect from another’s.'),
-    el('h3',{},'How each line-up is rated'),
-    el('p',{},'A planned line-up gets a predicted goal difference per quarter, compared with an average Blues line-up. It adds three parts:'),
-    el('p',{},'1. The players’ own plus-minus: in matches with goal times, how the team’s goal difference changes when each of them is on, compared with the match as a whole. Averaged across the seven.'),
-    el('p',{},`2. Their record in the position they’re given: clean sheets for keepers and defenders (team averages ${Math.round(a.avgCG*100)}% and ${Math.round(a.avgCD*100)}%), goals plus half their assists for everyone else. It counts in proportion to how much time they’ve spent in that position.`),
-    el('p',{},'3. Groupings: every past half-quarter with goal times where some of the same players were on the pitch together. The more players a past group shares with the planned line-up, the more it counts (7 in common counts fully; 5 about a third; 3 very little). If those groups did better than the players’ individual records predict, the line-up gets a bonus; if worse, a penalty. This covers pairs, trios and bigger units in one go. “Strong weight” doubles it; “Ignore” leaves it out.'),
-    el('p',{},'All three start at zero and move towards the real figures as evidence builds up, so a single good or bad match can’t dominate. Unrated players count as average.'),
-    el('h3',{},'Playing time and positions'),
-    el('p',{},'Changes can happen half-way through each quarter (or only at quarter breaks, if you choose). Three rules are always kept: every player plays at least 2 quarters; nobody sits on the bench for more than 1 quarter in a row, so no one goes cold; and playing time is shared as evenly as possible, with nobody getting more than half a quarter more than anyone else. With a keeper in goal all match, the rules apply to everyone else. The plan decides who gets any extra half-quarters.'),
-    el('p',{},'Whole quarters come first: the plan only splits a quarter when it has to. So a player on 2.5 quarters plays two full quarters and one half, not five separate halves.'),
-    el('p',{},'Players are only placed in positions ticked for them, with a small preference for the positions they usually play, and the plan tries to keep players in the same role from one half-quarter to the next.'),
-    el('p',{},'The search tries thousands of different match plans and keeps the best, so small changes (a player added or removed) can reshuffle it.'),
+    el('h3',{},'What it’s trying to do'),
+    el('p',{},'Plan all four quarters so the Blues score as many more goals than they concede as possible, while keeping to your playing-time rules.'),
+    el('h3',{},'What’s fixed before any data is used'),
+    el('p',{},'• Who’s in the squad, who plays the whole match, and which positions each player can play. You set these.'),
+    el('p',{},'• The rules: everyone else plays at least 2 quarters, time is shared as evenly as possible, whole quarters come first, a player keeps one position for the whole quarter, and nobody sits out more than 1 quarter in a row.'),
+    el('p',{},'On a new squad with little data, these do almost all the work.'),
+    el('h3',{},'How the data nudges the choice'),
+    el('p',{},'Within those rules there are many possible plans. The page scores each one using three things, all in goals:'),
+    el('p',{},'1. Each player’s “+/− when on”: whether the Blues tend to do better or worse while that player is on the pitch, compared with the rest of the same match. This only works for matches where you logged the quarter of every goal, because otherwise we can’t tell who was on when a goal went in.'),
+    el('p',{},`2. Each player’s record in the position they’re given: clean sheets for keepers and defenders (the team averages are ${Math.round(a.avgCG*100)}% and ${Math.round(a.avgCD*100)}% of quarters), and goals plus half their assists for everyone else.`),
+    el('p',{},'3. Groups: if some of the players in a planned line-up have been on the pitch together before, how the Blues did at those times. The more of the same players, the more it counts.'),
+    el('p',{},'All three start at “average” and only move as evidence builds up, so one good or bad match can’t swing things much. New players count as average.'),
     el('h3',{},'How far to trust it'),
-    el('p',{},'Small numbers swing a lot. Treat the plan as a starting point for your judgement, not a verdict. The ratings firm up once around 20 matches have goal times.')));
+    el('p',{},'Right now there are very few matches with goals logged by quarter, so the data is a small nudge. The plan becomes more useful with every match you log that way. It’s a starting point for your judgement, not a verdict.')));
 }
 </script>
 
