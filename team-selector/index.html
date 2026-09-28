@@ -1124,8 +1124,9 @@ function renderPicker(){
   const wholeMatch=(S.config.wholeMatch||[]).filter(n=>squad.includes(n));
   const plan=Core.planMatch(R,{squad,positions,wholeMatch,keeper:S.keeper,periods:S.planP,groupW:S.chemW});
   S.plan=plan;
-  if(plan.error){const fixes=(plan.suggestWhole||[]).map(n=>el('button',{type:'button',class:'btn',style:'margin-top:8px;margin-right:8px',disabled:!S.canEdit,onclick:()=>{const wm=[...new Set([...(S.config.wholeMatch||[]),n])];S.db.doc('data/config').set({...S.config,wholeMatch:wm}).catch(e=>toast('Couldn’t save ('+(e.code||e.message)+')'));}},`${n} plays the whole match`));$('planSummary').replaceChildren(el('div',{class:'notice err'},el('span',{class:'dot'}),el('div',{},plan.error,fixes.length?el('div',{},fixes):null)));['planGrid','groupNote','ptabs'].forEach(i=>$(i).replaceChildren());$('pitch').querySelectorAll('.spot').forEach(s=>s.remove());return;}
+  if(plan.error){const fixes=(plan.suggestWhole||[]).map(n=>el('button',{type:'button',class:'btn',style:'margin-top:8px;margin-right:8px',disabled:!S.canEdit,onclick:()=>{const wm=[...new Set([...(S.config.wholeMatch||[]),n])];S.db.doc('data/config').set({...S.config,wholeMatch:wm}).catch(e=>toast('Couldn’t save ('+(e.code||e.message)+')'));}},`${n} plays the whole match`));$('planSummary').replaceChildren(el('div',{class:'notice err'},el('span',{class:'dot'}),el('div',{},plan.error,fixes.length?el('div',{},fixes):null)));['planGrid','groupNote','ptabs'].forEach(i=>$(i).replaceChildren());$('pitch').querySelectorAll('.spot').forEach(s=>s.remove());if(S.tab==='mine')renderMine();return;}
   renderPlanSummary(plan); renderPlanGrid(plan); renderPitch(plan); renderGroupNote(plan);
+  if(S.tab==='mine')renderMine(); // keep “Check my plan” in step with the squad
 }
 function playedText(k,P){const q=k*4/P;return qfmt(q);}
 function renderPlanSummary(plan){
