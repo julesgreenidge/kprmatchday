@@ -665,7 +665,7 @@ const Core = (() => {
       const key = ids.slice().sort((a, b) => a - b).join(',');
       if (halfMemo.has(key)) return halfMemo.get(key);
       const members = ids.concat(fixedIds).map(i => all[i]);
-      const baseRate = members.reduce((s, r) => s + r.pmShrunk, 0) / members.length;
+      const baseRate = 0; // individual on/off figures are no longer used
       const g = groupAdj(members.map(r => r.name), baseRate);
       const res = { baseRate, g };
       halfMemo.set(key, res); return res;
@@ -720,7 +720,7 @@ const Core = (() => {
     const SPLIT_W = P === 8 ? 1 : 0;
     const splitsOf = (on, i) => { let c = 0; for (let q = 0; q + 1 < P; q += 2) if (on[q].has(i) !== on[q + 1].has(i)) c++; return c; };
     const benchOK = (on, i) => { let run = 0; for (let p = 0; p < P; p++) { if (on[p].has(i)) run = 0; else if (++run > maxOff) return false; } return true; };
-    const rank = pool.map((r, i) => [i, Math.max(...SL.map((_, k) => V[i][k])) + r.pmShrunk]).sort((a, b) => b[1] - a[1]).map(x => x[0]);
+    const rank = pool.map((r, i) => [i, Math.max(...SL.map((_, k) => V[i][k]))]).sort((a, b) => b[1] - a[1]).map(x => x[0]);
     let best = null;
     if (S === 0 || n === 0) {
       const per = Array.from({ length: P }, () => []);
@@ -1094,7 +1094,6 @@ function renderPlayers(){
     {k:'gf',h:'Scored /q',t:'Blues goals per quarter while on the pitch (estimated where goals weren’t logged by quarter)',v:r=>r.onGFq,td:r=>tdNum(r.onGFq,f2)},
     {k:'ga',h:'Conceded /q',t:'Goals conceded per quarter while on the pitch (estimated where goals weren’t logged by quarter)',v:r=>r.onGAq,td:r=>tdNum(r.onGAq,f2)},
     {k:'cs',h:'Clean sheet %',t:'Share of quarters in defence or goal that ended without conceding',v:r=>(r.pos.DEF+r.pos.GK)?(r.CD+r.CG)/(r.pos.DEF+r.pos.GK):null,td:r=>tdNum((r.pos.DEF+r.pos.GK)?(r.CD+r.CG)/(r.pos.DEF+r.pos.GK)*100:null,x=>x==null?'–':Math.round(x)+'%')},
-    {k:'pm',h:'+/− when on',t:'Blues goal difference per quarter while this player was on, compared with the team’s average across the whole of those matches. Only uses matches where goals are logged by quarter. “Always on” means they have never been off, so there is nothing to compare.',v:r=>r.alwaysOn?null:r.pm,td:r=>r.alwaysOn?el('td',{class:'muted',title:'Played every minute of the logged matches, so there is no time without them to compare'},'always on'):tdPM(r.pm,r.exQ)},
   ];
   $('v-players').replaceChildren(
     el('div',{class:'legend'},Core.GROUPS.map(g=>el('span',{},el('i',{style:'background:'+ROLE_C[g]}),{GK:'Goalkeeper',DEF:'Defender',MID:'Midfield',WING:'Wing',FOR:'Forward'}[g]))),
@@ -1102,8 +1101,7 @@ function renderPlayers(){
     el('div',{class:'muted',style:'font-size:13px;margin:8px 0 0;display:grid;gap:3px;max-width:80ch'},
       el('div',{},el('b',{},'G+A /q: '),'goals plus assists per quarter played (an assist counts the same as a goal here).'),
       el('div',{},el('b',{},'Scored /q, Conceded /q: '),'Blues goals and goals against per quarter while the player was on the pitch.'),
-      el('div',{},el('b',{},'Clean sheet %: '),'quarters in defence or goal that ended with nothing conceded.'),
-      el('div',{},el('b',{},'+/− when on: '),'how much better (+) or worse (−) the Blues’ goal difference per quarter was while the player was on, compared with the team’s average across the whole of those matches. Needs goals logged by quarter. Early on, a single goal moves these a lot.')),
+      el('div',{},el('b',{},'Clean sheet %: '),'quarters in defence or goal that ended with nothing conceded.')),
     el('p',{class:'muted',style:'font-size:13px;margin:8px 0 0'},'Only matches with a team sheet count here. “Scored /q” and “Conceded /q” spread a match’s goals evenly across its quarters when goals weren’t logged by quarter, so for those matches they mostly reflect the result.'));
 }
 
@@ -1117,8 +1115,6 @@ function renderPairs(){
     {k:'gf',h:'Scored /q',v:p=>p.gfq,td:p=>tdNum(p.gfq,f2)},
     {k:'ga',h:'Conceded /q',v:p=>p.gaq,td:p=>tdNum(p.gaq,f2)},
     {k:'net',h:'Net /q',v:p=>p.gfq-p.gaq,td:p=>{const n=p.gfq-p.gaq;return el('td',{class:n>0.005?'pos':n<-0.005?'neg':''},sgn(n));}},
-    {k:'pm',h:'+/− together',t:'Goal difference per quarter while both were on, compared with the rest of that match. Only uses matches where goals are logged by quarter.',v:p=>p.pm,td:p=>tdPM(p.pm,p.exQ)},
-    {k:'chem',h:'Chemistry',t:'How much better (+) or worse (−) the pair does together than their own individual records suggest. Starts at zero and only moves as they play more quarters together in matches where goals are logged by quarter.',v:p=>p.chem,td:p=>el('td',{class:p.chem==null?'':p.chem>0.005?'pos':p.chem<-0.005?'neg':''},p.chem==null?'–':sgn(p.chem))},
   ];
   $('v-pairs').replaceChildren(
     el('div',{class:'bar',style:'margin-bottom:10px'},
@@ -1127,7 +1123,7 @@ function renderPairs(){
       el('label',{for:'pairMin',class:'eyebrow'},'Min. quarters together'),
       el('select',{id:'pairMin',class:'btn',onchange:e=>{S.pairMin=+e.target.value;renderPairs();}},[1,2,4,6,8,12].map(v=>el('option',{value:v,selected:v===S.pairMin},String(v))))),
     rows.length?sortable(cols,rows,S.sortPair,renderPairs):el('p',{class:'muted'},'No pairs have played this many quarters together in these roles yet.'),
-    el('p',{class:'muted',style:'font-size:13px;margin:8px 0 0'},'Net /q uses every match with a team sheet, so it carries the results of those matches. “+/− together” only uses matches where goals are logged by quarter, and compares each pair with the rest of that match, which strips out how strong the opponent was.'));
+    el('p',{class:'muted',style:'font-size:13px;margin:8px 0 0'},'Scored, conceded and net are per quarter while the pair were on the pitch together, from every match with a team sheet.'));
 }
 
 function renderLineups(){
@@ -1141,7 +1137,6 @@ function renderLineups(){
     {k:'Q',h:'Quarters together',v:l=>l.Q,td:l=>tdNum(l.Q,qfmt)},
     {k:'gf',h:'Scored /q',v:l=>l.gfq,td:l=>tdNum(l.gfq,f2)},
     {k:'ga',h:'Conceded /q',v:l=>l.gaq,td:l=>tdNum(l.gaq,f2)},
-    {k:'pm',h:'+/− together',t:'Goal difference per quarter while this group was on, compared with the rest of that match. Only uses matches where goals are logged by quarter.',v:l=>l.pm,td:l=>tdPM(l.pm,l.exQ)},
   ];
   if(!S.sortLu)S.sortLu={k:'Q',d:-1};
   $('v-lineups').replaceChildren(
@@ -1187,11 +1182,10 @@ function renderHow(){
     el('p',{},'• The rules: everyone else plays at least 2 quarters, time is shared as evenly as possible, whole quarters come first, a player keeps one position for the whole quarter, and nobody sits out more than 1 quarter in a row.'),
     el('p',{},'On a new squad with little data, these do almost all the work.'),
     el('h3',{},'How the data nudges the choice'),
-    el('p',{},'Within those rules there are many possible plans. The page scores each one using three things, all in goals:'),
-    el('p',{},'1. Each player’s “+/− when on”: whether the Blues tend to do better or worse while that player is on the pitch, compared with the rest of the same match. This only works for matches where you logged the quarter of every goal, because otherwise we can’t tell who was on when a goal went in.'),
-    el('p',{},`2. Each player’s record in the position they’re given: clean sheets for keepers and defenders (the team averages are ${Math.round(a.avgCG*100)}% and ${Math.round(a.avgCD*100)}% of quarters), and goals plus half their assists for everyone else.`),
-    el('p',{},'3. Groups: if some of the players in a planned line-up have been on the pitch together before, how the Blues did at those times. The more of the same players, the more it counts.'),
-    el('p',{},'All three start at “average” and only move as evidence builds up, so one good or bad match can’t swing things much. New players count as average.'),
+    el('p',{},'Within those rules there are many possible plans. The page scores each one using two things, both in goals:'),
+    el('p',{},`1. Each player’s record in the position they’re given: clean sheets for keepers and defenders (the team averages are ${Math.round(a.avgCG*100)}% and ${Math.round(a.avgCD*100)}% of quarters), and goals plus half their assists for everyone else.`),
+    el('p',{},'2. Groups: if some of the players in a planned line-up have been on the pitch together before, how the Blues did at those times. The more of the same players, the more it counts.'),
+    el('p',{},'Both start at “average” and only move as evidence builds up, so one good or bad match can’t swing things much. New players count as average.'),
     el('h3',{},'How far to trust it'),
     el('p',{},'Right now there are very few matches with goals logged by quarter, so the data is a small nudge. The plan becomes more useful with every match you log that way. It’s a starting point for your judgement, not a verdict.')));
 }
