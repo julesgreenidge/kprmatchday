@@ -604,7 +604,7 @@ const Core = (() => {
       else if (wrong.length) shapeProblems.push(`${QL(p)}: ${wrong.join(', ')} (needs 1 GK, 2 DEF, 1 MID, 2 WING, 1 FOR)`);
       const ind = on.reduce((s, x) => s + slotScore(rec(x.name), x.slot).ind, 0);
       const g = GT.adj(on.map(x => x.name), 0);
-      periods.push({ lineup: on.sort((a, b) => SLOTS.indexOf(a.slot) - SLOTS.indexOf(b.slot)), pred: ind + g.adj, story: GT.story(on.map(x => x.name)) });
+      periods.push({ lineup: on.sort((a, b) => SLOTS.indexOf(a.slot) - SLOTS.indexOf(b.slot)), pred: ind + g.adj, ind, groupAdj: g.adj, story: opts.quick ? null : GT.story(on.map(x => x.name)) });
     }
     if (shapeProblems.length) add(false, 'Line-up shape: ' + shapeProblems.join('; ') + '.');
     else add(true, 'Every half-quarter has 7 players: 1 keeper, 2 defenders, 1 midfielder, 2 wingers and 1 forward.');
@@ -645,6 +645,63 @@ const Core = (() => {
     else add(true, 'Everyone is in a position ticked for them.');
     const perQuarter = periods.reduce((s, x) => s + x.pred, 0) / P;
     return { checks, periods, played, perQuarter, P, names };
+  }
+
+
+  // ---------- Critique: weakest spots and changes that would help ----------
+  function critiquePlan(R, grid, opts) {
+    opts = opts || {};
+    const base = evaluatePlan(R, grid, opts);
+    const score = ev => ev.perQuarter * 4;
+    const problems = ev => ev.checks.filter(c => c.level !== 'ok').length;
+    const baseScore = score(base), baseProblems = problems(base);
+    const names = base.names;
+    const byName = Object.fromEntries(R.players.map(r => [r.name, r]));
+    const rec = n => byName[n] || { name: n, pos: { GK: 0, DEF: 0, MID: 0, WING: 0, FOR: 0 }, out: 0, gkAdj: 0, defAdj: 0 };
+    const clone = g => Object.fromEntries(Object.entries(g).map(([k, v]) => [k, v.slice()]));
+    const onQ = (g, n, q) => g[n][2 * q] && g[n][2 * q + 1] && g[n][2 * q] === g[n][2 * q + 1] ? g[n][2 * q] : null;
+    const offQ = (g, n, q) => !g[n][2 * q] && !g[n][2 * q + 1];
+    const cands = [];
+    const tryIt = (g, text) => {
+      const ev = evaluatePlan(R, g, Object.assign({}, opts, { quick: true }));
+      if (problems(ev) > baseProblems) return; // never suggest something that breaks a rule
+      const gain = score(ev) - baseScore;
+      if (gain > 0.01) cands.push({ text, gain, grid: g });
+    };
+    // 1. swap two players between two quarters (playing time stays the same)
+    for (let q1 = 0; q1 < 4; q1++) for (let q2 = 0; q2 < 4; q2++) {
+      if (q1 === q2) continue;
+      for (const x of names) {
+        const sx = onQ(grid, x, q1); if (!sx || !offQ(grid, x, q2)) continue;
+        for (const y of names) {
+          const sy = onQ(grid, y, q2); if (!sy || y === x || !offQ(grid, y, q1)) continue;
+          if (q1 > q2) continue; // each pair once
+          const g = clone(grid);
+          g[x][2 * q1] = g[x][2 * q1 + 1] = ''; g[y][2 * q1] = g[y][2 * q1 + 1] = sx;
+          g[y][2 * q2] = g[y][2 * q2 + 1] = ''; g[x][2 * q2] = g[x][2 * q2 + 1] = sy;
+          tryIt(g, `Swap ${x} and ${y} between Q${q1 + 1} and Q${q2 + 1}: ${y} plays Q${q1 + 1} at ${sx}, ${x} plays Q${q2 + 1} at ${sy}.`);
+        }
+      }
+    }
+    // 2. swap two players' positions within a quarter
+    for (let q = 0; q < 4; q++) for (let i = 0; i < names.length; i++) for (let j = i + 1; j < names.length; j++) {
+      const x = names[i], y = names[j], sx = onQ(grid, x, q), sy = onQ(grid, y, q);
+      if (!sx || !sy || sx === sy) continue;
+      const g = clone(grid);
+      g[x][2 * q] = g[x][2 * q + 1] = sy; g[y][2 * q] = g[y][2 * q + 1] = sx;
+      tryIt(g, `In Q${q + 1}, swap positions: ${x} to ${sy}, ${y} to ${sx}.`);
+    }
+    cands.sort((a, b) => b.gain - a.gain);
+    const seen = new Set(), fixes = [];
+    for (const c of cands) { if (seen.has(c.text)) continue; seen.add(c.text); fixes.push(c); if (fixes.length === 5) break; }
+    // weakest quarter and the weakest spots in it
+    const qv = [0, 1, 2, 3].map(q => base.periods[2 * q].pred + base.periods[2 * q + 1].pred);
+    const wq = qv.indexOf(Math.min(...qv));
+    const spots = base.periods[2 * wq].lineup.filter(x => x.slot !== 'GK' || true).map(x => {
+      const r = rec(x.name), s = slotScore(r, x.slot);
+      return { name: x.name, slot: x.slot, ind: s.ind, r };
+    }).sort((a, b) => a.ind - b.ind);
+    return { base, baseScore, fixes, weakest: { q: wq, value: qv[wq] / 2, spots: spots.slice(0, 2), story: base.periods[2 * wq].story }, quarterValues: qv.map(v => v / 2) };
   }
 
   // ---------- Match planner ----------
@@ -892,7 +949,7 @@ const Core = (() => {
       elig: Object.fromEntries(Object.entries(elig).map(([k, v]) => [k, [...v]])), squad: squad.map(r => r.name), newPlayers: squad.filter(r => r.isNew).map(r => r.name) };
   }
 
-  return { TEAM, GROUPS, SLOTS, planMatch, evaluatePlan, groupTools, parseStatsRows, defaultPositions, K, MIN_POS_Q, parseStats, parseWorkbook, analyse, pickSeven, slotScore };
+  return { TEAM, GROUPS, SLOTS, planMatch, evaluatePlan, critiquePlan, groupTools, parseStatsRows, defaultPositions, K, MIN_POS_Q, parseStats, parseWorkbook, analyse, pickSeven, slotScore };
 })();
 
 
@@ -1199,24 +1256,33 @@ function renderMine(){
   kids.push(el('div',{class:'tbl',style:'margin-top:10px'},el('table',{class:'grid'},el('thead',{},head),el('tbody',{},body))));
   const used=rows.filter(n=>grid[n].some(Boolean));
   if(used.length){
-    const ev=Core.evaluatePlan(R,grid,{squad,positions:S.config.positions,wholeMatch:S.config.wholeMatch});
-    const mine=ev.perQuarter*4, sug=S.plan&&!S.plan.error?S.plan.perQuarter*4:null;
-    const diff=sug==null?null:mine-sug;
-    const verdict=sug==null?'':Math.abs(diff)<0.05?' That’s the same as the suggested plan.':diff>0?` That’s ${diff.toFixed(2)} goals better than the suggested plan.`:` The suggested plan is ${(-diff).toFixed(2)} goals better${-diff<0.3?', which is a small difference':''}.`;
-    const mark={ok:['✓','var(--good)'],warn:['!','var(--warn)'],bad:['✗','var(--bad)']};
-    kids.push(el('div',{class:'panel',style:'margin-top:14px;display:grid;gap:10px'},
-      el('h3',{},'How your plan measures up'),
-      el('div',{},'Expected edge: ',el('b',{class:'num',text:sgn(mine)+' goals'}),' over the match compared with an average Blues line-up.',verdict),
-      el('ul',{style:'margin:0;padding:0;list-style:none;display:grid;gap:6px'},ev.checks.map(c=>el('li',{style:'display:flex;gap:8px;align-items:flex-start'},el('b',{style:'color:'+mark[c.level][1]+';width:1em;flex:none',text:mark[c.level][0]}),el('span',{text:c.text})))),
-      el('div',{},el('b',{},'Each quarter'),el('ul',{style:'margin:6px 0 0;padding-left:18px;display:grid;gap:6px;font-size:14px'},[0,1,2,3].map(q=>{
-        const a=ev.periods[2*q], b2=ev.periods[2*q+1], nA=a.lineup.map(x=>x.name), nB=b2.lineup.map(x=>x.name);
-        const off=nA.filter(x=>!nB.includes(x)), on=nB.filter(x=>!nA.includes(x));
-        const L=arr=>arr.length>1?arr.slice(0,-1).join(', ')+' and '+arr[arr.length-1]:arr[0]||'';
-        let line=nA.length?L(nA)+'.':'Nobody picked.';
-        if(off.length||on.length)line+=` At half-time ${on.length?L(on):'nobody'} replace${on.length===1?'s':''} ${off.length?L(off):'nobody'}.`;
-        const st=a.story;
-        return el('li',{},el('b',{text:'Q'+(q+1)+': '}),line,el('span',{class:'muted'},st?` ${st.players.length} of them (${L(st.players)}) have played ${qfmt(st.quarters)} quarter${st.quarters===1?'':'s'} together before: Blues scored ${qfmt(st.gf)}, conceded ${qfmt(st.ga)}.`:' This group hasn’t played together in a logged match yet.'));
-      })))));
+    const MEANINGFUL=0.25; // goals over a match; smaller differences are noise on this much data
+    const opts={squad,positions:S.config.positions,wholeMatch:S.config.wholeMatch};
+    const cr=Core.critiquePlan(R,grid,opts), ev=cr.base;
+    const mine=cr.baseScore, sug=S.plan&&!S.plan.error?S.plan.perQuarter*4:null;
+    const logged=R.checks.exactMatches;
+    const bad=ev.checks.filter(c=>c.level!=='ok');
+    const L=arr=>arr.length>1?arr.slice(0,-1).join(', ')+' and '+arr[arr.length-1]:arr[0]||'';
+    const parts=[el('h3',{},'Critique')];
+    // 1. rule problems
+    if(bad.length)parts.push(el('div',{},el('b',{},'Fix first. '),el('ul',{style:'margin:6px 0 0;padding-left:18px;display:grid;gap:4px'},bad.map(c=>el('li',{style:'color:'+(c.level==='bad'?'var(--bad)':'var(--warn)')},c.text)))));
+    else parts.push(el('div',{},el('b',{},'Rules: '),'passes all of them (7 in the right shape, 2+ quarters each, even time, no one out for more than a quarter, one position per quarter, whole quarters, ticked positions).'));
+    // 2. changes that matter
+    const real=cr.fixes.filter(f=>f.gain>=MEANINGFUL);
+    if(real.length){
+      parts.push(el('div',{},el('b',{},'Changes worth making'),el('ul',{style:'margin:6px 0 0;padding-left:18px;display:grid;gap:6px'},real.map(f=>el('li',{},`${f.text} `,el('b',{class:'num',text:'+'+f.gain.toFixed(2)+' goals'}),' ',el('button',{type:'button',class:'btn',style:'padding:2px 8px;font-size:12px',onclick:()=>{S.config={...S.config,myPlan:{grid:f.grid,source:(my.source?my.source+', ':'')+'edited'}};save();renderMine();}},'Apply'))))));
+    }else{
+      const best=cr.fixes[0];
+      parts.push(el('div',{},el('b',{},'Changes worth making: none. '),best?`The best single swap would gain ${best.gain.toFixed(2)} goals over a match, which is too small to mean anything on ${logged} logged match${logged===1?'':'es'}. The data gives no reason to change this plan.`:'No single swap would improve it.'));
+    }
+    // 3. comparison with the suggested plan
+    if(sug!=null){const d=sug-mine;parts.push(el('div',{},el('b',{},'Against the suggested plan: '),Math.abs(d)<MEANINGFUL?`no real difference (${Math.abs(d).toFixed(2)} goals over a match).`:d>0?`the suggested plan is ${d.toFixed(2)} goals better over a match. Compare the two grids to see where they differ.`:`yours is ${(-d).toFixed(2)} goals better over a match.`));}
+    // 4. weakest quarter, only if it clearly stands out
+    const avgQ=cr.quarterValues.reduce((a,b)=>a+b,0)/4, w=cr.weakest;
+    if(avgQ-w.value>=MEANINGFUL/4){const st=w.story;parts.push(el('div',{},el('b',{},`Weakest quarter: Q${w.q+1}. `),st?`${st.players.length} of those players (${L(st.players)}) have been on together for ${qfmt(st.quarters)} quarter${st.quarters===1?'':'s'}: Blues scored ${qfmt(st.gf)}, conceded ${qfmt(st.ga)}.`:'Its players have the weakest records in their positions.'));}
+    // 5. what the verdict rests on
+    parts.push(el('p',{class:'muted',style:'margin:0;font-size:13px'},`Based on ${logged} match${logged===1?'':'es'} with goals logged by quarter and the positional records in the seasons ticked at the top. It can’t judge form, confidence or the opponent. It only flags changes worth ${MEANINGFUL} goals or more over a match.`));
+    kids.push(el('div',{class:'panel',style:'margin-top:14px;display:grid;gap:10px'},parts));
   }
   box.replaceChildren(...kids);
 }
