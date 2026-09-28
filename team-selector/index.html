@@ -388,7 +388,8 @@ const Core = (() => {
       const avgHalf = (m.GF - m.GA) / 8;
       const onHalf = {}; // "q-h" -> [[player,pos]]
       for (const [p, segs] of Object.entries(m.lineup)) {
-        const r = pl(p); r.apps++; r[m.res] = (r[m.res] || 0) + 1; r.last = m.d > r.last ? m.d : r.last;
+        const r = pl(p); r.apps++;
+        if (m.exact) r.exOffH = (r.exOffH || 0) + 8 - segs.length; r[m.res] = (r[m.res] || 0) + 1; r.last = m.d > r.last ? m.d : r.last;
         for (const [q, h, g] of segs) {
           r.halves++; r.pos[g] += 0.5;
           const hGF = m.qGF[q - 1] / 2, hGA = m.qGA[q - 1] / 2;
@@ -439,7 +440,7 @@ const Core = (() => {
 
     const players = Object.values(P).map(r => {
       const Q = r.halves / 2;
-      return { ...r, Q, exQ: r.exH / 2, gaPerQ: Q ? (r.G + r.A) / Q : 0, onGFq: Q ? r.onGF / Q : 0, onGAq: Q ? r.onGA / Q : 0, pm: r.exH ? r.exNet / (r.exH / 2) : null, pmShrunk: r.exNet / (r.exH / 2 + K) };
+      return { ...r, Q, exQ: r.exH / 2, gaPerQ: Q ? (r.G + r.A) / Q : 0, onGFq: Q ? r.onGF / Q : 0, onGAq: Q ? r.onGA / Q : 0, pm: r.exH ? r.exNet / (r.exH / 2) : null, alwaysOn: r.exH > 0 && !r.exOffH, pmShrunk: r.exNet / (r.exH / 2 + K) };
     }).sort((a, b) => b.Q - a.Q);
 
     // averages for the picker
@@ -1093,11 +1094,16 @@ function renderPlayers(){
     {k:'gf',h:'Scored /q',t:'Blues goals per quarter while on the pitch (estimated where goals weren’t logged by quarter)',v:r=>r.onGFq,td:r=>tdNum(r.onGFq,f2)},
     {k:'ga',h:'Conceded /q',t:'Goals conceded per quarter while on the pitch (estimated where goals weren’t logged by quarter)',v:r=>r.onGAq,td:r=>tdNum(r.onGAq,f2)},
     {k:'cs',h:'Clean sheet %',t:'Share of quarters in defence or goal that ended without conceding',v:r=>(r.pos.DEF+r.pos.GK)?(r.CD+r.CG)/(r.pos.DEF+r.pos.GK):null,td:r=>tdNum((r.pos.DEF+r.pos.GK)?(r.CD+r.CG)/(r.pos.DEF+r.pos.GK)*100:null,x=>x==null?'–':Math.round(x)+'%')},
-    {k:'pm',h:'+/− when on',t:'How much better or worse the Blues’ goal difference was per quarter while this player was on, compared with the rest of that match. Only uses matches where goals are logged by quarter; the small number is how many quarters that covers.',v:r=>r.pm,td:r=>tdPM(r.pm,r.exQ)},
+    {k:'pm',h:'+/− when on',t:'Blues goal difference per quarter while this player was on, compared with the team’s average across the whole of those matches. Only uses matches where goals are logged by quarter. “Always on” means they have never been off, so there is nothing to compare.',v:r=>r.alwaysOn?null:r.pm,td:r=>r.alwaysOn?el('td',{class:'muted',title:'Played every minute of the logged matches, so there is no time without them to compare'},'always on'):tdPM(r.pm,r.exQ)},
   ];
   $('v-players').replaceChildren(
     el('div',{class:'legend'},Core.GROUPS.map(g=>el('span',{},el('i',{style:'background:'+ROLE_C[g]}),{GK:'Goalkeeper',DEF:'Defender',MID:'Midfield',WING:'Wing',FOR:'Forward'}[g]))),
     sortable(cols,R.players,S.sortP,renderPlayers),
+    el('div',{class:'muted',style:'font-size:13px;margin:8px 0 0;display:grid;gap:3px;max-width:80ch'},
+      el('div',{},el('b',{},'G+A /q: '),'goals plus assists per quarter played (an assist counts the same as a goal here).'),
+      el('div',{},el('b',{},'Scored /q, Conceded /q: '),'Blues goals and goals against per quarter while the player was on the pitch.'),
+      el('div',{},el('b',{},'Clean sheet %: '),'quarters in defence or goal that ended with nothing conceded.'),
+      el('div',{},el('b',{},'+/− when on: '),'how much better (+) or worse (−) the Blues’ goal difference per quarter was while the player was on, compared with the team’s average across the whole of those matches. Needs goals logged by quarter. Early on, a single goal moves these a lot.')),
     el('p',{class:'muted',style:'font-size:13px;margin:8px 0 0'},'Only matches with a team sheet count here. “Scored /q” and “Conceded /q” spread a match’s goals evenly across its quarters when goals weren’t logged by quarter, so for those matches they mostly reflect the result.'));
 }
 
