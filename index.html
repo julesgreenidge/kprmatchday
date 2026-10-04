@@ -1448,7 +1448,7 @@
 
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyRiGa5jg1roJh3drjIvHv96axQiX_bTDnGiGAeeGFsxb94_G1xA1z6GFkk5n0eZ97B5g/exec";
-const APP_VERSION = "2026-10-01-1500"; // must be bumped manually on every deploy — see note below
+const APP_VERSION = "2026-10-04-1200"; // must be bumped manually on every deploy — see note below
 const AGE = "U11";
 
 // ── ACCESS CONTROL ──
@@ -1757,6 +1757,12 @@ function showMatchDayScreens() {
   if (ss) ss.style.display = ended ? '' : 'none';
   const endBtnEl = document.getElementById('endMatchBtnWrap');
   if (endBtnEl) endBtnEl.style.display = ended ? 'none' : '';
+  // Refresh the award pickers every time this screen is shown — unlike the
+  // goal/assist/clean-sheet pickers (which rebuild fresh each time their own
+  // modal opens), this section otherwise only re-renders on specific actions
+  // (guest add/remove, editing an award, ending the match), so it could keep
+  // showing a squad list from an earlier match/visit until one of those fired.
+  renderAwardGrids();
 }
 
 function hideAllScreens() {
@@ -1920,6 +1926,7 @@ function ensureMatchStarted() {
     state.matchId = generateMatchId();
     state._matchStarted = true;
     updateScoreBarLayout();
+    renderAwardGrids();
   } else {
     // Update opponent/date/venue from inline fields each time
     state.matchDate = document.getElementById('matchDate')?.value || state.matchDate;
