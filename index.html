@@ -209,6 +209,7 @@
     overflow: hidden;
   }
   .team-tile:active { transform: scale(0.97); }
+  .team-grid .team-tile:last-child:nth-child(odd) { grid-column: span 2; }
   .team-tile.blues { background: #2196F3; }
   .team-tile.reds { background: #cc1818; }
   .team-tile.royals { background: #1a3a8f; }
@@ -955,9 +956,6 @@
     <button class="team-tile reds" onclick="selectTeam('Reds')">
       <div class="team-name">Reds</div>
     </button>
-    <button class="team-tile royals" onclick="selectTeam('Royals')">
-      <div class="team-name">Royals</div>
-    </button>
     <button class="team-tile stripes" onclick="selectTeam('Stripes')">
       <div class="team-name">Stripes</div>
     </button>
@@ -1180,7 +1178,8 @@
       </select>
       <select id="historyFilterAge" onchange="renderHistoryList()" style="flex:1;padding:8px 10px;border:1.5px solid var(--light-grey);border-radius:8px;font-size:13px;background:white;">
         <option value="">All seasons</option>
-        <option value="U11" selected>U11</option>
+        <option value="U11x" selected>U11 (excl. Royals)</option>
+        <option value="U11">U11 (incl. Royals)</option>
         <option value="U10">U10</option>
         <option value="U9">U9</option>
       </select>
@@ -1220,7 +1219,8 @@
         </select>
         <select id="statsFilterAge" onchange="renderStats()" style="flex:1;min-width:0;padding:7px 8px;border:1.5px solid var(--light-grey);border-radius:8px;font-size:13px;background:white;">
           <option value="">All seasons</option>
-          <option value="U11" selected>U11</option>
+          <option value="U11x" selected>U11 (excl. Royals)</option>
+          <option value="U11">U11 (incl. Royals)</option>
           <option value="U10">U10</option>
           <option value="U9">U9</option>
         </select>
@@ -1391,7 +1391,6 @@
     <div class="team-grid" style="margin-top:12px;">
       <button class="team-tile blues" onclick="selectTeam('Blues');closeModal('teamChangeModal')"><div class="team-name">Blues</div></button>
       <button class="team-tile reds" onclick="selectTeam('Reds');closeModal('teamChangeModal')"><div class="team-name">Reds</div></button>
-      <button class="team-tile royals" onclick="selectTeam('Royals');closeModal('teamChangeModal')"><div class="team-name">Royals</div></button>
       <button class="team-tile stripes" onclick="selectTeam('Stripes');closeModal('teamChangeModal')"><div class="team-name">Stripes</div></button>
     </div>
     <button id="teamChangeModalCancel" class="btn-secondary" style="margin-top:12px;" onclick="closeModal('teamChangeModal')">Cancel</button>
@@ -1448,7 +1447,7 @@
 
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyRiGa5jg1roJh3drjIvHv96axQiX_bTDnGiGAeeGFsxb94_G1xA1z6GFkk5n0eZ97B5g/exec";
-const APP_VERSION = "2026-10-04-1200"; // must be bumped manually on every deploy — see note below
+const APP_VERSION = "2026-10-11-1300"; // must be bumped manually on every deploy — see note below
 const AGE = "U11";
 
 // ── ACCESS CONTROL ──
@@ -1512,7 +1511,7 @@ const DEFAULT_SQUADS = {
   Royals:  ['Aaban','Albie','Arthur','Evan','Gio','Harry','Huxley GC','Liam','Olly H','Ted','Teo'],
   Stripes: ['Arlo','Aurelian','Ayden','Elliott','Ferdinand','Hugo','Ismayil','Jacob','Magnus','Marco','Max','Otto']
 };
-const ALL_TEAMS = ['Blues','Reds','Royals','Stripes'];
+const ALL_TEAMS = ['Blues','Reds','Stripes']; // active teams only - Royals folded (history kept in the Sheet)
 
 // ── SQUADS: shared across all managers via the Sheet, not local-only ──
 let SQUAD_DATA = null; // null = not yet loaded; falls back to DEFAULT_SQUADS meanwhile
@@ -3303,7 +3302,7 @@ function getFilteredData() {
   return SHEET_DATA.filter(m =>
     (!team || m.team === team) &&
     (!venue || m.venue === venue) &&
-    (!age || m.age === age) &&
+    (!age || (age === 'U11x' ? (m.age === 'U11' && m.team !== 'Royals') : m.age === age)) &&
     (!opponent || m.opponent === opponent)
   );
 }
@@ -3778,7 +3777,7 @@ function renderHistoryList() {
   const teamFilter = document.getElementById('historyFilterTeam')?.value || '';
   const ageFilter = document.getElementById('historyFilterAge')?.value || '';
   if (teamFilter) matches = matches.filter(m => m.team === teamFilter);
-  if (ageFilter) matches = matches.filter(m => m.age === ageFilter);
+  if (ageFilter) matches = matches.filter(m => ageFilter === 'U11x' ? (m.age === 'U11' && m.team !== 'Royals') : m.age === ageFilter);
 
   const el = document.getElementById('historyList');
   if (!matches.length) {
@@ -4354,7 +4353,7 @@ loadSquadData(); // same idea for squads, so guest-picker and rosters are ready 
 
 // Restore last team or prompt to select one
 const lastTeam = localStorage.getItem('kprLastTeam');
-if (lastTeam && ['Blues','Reds','Royals','Stripes'].includes(lastTeam)) {
+if (lastTeam && ALL_TEAMS.includes(lastTeam)) {
   state.team = lastTeam;
   state.league = TEAM_LEAGUES[lastTeam];
   document.getElementById('scoreLeftLabel').textContent = 'KPR ' + lastTeam;
